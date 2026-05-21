@@ -9,6 +9,9 @@
 
 ![PhishShield in action](screenshots/demo.gif)
 
+> **Workflow note:** Paste/forward workflow today; 
+> direct inbox integration (Gmail/Outlook) planned.
+
 ## Why I Built This
 I kept seeing smart people around me still fall for phishing because the emails looked "normal enough."  
 Most tools just say safe or unsafe, but they do not explain why in a way regular users can trust.  
@@ -215,6 +218,10 @@ The loadable extension sources live under **`frontend/artifacts/chrome-extension
 └── README.md                # Recruiter-facing project overview
 ```
 
+> **Submodules:** `phishshield-backend-space` and 
+> `phishshield-backend` are deployment submodules (HF Space). 
+> Main development lives in `/backend`.
+
 `pytest.ini` stays at the repository root on purpose: pytest discovers it automatically and applies one shared configuration to the centralized `tests/` directory, so you do not need duplicate config files next to each test package.
 
 ## Dataset
@@ -228,6 +235,10 @@ Key visible files include:
 
 Source notes in the code/docs reference curated phishing corpora plus internally cleaned and synthetic balancing steps.  
 The training metadata in `data/training_meta.json` reports `rows: 18684`.
+
+> **Row count note:** 18,684 = post-cleaning training rows 
+> in `training_meta.json` (raw CSV has ~18,133 rows before 
+> deduplication and balancing steps).
 
 ## Environment variables (runtime honesty)
 
