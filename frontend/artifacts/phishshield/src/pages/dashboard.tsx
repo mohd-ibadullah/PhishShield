@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { getLiveFeedStorageKey, getSessionId } from '@/lib/session';
 import { toast } from '@/hooks/use-toast';
 import { SCAN_STAGE_MESSAGES, RESULT_REVEAL_MS, formatRelativeTimestamp, usePrefersReducedMotion } from '@/lib/motion';
+import { formatBenchmarkFpr, formatBenchmarkMetric } from '@/lib/metricFormatters';
 
 const MOCK_GMAIL_EMAILS = [
   {
@@ -2642,13 +2643,20 @@ export default function Dashboard() {
     safe_detected?: number;
     disclaimer?: string;
   };
-  const benchmarkAccuracy = Number(offlineEvaluation.accuracy ?? learningMetrics.accuracy ?? 0);
-  const benchmarkPrecision = Number(offlineEvaluation.precision ?? learningMetrics.precision ?? 0);
-  const benchmarkRecall = Number(offlineEvaluation.recall ?? learningMetrics.recall ?? 0);
-  const benchmarkF1 = Number(offlineEvaluation.f1_score ?? offlineEvaluation.f1Score ?? learningMetrics.f1Score ?? 0);
-  const benchmarkFpr = Number(
-    offlineEvaluation.false_positive_rate ?? learningMetrics.falsePositiveRate ?? 0,
-  );
+  const parseMetricNumber = (val: unknown): number | null => {
+    if (typeof val === 'number' && !Number.isNaN(val)) return val;
+    if (typeof val === 'string' && val.trim() !== '' && val.trim() !== '—') {
+      const num = Number(val);
+      return Number.isNaN(num) ? null : num;
+    }
+    return null;
+  };
+
+  const benchmarkAccuracy = parseMetricNumber(offlineEvaluation.accuracy ?? learningMetrics.accuracy);
+  const benchmarkPrecision = parseMetricNumber(offlineEvaluation.precision ?? learningMetrics.precision);
+  const benchmarkRecall = parseMetricNumber(offlineEvaluation.recall ?? learningMetrics.recall);
+  const benchmarkF1 = parseMetricNumber(offlineEvaluation.f1_score ?? offlineEvaluation.f1Score ?? learningMetrics.f1Score);
+  const benchmarkFpr = parseMetricNumber(offlineEvaluation.false_positive_rate ?? learningMetrics.falsePositiveRate);
   const sessionScanTotal = Number(
     runtimeOperational.total_scans ?? learningMetrics.totalScans ?? 0,
   );
@@ -5268,7 +5276,7 @@ export default function Dashboard() {
                     <div key={label} className={cn('rounded-xl border border-card-border bg-card p-4', cardHoverClass)}>
                       <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide">{label}</p>
                       <p className={cn("text-2xl font-bold font-mono", color)}>
-                        {value !== undefined ? `${(value * 100).toFixed(1)}%` : '—'}
+                        {formatBenchmarkMetric(value)}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{desc}</p>
                     </div>
@@ -5278,21 +5286,27 @@ export default function Dashboard() {
                 <div className={cn('mt-3 rounded-xl border border-card-border bg-card p-4', cardHoverClass)}>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs text-muted-foreground font-medium">False Positive Rate</span>
-                    <span className="text-xs font-mono text-warning">
-                      {benchmarkFpr > 0 ? `${(benchmarkFpr * 100).toFixed(1)}%` : '—'} <span className="text-muted-foreground">(lower is better)</span>
-                    </span>
+                    {(() => {
+                      const fprDisplay = formatBenchmarkFpr(benchmarkFpr);
+                      return (
+                        <span className="text-xs font-mono text-warning">
+                          {fprDisplay.valueText}{' '}
+                          <span className="text-muted-foreground">{fprDisplay.captionText}</span>
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-warning rounded-full"
                       initial={{ width: 0 }}
-                      animate={{ width: `${benchmarkFpr * 100}%` }}
+                      animate={{ width: benchmarkFpr !== null ? `${benchmarkFpr * 100}%` : '0%' }}
                       transition={{ duration: 0.8 }}
                     />
                   </div>
                 </div>
 
-                {benchmarkAccuracy > 0 && (
+                {benchmarkAccuracy !== null && benchmarkAccuracy > 0 && (
                   <div className="mt-3 space-y-1.5">
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>Offline holdout accuracy</span>
