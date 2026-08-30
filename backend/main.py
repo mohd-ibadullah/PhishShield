@@ -1014,22 +1014,27 @@ def _runtime_primary_model_label() -> str:
 
 def resolve_health_model_fields() -> dict[str, str]:
     has_indicbert = artifacts.indicbert_model is not None and artifacts.indicbert_tokenizer is not None
-    if has_indicbert or _ensemble_providers_ready() or artifacts.active_model == INDICBERT_HEALTH_LABEL:
-        indic_metrics = load_indicbert_metrics()
-        return {
-            "model_used": INDICBERT_HEALTH_LABEL,
-            "active_model": INDICBERT_HEALTH_LABEL,
-            "accuracy": _format_health_metric(indic_metrics.get("accuracy"), default="—"),
-            "f1_score": _format_health_metric(indic_metrics.get("f1"), default="—"),
-            "device": str(artifacts.device or "cpu"),
-        }
+    has_securebert = _securebert_provider is not None and _provider_health_ready(_securebert_provider)
+    has_muril = _muril_provider is not None and _provider_health_ready(_muril_provider)
+
+    if has_securebert and has_muril:
+        active_label = "SecureBERT + MuRIL Ensemble"
+    elif has_securebert:
+        active_label = "SecureBERT (Fine-Tuned Transformer)"
+    elif has_muril:
+        active_label = "MuRIL (Multilingual Transformer)"
+    elif has_indicbert:
+        active_label = "IndicBERT Transformer"
+    elif artifacts.model is not None:
+        active_label = "TF-IDF Logistic Regression"
+    else:
+        active_label = "Rule-based Engine"
 
     metadata = load_training_metadata()
     metrics = metadata.get("metrics") if isinstance(metadata.get("metrics"), dict) else {}
-    model_used = str(artifacts.active_model or "TF-IDF")
     return {
-        "model_used": model_used,
-        "active_model": model_used,
+        "model_used": active_label,
+        "active_model": active_label,
         "accuracy": _format_health_metric(metrics.get("accuracy"), default="—"),
         "f1_score": _format_health_metric(metrics.get("f1_score", metrics.get("f1")), default="—"),
         "device": str(artifacts.device or "cpu"),
