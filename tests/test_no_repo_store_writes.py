@@ -4,11 +4,14 @@ Records (size, mtime, line count) of every persisted store under backend/
 and data/ via a session-scoped fixture that fires before ANY test runs.
 A later test asserts none of those snapshots changed.
 
-The deliberate-violation test (test_deliberate_repo_write) is a
-compile-time-conditional proof: when the env var
-_TEST_PROVE_META_CATCHES_VIOLATION=1 is set it writes to the real
-scan_logs.jsonl and the meta-test fails.  It runs FIRST in this file
-so the snapshot comparison detects the change.
+The self-proving test (test_isolation_redirect_works) writes to the
+module-level constant (which the conftest session fixture redirected to
+tmp) and asserts the REAL store file is unchanged — proving the redirect
+works on every run, not just when an env var is set.
+
+The deliberate-violation test (test_deliberate_repo_write) writes
+directly to the real file and is skipped by default — it exists only
+for one-shot manual proof.
 """
 from __future__ import annotations
 
@@ -66,21 +69,41 @@ def _record_initial_store_state():
     yield
 
 
-# ── Deliberate-violation proof (compile-time-conditional) ────────
-# MUST appear before the assertion test so pytest runs it first.
-_PROVE = os.getenv("_TEST_PROVE_META_CATCHES_VIOLATION", "") == "1"
+# ── Self-proving: redirect works on every run ────────────────────
+
+def test_isolation_redirect_works():
+    """Write to the module-level SCAN_LOG_PATH (redirected to tmp by conftest)
+    and assert the REAL backend/scan_logs.jsonl is unchanged.
+
+    This proves the session fixture works — every run, no env var needed.
+    """
+    import importlib
+    main_mod = importlib.import_module("main")
+
+    # The conftest session fixture should have redirected this to tmp.
+    redirected_path = main_mod.SCAN_LOG_PATH
+    real_path = BACKEND_DIR / "scan_logs.jsonl"
+
+    # Write a marker to the REDIRECTED path (should be in tmp).
+    marker = f"ISOLATION-PROOF-{os.getpid()}"
+    redirected_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(redirected_path, "a", encoding="utf-8") as f:
+        f.write(marker + "\n")
+
+    # The REAL store must be unchanged.
+    real_after = _snapshot(real_path)
+    real_before = _initial.get(str(real_path), {"exists": False})
+    assert real_after == real_before, (
+        f"Real store changed despite isolation redirect!\n"
+        f"  redirected_path: {redirected_path}\n"
+        f"  real_path: {real_path}\n"
+        f"  before: {real_before}\n"
+        f"  after: {real_after}"
+    )
 
 
-@pytest.mark.skipif(not _PROVE, reason="set _TEST_PROVE_META_CATCHES_VIOLATION=1 to run")
-def test_deliberate_repo_write():
-    """Write to the real scan_logs.jsonl to prove the meta-test catches it."""
-    violation_marker = f"VIOLATION-PROOF-{os.getpid()}"
-    real_path = ROOT / "backend" / "scan_logs.jsonl"
-    with open(real_path, "a", encoding="utf-8") as f:
-        f.write(violation_marker + "\n")
+# ── The actual suite-wide assertion ──────────────────────────────
 
-
-# ── The actual assertion ─────────────────────────────────────────
 def test_no_repo_store_writes():
     """§1.2: Assert no store file under backend/ or data/ was modified."""
     failures = []
@@ -93,3 +116,17 @@ def test_no_repo_store_writes():
     assert not failures, (
         "Store files changed during the test suite:\n" + "\n".join(failures)
     )
+
+
+# ── Deliberate-violation proof (skipped by default) ─────────────
+# Only for one-shot manual proof: _TEST_PROVE_META_CATCHES_VIOLATION=1
+_PROVE = os.getenv("_TEST_PROVE_META_CATCHES_VIOLATION", "") == "1"
+
+
+@pytest.mark.skipif(not _PROVE, reason="set _TEST_PROVE_META_CATCHES_VIOLATION=1 to run")
+def test_deliberate_repo_write():
+    """Write to the real scan_logs.jsonl to prove the meta-test catches it."""
+    violation_marker = f"VIOLATION-PROOF-{os.getpid()}"
+    real_path = ROOT / "backend" / "scan_logs.jsonl"
+    with open(real_path, "a", encoding="utf-8") as f:
+        f.write(violation_marker + "\n")
