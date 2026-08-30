@@ -6,9 +6,8 @@ import path from "path";
 const rawPort = process.env.PORT ?? "5173";
 const port = Number(rawPort);
 
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
+// Treat 0 or negative as unset — fall back to default.
+const resolvedPort = port > 0 ? port : 5173;
 
 const basePath = process.env.BASE_PATH || "/";
 
@@ -39,7 +38,7 @@ export default defineConfig(async () => {
       chunkSizeWarningLimit: 1200,
     },
     server: {
-      port,
+      port: resolvedPort,
       host: "0.0.0.0",
       allowedHosts: true,
       proxy: {
@@ -79,7 +78,7 @@ export default defineConfig(async () => {
       },
     },
     preview: {
-      port,
+      port: resolvedPort,
       host: "0.0.0.0",
       allowedHosts: true,
     },
