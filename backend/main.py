@@ -4,6 +4,7 @@ import base64
 import asyncio
 import concurrent.futures
 import hashlib
+import hmac
 import ipaddress
 import json
 import logging
@@ -297,6 +298,21 @@ OPENROUTER_TIMEOUT_SECONDS = min(LLM_TIMEOUT_SECONDS, _env_float("OPENROUTER_TIM
 GEMINI_TIMEOUT_SECONDS = min(LLM_TIMEOUT_SECONDS, _env_float("GEMINI_TIMEOUT_SECONDS", LLM_TIMEOUT_SECONDS))
 logger = logging.getLogger("phishshield")
 INTERNAL_API_KEY = (os.getenv("PHISHSHIELD_INTERNAL_API_KEY") or "").strip()
+# Must match the exact placeholder shipped in .env.example.
+INTERNAL_API_KEY_PLACEHOLDER = "change-me"
+
+
+def validate_internal_key_configuration() -> None:
+    """Refuse to run when the internal key is unset or the shipped placeholder.
+
+    Called at startup (never at import, so importing the app for tests stays
+    safe) and enforced again per-request by _validate_internal_access.
+    """
+    if not INTERNAL_API_KEY or INTERNAL_API_KEY == INTERNAL_API_KEY_PLACEHOLDER:
+        raise RuntimeError(
+            "PHISHSHIELD_INTERNAL_API_KEY is unset or still the .env.example "
+            "placeholder; refusing to start. Set a strong unique key."
+        )
 
 app = FastAPI(title="PhishShield AI Backend", version="1.0")
 app.include_router(metrics_router)
@@ -1573,6 +1589,7 @@ def load_artifacts() -> None:
 
 @app.on_event("startup")
 async def startup_event() -> None:
+    validate_internal_key_configuration()
     ensure_scans_db()
     ensure_feedback_store()
     ensure_feedback_memory_store()
@@ -4014,14 +4031,16 @@ def normalize_prediction_label(verdict: str | None) -> str:
 
 
 def _validate_internal_access(request: Request) -> None:
-    if not INTERNAL_API_KEY:
-        return
+    # Deny by default: an unset or placeholder key means misconfiguration,
+    # not open access.
+    if not INTERNAL_API_KEY or INTERNAL_API_KEY == INTERNAL_API_KEY_PLACEHOLDER:
+        raise HTTPException(status_code=403, detail="Forbidden: internal API key not configured")
     provided_key = (
         request.headers.get("x-internal-api-key")
         or request.headers.get("x-phishshield-internal-key")
         or ""
     ).strip()
-    if provided_key != INTERNAL_API_KEY:
+    if not hmac.compare_digest(provided_key, INTERNAL_API_KEY):
         raise HTTPException(status_code=403, detail="Forbidden: invalid internal API key")
 
 
@@ -4312,7 +4331,6 @@ def get_feedback_stats_payload() -> dict[str, Any]:
         "total_feedback": total_feedback,
         "pending_retrain": pending_retrain,
         "needed_for_retrain": needed_for_retrain,
-        "retrain_threshold": RETRAIN_THRESHOLD,
         "last_retrain": str(feedback_state.get("last_retrain") or artifacts.last_trained or "")[:10] or None,
         "model_improving": bool(feedback_state.get("model_improving", pattern_adjustment <= 0)),
     }

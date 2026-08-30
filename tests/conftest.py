@@ -40,6 +40,16 @@ def _load_model_artifacts_once() -> None:
 
 
 @pytest.fixture(autouse=True)
+def _internal_api_key_for_tests(monkeypatch) -> None:
+    """Default every test to a configured internal key (deny-by-default contract).
+
+    Tests that exercise the unconfigured/placeholder state monkeypatch
+    INTERNAL_API_KEY themselves and override this default.
+    """
+    monkeypatch.setattr(backend_main, "INTERNAL_API_KEY", "test-internal-key")
+
+
+@pytest.fixture(autouse=True)
 def _reset_scan_cache_for_tests(tmp_path, monkeypatch) -> None:
     """Avoid cross-test pollution from scan_cache / explanations (stable scores)."""
     app.state.scan_cache = OrderedDict()

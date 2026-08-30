@@ -81,6 +81,8 @@ def test_explain_prediction_returns_method_and_words() -> None:
 
 @pytest.mark.asyncio
 async def test_retrain_rejects_invalid_feedback_labels(client, monkeypatch, tmp_path) -> None:
+    # Uses the conftest default configured key; the internal header is required
+    # post-b3.1 (unset/placeholder key now denies with 403, tested separately).
     feedback_path = tmp_path / "feedback.csv"
     state_path = tmp_path / "feedback_state.json"
     dataset_path = tmp_path / "Phishing_Email.csv"
@@ -101,7 +103,7 @@ async def test_retrain_rejects_invalid_feedback_labels(client, monkeypatch, tmp_
         encoding="utf-8",
     )
 
-    response = await client.post("/retrain")
+    response = await client.post("/retrain", headers={"x-internal-api-key": "test-internal-key"})
     assert response.status_code == 400
     assert "Unsupported feedback labels" in response.json().get("detail", "")
 
@@ -137,12 +139,40 @@ async def test_feedback_stats_api_alias(client) -> None:
 
 @pytest.mark.asyncio
 async def test_retrain_requires_feedback_rows(client, monkeypatch, tmp_path) -> None:
+    # Uses the conftest default configured key; the internal header is required
+    # post-b3.1 (unset/placeholder key now denies with 403, tested separately).
     feedback_path = tmp_path / "feedback.csv"
     state_path = tmp_path / "feedback_state.json"
     monkeypatch.setattr(backend_main, "FEEDBACK_CSV_PATH", feedback_path)
     monkeypatch.setattr(backend_main, "FEEDBACK_STATE_PATH", state_path)
     backend_main.ensure_feedback_store()
 
-    response = await client.post("/retrain")
+    response = await client.post("/retrain", headers={"x-internal-api-key": "test-internal-key"})
+    assert response.status_code == 400
+    assert "No new feedback" in response.json().get("detail", "")
+
+
+@pytest.mark.asyncio
+async def test_retrain_forbidden_without_header_when_key_configured(client, monkeypatch) -> None:
+    """Key configured: /retrain without or with an invalid key header is 403."""
+    monkeypatch.setattr(backend_main, "INTERNAL_API_KEY", "b2-test-internal-key")
+
+    missing = await client.post("/retrain")
+    assert missing.status_code == 403
+    wrong = await client.post("/retrain", headers={"x-internal-api-key": "wrong-key"})
+    assert wrong.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_retrain_authorized_with_configured_key(client, monkeypatch, tmp_path) -> None:
+    """Key configured + valid header passes the guard; empty feedback is still 400."""
+    monkeypatch.setattr(backend_main, "INTERNAL_API_KEY", "b2-test-internal-key")
+    feedback_path = tmp_path / "feedback.csv"
+    state_path = tmp_path / "feedback_state.json"
+    monkeypatch.setattr(backend_main, "FEEDBACK_CSV_PATH", feedback_path)
+    monkeypatch.setattr(backend_main, "FEEDBACK_STATE_PATH", state_path)
+    backend_main.ensure_feedback_store()
+
+    response = await client.post("/retrain", headers={"x-internal-api-key": "b2-test-internal-key"})
     assert response.status_code == 400
     assert "No new feedback" in response.json().get("detail", "")
