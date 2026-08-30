@@ -57,7 +57,16 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
     precision = float(offline_raw.get("precision", 0.0) or 0.0)
     recall = float(offline_raw.get("recall", 0.0) or 0.0)
     f1 = float(offline_raw.get("f1_score", offline_raw.get("f1Score", 0.0)) or 0.0)
-    false_positive_rate = max(0.0, 1.0 - precision) if precision > 0 else None
+    # Honest False Positive Rate: FP / (FP + TN)
+    fpr_val = offline_raw.get("fpr", offline_raw.get("false_positive_rate"))
+    if fpr_val is not None:
+        false_positive_rate = float(fpr_val)
+    elif "fp" in offline_raw and "tn" in offline_raw:
+        fp_count = float(offline_raw["fp"])
+        tn_count = float(offline_raw["tn"])
+        false_positive_rate = fp_count / max(1.0, fp_count + tn_count)
+    else:
+        false_positive_rate = None
 
     live_qa = metadata.get("live_qa") if isinstance(metadata.get("live_qa"), dict) else {}
     live_range = live_qa.get("estimated_accuracy_range")
@@ -101,7 +110,7 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
         "precision": precision,
         "recall": recall,
         "f1Score": f1,
-        "falsePositiveRate": false_positive_rate if false_positive_rate is not None else 0.0,
+        "falsePositiveRate": false_positive_rate,
         "accuracy_source": "offline_holdout_evaluation",
         "totalScans": runtime["total_scans"],
         "phishingDetected": runtime["phishing_detected"],
