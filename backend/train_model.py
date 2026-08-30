@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
@@ -17,6 +16,7 @@ DATASET_PATH = BASE_DIR.parent / "data" / "Phishing_Email.csv"
 MODEL_PATH = BASE_DIR / "model.pkl"
 VECTORIZER_PATH = BASE_DIR / "vectorizer.pkl"
 METADATA_PATH = BASE_DIR.parent / "data" / "training_meta.json"
+REPO_RELATIVE_DATASET_PATH = "data/Phishing_Email.csv"
 
 LABEL_MAP = {
     "Phishing Email": 1,
@@ -31,6 +31,19 @@ def clean_text(text: str) -> str:
     text = re.sub(r"[^a-z0-9\s]", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+def build_training_metadata(
+    *, rows: int, train_rows: int, test_rows: int, metrics: dict[str, float]
+) -> dict[str, object]:
+    """Return the deterministic canonical metadata for this trainer recipe."""
+    return {
+        "dataset_path": REPO_RELATIVE_DATASET_PATH,
+        "rows": rows,
+        "train_rows": train_rows,
+        "test_rows": test_rows,
+        "metrics": metrics,
+    }
 
 
 def main() -> None:
@@ -107,14 +120,12 @@ def main() -> None:
     joblib.dump(model, MODEL_PATH)
     joblib.dump(vectorizer, VECTORIZER_PATH)
 
-    metadata = {
-        "trained_at": datetime.now(timezone.utc).isoformat(),
-        "dataset_path": str(DATASET_PATH),
-        "rows": int(len(df)),
-        "train_rows": int(len(X_train)),
-        "test_rows": int(len(X_test)),
-        "metrics": metrics,
-    }
+    metadata = build_training_metadata(
+        rows=int(len(df)),
+        train_rows=int(len(X_train)),
+        test_rows=int(len(X_test)),
+        metrics=metrics,
+    )
     METADATA_PATH.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
     print(f"Saved model to      : {MODEL_PATH}")

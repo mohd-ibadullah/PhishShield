@@ -21,7 +21,6 @@ from transformers import (
 BASE_DIR = Path(__file__).resolve().parent
 DATASET_PATH = BASE_DIR.parent / "data" / "Phishing_Email.csv"
 OUTPUT_DIR = BASE_DIR / "indicbert_model"
-METADATA_PATH = BASE_DIR.parent / "data" / "training_meta.json"
 MODEL_NAME = "ai4bharat/indic-bert"
 MODEL_CANDIDATES = [MODEL_NAME, "ai4bharat/SecureBERT/MuRILv2-MLM-only"]
 LABEL_MAP = {
@@ -204,7 +203,8 @@ def main() -> None:
         "metrics": summary_metrics,
     }
     (OUTPUT_DIR / "metrics.json").write_text(json.dumps(training_metadata, indent=2), encoding="utf-8")
-    METADATA_PATH.write_text(json.dumps(training_metadata, indent=2), encoding="utf-8")
+    # The optional transformer trainer owns only its model-local metrics. The
+    # canonical data/training_meta.json is written solely by train_model.py.
 
     print("=== SecureBERT/MuRIL Fine-Tuning Complete ===")
     print(f"Dataset rows: {len(df):,}")

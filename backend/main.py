@@ -93,6 +93,7 @@ DATASET_PATH = BASE_DIR.parent / "data" / "Phishing_Email.csv"
 MODEL_PATH = BASE_DIR / "model.pkl"
 VECTORIZER_PATH = BASE_DIR / "vectorizer.pkl"
 METADATA_PATH = BASE_DIR.parent / "data" / "training_meta.json"
+RETRAINING_METADATA_PATH = BASE_DIR.parent / "data" / "retraining_metadata.json"
 FEEDBACK_CSV_PATH = BASE_DIR / "feedback.csv"
 FEEDBACK_STATE_PATH = BASE_DIR.parent / "data" / "feedback_state.json"
 FEEDBACK_MEMORY_PATH = BASE_DIR.parent / "data" / "feedback_memory.json"
@@ -1071,9 +1072,10 @@ def load_training_metadata() -> dict[str, Any]:
         return {}
 
 
-def save_training_metadata(metadata: dict[str, Any]) -> None:
-    _ensure_parent_dir(METADATA_PATH)
-    METADATA_PATH.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+def save_retraining_metadata(metadata: dict[str, Any]) -> None:
+    """Persist runtime retraining details without replacing canonical metadata."""
+    _ensure_parent_dir(RETRAINING_METADATA_PATH)
+    RETRAINING_METADATA_PATH.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
 
 def ensure_feedback_store() -> None:
@@ -4278,7 +4280,7 @@ def _retrain_tfidf_with_feedback_locked() -> dict[str, Any]:
         "feedback_rows": int(len(pending_feedback)),
         "metrics": metrics,
     }
-    save_training_metadata(updated_metadata)
+    save_retraining_metadata(updated_metadata)
     load_artifacts()
 
     state = load_feedback_state()

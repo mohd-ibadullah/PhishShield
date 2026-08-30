@@ -8,11 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def training_metadata_paths() -> list[Path]:
-    """Repo layout uses ../data; HF Space Docker layout uses ./data next to main.py."""
-    return [
-        BASE_DIR / "data" / "training_meta.json",
-        BASE_DIR.parent / "data" / "training_meta.json",
-    ]
+    """Canonical metadata is tracked once at the repository data path."""
+    return [BASE_DIR.parent / "data" / "training_meta.json"]
 
 
 def resolve_training_metadata_path() -> Path | None:

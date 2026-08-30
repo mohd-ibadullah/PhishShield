@@ -57,6 +57,9 @@ jobs:
         run: python train_model.py
         working-directory: backend
 
+      - name: Verify canonical metadata is reproducible
+        run: git diff --exit-code -- data/training_meta.json
+
       - name: Python syntax check
         run: python -m py_compile main.py explain.py train_model.py train_indicbert.py
         working-directory: backend

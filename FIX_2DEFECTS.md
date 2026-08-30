@@ -149,8 +149,11 @@ contained no surviving harness source. It parses `data/training_meta.json`,
 uses `csv.DictReader` for the committed CSV, reruns the exact
 `backend/train_model.py` recipe in memory, and computes FPR as `FP/(FP+TN)`.
 Its raw measurement was 2,000 CSV records, 1,600/400 train/test rows, 1.0
-accuracy/precision/recall/F1, and FPR 0.0 from FP 0 and TN 200. This matches
-the current `training_meta.json` metrics. Historical C1–C4 headlines remain
+accuracy/precision/recall/F1, and FPR 0.0 from FP 0 and TN 200. Before the
+metadata repair, stored metadata metrics were accuracy 0.971902595664972,
+precision 0.940530058177117, recall 0.9911444141689373, and F1
+0.9651741293532339; they did not match the freshly recomputed metrics.
+Historical C1–C4 headlines remain
 unreproducible because their runners, corpus inputs, and transformer weights
 are absent; their existing JSON artifacts remain preserved evidence.
 
