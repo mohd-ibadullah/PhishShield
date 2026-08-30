@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 import sys
 from collections import OrderedDict
 from pathlib import Path
@@ -8,6 +9,23 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+
+# ── §1.1: Store-isolation session fixture ──────────────────────
+# Redirect every persisted store to a per-run tmp dir so the test suite
+# never writes to backend/ or data/.  Patched at module-level constants;
+# call sites are not touched.
+STORE_PATH_ATTRS = (
+    "SCAN_LOG_PATH",
+    "SCANS_DB_PATH",
+    "FEEDBACK_CSV_PATH",
+    "FEEDBACK_STATE_PATH",
+    "FEEDBACK_MEMORY_PATH",
+    "SENDER_PROFILE_PATH",
+)
+
+
+# §3: Set a dedicated HMAC key for tests — never falls back to INTERNAL_API_KEY
+os.environ.setdefault("PHISHSHIELD_PREVIEW_HMAC_KEY", "test-hmac-key-for-ci-only")
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -21,7 +39,6 @@ collect_ignore = [
     "test_script.py",
     "test_scan_simple.py",
     "test_wsbroadcast.py",
-    "test_e2e_websocket.py",
     "test_10_cases.py",
     "test_phishshield_cases.py",
 ]
@@ -31,6 +48,22 @@ if str(BACKEND_DIR) not in sys.path:
 
 backend_main = importlib.import_module("main")
 app = backend_main.app
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _isolate_stores_to_tmp(tmp_path_factory) -> None:
+    """§1.1: Redirect every persisted store to a per-run tmp dir.
+
+    Patches the module-level constants in backend.main so that all writes
+    (scan_logs.jsonl, scans.db, feedback.csv, etc.) go to an ephemeral
+    directory.  Call sites are NOT touched.
+    """
+    tmp_dir = tmp_path_factory.mktemp("stores")
+    for attr in STORE_PATH_ATTRS:
+        original = getattr(backend_main, attr, None)
+        if original is not None:
+            setattr(backend_main, attr, tmp_dir / Path(original).name)
+    yield
 
 
 @pytest.fixture(scope="session", autouse=True)
