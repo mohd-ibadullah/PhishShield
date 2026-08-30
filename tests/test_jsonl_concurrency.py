@@ -23,7 +23,6 @@ def _make_record(i: int) -> dict:
     return {
         "scan_id": f"conc-{i}-{uuid.uuid4().hex[:8]}",
         "cached": False,
-        "input_hash": f"{i:016x}",
         "signals": [f"signal-{i}"],
         "safe_signals": [],
         "risk_score": i % 100,

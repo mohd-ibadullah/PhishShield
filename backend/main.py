@@ -7618,7 +7618,6 @@ def calculate_email_risk(
         {
             "scan_id": scan_id,
             "cached": False,
-            "input_hash": build_safe_preview(email_text),
             "signals": final_signals,
             "safe_signals": safe_reputation_signals,
             "risk_score": risk_score,
@@ -7732,7 +7731,6 @@ def legacy_analyze(payload: LegacyAnalyzeRequest, request: Request) -> dict[str,
             {
                 "scan_id": f"rejected-{uuid4().hex[:12]}",
                 "cached": False,
-                "input_hash": build_safe_preview(payload.emailText),
                 "signals": [],
                 "safe_signals": [],
                 "risk_score": 0,
@@ -7937,7 +7935,6 @@ async def scan_email(payload: EmailScanRequest, request: Request, response: Resp
             {
                 "scan_id": f"timeout-{uuid4().hex[:12]}",
                 "cached": False,
-                "input_hash": build_safe_preview(payload.email_text),
                 "signals": [],
                 "safe_signals": [],
                 "risk_score": 0,
@@ -7960,7 +7957,6 @@ async def scan_email(payload: EmailScanRequest, request: Request, response: Resp
             {
                 "scan_id": f"error-{uuid4().hex[:12]}",
                 "cached": False,
-                "input_hash": build_safe_preview(payload.email_text),
                 "signals": [],
                 "safe_signals": [],
                 "risk_score": 0,

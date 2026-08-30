@@ -110,25 +110,24 @@ async def test_no_marker_in_any_persisted_store() -> None:
 
 # ── §2.2: Hash format + HMAC proof ───────────────────────────
 
-def test_hash_values_are_valid_hex() -> None:
-    """Every PERSISTABLE_HASH_KEYS value in the latest JSONL record must
-    match the hash pattern and be an HMAC (not plain sha256)."""
+def test_input_hash_removed_from_writer() -> None:
+    """§4.1: input_hash was removed from the writer — scan_id serves
+    correlation, no external consumer reads input_hash from the log.
+    New records must NOT contain input_hash."""
     jsonl_path = _jsonl()
     assert jsonl_path.exists()
-    last_hash_line = None
-    with open(jsonl_path, "r", encoding="utf-8") as f:
-        for line in f:
-            if '"input_hash"' in line:
-                last_hash_line = line
-    assert last_hash_line is not None, "No input_hash found in JSONL"
-    obj = json.loads(last_hash_line.strip())
-
-    for key in PERSISTABLE_HASH_KEYS:
-        if key not in obj:
+    # Check the last 50 lines (the ones written by this session's tests)
+    lines = jsonl_path.read_text(encoding="utf-8").splitlines()
+    for line in lines[-50:]:
+        s = line.strip()
+        if not s:
             continue
-        val = obj[key]
-        assert _HASH_RE.match(val), (
-            f"{key}={val!r} does not match {HASH_VALUE_PATTERN}"
+        try:
+            obj = json.loads(s)
+        except json.JSONDecodeError:
+            continue
+        assert "input_hash" not in obj, (
+            f"input_hash still present in new record: {obj.get('scan_id')}"
         )
 
 
@@ -147,56 +146,38 @@ def test_forbidden_keys_constant_is_correct() -> None:
     assert FORBIDDEN_RAW_CONTENT_KEYS == frozenset({
         "email_text", "input_preview", "headers", "client_ip",
     }), f"FORBIDDEN_RAW_CONTENT_KEYS drifted: {FORBIDDEN_RAW_CONTENT_KEYS}"
-    assert PERSISTABLE_HASH_KEYS == frozenset({"input_hash"}), (
-        f"PERSISTABLE_HASH_KEYS drifted: {PERSISTABLE_HASH_KEYS}"
+    # input_hash was removed: scan_id serves correlation, no external consumer.
+    assert PERSISTABLE_HASH_KEYS == frozenset(), (
+        f"PERSISTABLE_HASH_KEYS should be empty (input_hash removed): {PERSISTABLE_HASH_KEYS}"
     )
 
 
-# ── §4.2: Hash format + non-reversibility assertion ─────────────
+# ── §4.2: No persistable hash fields in new records ──────────
 
-def test_all_persistable_hash_values_match_format_and_not_raw():
-    """§4.2: For every persisted JSONL record, every PERSISTABLE_HASH_KEYS
-    value must match ^[0-9a-f]{16}$ and must NOT equal the raw input
-    or a truncated raw input."""
+def test_no_email_content_in_new_records():
+    """§4.2: No forbidden raw-content key (email_text, input_preview,
+    headers, client_ip) should appear in any new JSONL record."""
     jsonl_path = _jsonl()
     assert jsonl_path.exists()
     violations = []
-    with open(jsonl_path, "r", encoding="utf-8") as f:
-        for line_no, line in enumerate(f, 1):
-            s = line.strip()
-            if not s:
-                continue
-            try:
-                obj = json.loads(s)
-            except json.JSONDecodeError:
-                continue
-            if not isinstance(obj, dict):
-                continue
-            for key in PERSISTABLE_HASH_KEYS:
-                if key not in obj:
-                    continue
-                val = obj[key]
-                # Must match hex pattern
-                if not _HASH_RE.match(str(val)):
-                    violations.append(
-                        f"line {line_no}: {key}={val!r} does not match {HASH_VALUE_PATTERN}"
-                    )
-                # Must not equal raw input (any email_text-like value in the record)
-                for candidate_key in ("email_text", "input_preview", "raw_input"):
-                    if candidate_key in obj and str(obj[candidate_key]) == str(val):
-                        violations.append(
-                            f"line {line_no}: {key} equals raw {candidate_key}"
-                        )
-                # Must not equal a truncated raw input
-                if isinstance(val, str) and len(val) >= 8:
-                    for candidate_key in ("email_text", "input_preview"):
-                        raw = str(obj.get(candidate_key, ""))
-                        if raw and val == raw[:16]:
-                            violations.append(
-                                f"line {line_no}: {key} equals truncated {candidate_key}"
-                            )
+    lines = jsonl_path.read_text(encoding="utf-8").splitlines()
+    for line_no, line in enumerate(lines[-50:], len(lines) - 49):
+        s = line.strip()
+        if not s:
+            continue
+        try:
+            obj = json.loads(s)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(obj, dict):
+            continue
+        for key in FORBIDDEN_RAW_CONTENT_KEYS:
+            if key in obj:
+                violations.append(
+                    f"line {line_no}: forbidden key '{key}' in record {obj.get('scan_id')}"
+                )
     assert not violations, (
-        "Persistable hash violations:\n" + "\n".join(violations[:20])
+        "Forbidden keys in new records:\n" + "\n".join(violations[:20])
     )
 
 

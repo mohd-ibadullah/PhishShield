@@ -120,8 +120,8 @@ def test_value_guard_fails_on_break(tmp_path):
     scratch = tmp_path / "data_constants_broken.py"
     original = (BACKEND_DIR / "data_constants.py").read_text(encoding="utf-8")
     broken = original.replace(
-        'frozenset({"input_hash"})',
-        'frozenset({"input_hash_corrupted"})',
+        'PERSISTABLE_HASH_KEYS: frozenset[str] = frozenset()',
+        'PERSISTABLE_HASH_KEYS: frozenset[str] = frozenset({"spurious"})',
     )
     scratch.write_text(broken, encoding="utf-8")
 
