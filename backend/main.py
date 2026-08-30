@@ -2815,6 +2815,8 @@ def calibrate_confidence(
     return max(60, min(75, int(round(confidence))))
 
 
+_scan_log_lock = __import__("threading").Lock()
+
 def append_structured_scan_log(entry: dict[str, Any]) -> None:
     logger = logging.getLogger("uvicorn.error")
     log_entry = {
@@ -2824,8 +2826,12 @@ def append_structured_scan_log(entry: dict[str, Any]) -> None:
 
     try:
         SCAN_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with SCAN_LOG_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        # Serialize BEFORE acquiring lock so disk I/O is outside the critical section.
+        # json.dumps never produces unescaped newlines, so the line is atomic.
+        line = json.dumps(log_entry, ensure_ascii=False) + "\n"
+        with _scan_log_lock:
+            with SCAN_LOG_PATH.open("a", encoding="utf-8") as handle:
+                handle.write(line)
     except Exception as exc:
         logger.warning("Unable to write PhishShield structured scan log: %s", exc)
 
@@ -7612,7 +7618,7 @@ def calculate_email_risk(
         {
             "scan_id": scan_id,
             "cached": False,
-            "input_preview": build_safe_preview(email_text),
+            "input_hash": build_safe_preview(email_text),
             "signals": final_signals,
             "safe_signals": safe_reputation_signals,
             "risk_score": risk_score,
@@ -7726,7 +7732,7 @@ def legacy_analyze(payload: LegacyAnalyzeRequest, request: Request) -> dict[str,
             {
                 "scan_id": f"rejected-{uuid4().hex[:12]}",
                 "cached": False,
-                "input_preview": build_safe_preview(payload.emailText),
+                "input_hash": build_safe_preview(payload.emailText),
                 "signals": [],
                 "safe_signals": [],
                 "risk_score": 0,
@@ -7931,7 +7937,7 @@ async def scan_email(payload: EmailScanRequest, request: Request, response: Resp
             {
                 "scan_id": f"timeout-{uuid4().hex[:12]}",
                 "cached": False,
-                "input_preview": build_safe_preview(payload.email_text),
+                "input_hash": build_safe_preview(payload.email_text),
                 "signals": [],
                 "safe_signals": [],
                 "risk_score": 0,
@@ -7954,7 +7960,7 @@ async def scan_email(payload: EmailScanRequest, request: Request, response: Resp
             {
                 "scan_id": f"error-{uuid4().hex[:12]}",
                 "cached": False,
-                "input_preview": build_safe_preview(payload.email_text),
+                "input_hash": build_safe_preview(payload.email_text),
                 "signals": [],
                 "safe_signals": [],
                 "risk_score": 0,
