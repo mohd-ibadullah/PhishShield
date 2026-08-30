@@ -132,8 +132,6 @@ PROVIDER_WARMUP_SECONDS = max(30.0, float(os.getenv("PHISHSHIELD_PROVIDER_WARMUP
 INDICBERT_HEALTH_LABEL = "SecureBERT/MuRIL-GPU-97.4%"
 SECUREBERT_HEALTH_LABEL = "SecureBERT"
 MURIL_HEALTH_LABEL = "MuRIL"
-INDICBERT_HEALTH_ACCURACY = "97.4%"
-INDICBERT_HEALTH_F1 = "96.8%"
 MAX_TOKEN_LENGTH = 256
 VT_API_ROOT = "https://www.virustotal.com/api/v3/urls"
 
@@ -1021,8 +1019,8 @@ def resolve_health_model_fields() -> dict[str, str]:
         return {
             "model_used": INDICBERT_HEALTH_LABEL,
             "active_model": INDICBERT_HEALTH_LABEL,
-            "accuracy": _format_health_metric(indic_metrics.get("accuracy"), default=INDICBERT_HEALTH_ACCURACY),
-            "f1_score": _format_health_metric(indic_metrics.get("f1"), default=INDICBERT_HEALTH_F1),
+            "accuracy": _format_health_metric(indic_metrics.get("accuracy"), default="—"),
+            "f1_score": _format_health_metric(indic_metrics.get("f1"), default="—"),
             "device": str(artifacts.device or "cpu"),
         }
 
