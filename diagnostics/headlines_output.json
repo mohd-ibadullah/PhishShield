@@ -1,0 +1,20 @@
+{
+  "measured": {
+    "csv_records": 2000,
+    "eval_set_v1_records": 220,
+    "train_rows": 1600,
+    "test_rows": 400,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "fp": 0,
+    "tn": 200,
+    "false_positive_rate": 0.0
+  },
+  "caveat": {
+    "csv_records": 2000,
+    "template_families": 1115,
+    "families_shared_between_classes": 0
+  }
+}

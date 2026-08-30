@@ -12,6 +12,30 @@ def training_metadata_paths() -> list[Path]:
     return [BASE_DIR.parent / "data" / "training_meta.json"]
 
 
+HEADLINES_OUTPUT_PATH = BASE_DIR.parent / "diagnostics" / "headlines_output.json"
+
+
+def load_benchmark_caveat() -> dict[str, Any] | None:
+    """Caveat counts produced by diagnostics/reproduce_headlines.py, or None.
+
+    The dashboard renders the committed-dataset caveat only when this harness
+    output is present; an absent or unreadable file means no caveat is shown.
+    """
+    if not HEADLINES_OUTPUT_PATH.exists():
+        return None
+    try:
+        payload = json.loads(HEADLINES_OUTPUT_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    caveat = payload.get("caveat")
+    if not isinstance(caveat, dict):
+        return None
+    required = ("csv_records", "template_families", "families_shared_between_classes")
+    if not all(isinstance(caveat.get(key), int) for key in required):
+        return None
+    return {key: caveat[key] for key in required}
+
+
 def resolve_training_metadata_path() -> Path | None:
     for candidate in training_metadata_paths():
         if candidate.exists():
@@ -90,6 +114,7 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
         "metadata_path": str(resolve_training_metadata_path() or training_metadata_paths()[0]),
         "disclaimer": "Offline holdout evaluation on a fixed train/test split — not continuously measured live accuracy.",
         "live_qa_note": live_accuracy_note,
+        "benchmark_caveat": load_benchmark_caveat(),
     }
 
     runtime_operational = {

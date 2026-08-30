@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { getLiveFeedStorageKey, getSessionId } from '@/lib/session';
 import { toast } from '@/hooks/use-toast';
 import { SCAN_STAGE_MESSAGES, RESULT_REVEAL_MS, formatRelativeTimestamp, usePrefersReducedMotion } from '@/lib/motion';
-import { formatBenchmarkFpr, formatBenchmarkMetric } from '@/lib/metricFormatters';
+import { formatBenchmarkCaveat, formatBenchmarkFpr, formatBenchmarkMetric } from '@/lib/metricFormatters';
 
 const MOCK_GMAIL_EMAILS = [
   {
@@ -2635,6 +2635,11 @@ export default function Dashboard() {
     disclaimer?: string;
     live_qa_note?: string;
     metrics_source_note?: string;
+    benchmark_caveat?: {
+      csv_records?: number;
+      template_families?: number;
+      families_shared_between_classes?: number;
+    } | null;
   };
   const runtimeOperational = (learningMetrics.runtime_operational ?? {}) as {
     total_scans?: number;
@@ -2657,6 +2662,21 @@ export default function Dashboard() {
   const benchmarkRecall = parseMetricNumber(offlineEvaluation.recall ?? learningMetrics.recall);
   const benchmarkF1 = parseMetricNumber(offlineEvaluation.f1_score ?? offlineEvaluation.f1Score ?? learningMetrics.f1Score);
   const benchmarkFpr = parseMetricNumber(offlineEvaluation.false_positive_rate ?? learningMetrics.falsePositiveRate);
+  // Caveat counts come from diagnostics/reproduce_headlines.py via the metrics
+  // payload; when the harness output is absent this is null and nothing renders.
+  const rawCaveat = offlineEvaluation.benchmark_caveat;
+  const benchmarkCaveatText = formatBenchmarkCaveat(
+    rawCaveat &&
+      typeof rawCaveat.csv_records === 'number' &&
+      typeof rawCaveat.template_families === 'number' &&
+      typeof rawCaveat.families_shared_between_classes === 'number'
+      ? {
+          csv_records: rawCaveat.csv_records,
+          template_families: rawCaveat.template_families,
+          families_shared_between_classes: rawCaveat.families_shared_between_classes,
+        }
+      : null,
+  );
   const sessionScanTotal = Number(
     runtimeOperational.total_scans ?? learningMetrics.totalScans ?? 0,
   );
@@ -5305,6 +5325,12 @@ export default function Dashboard() {
                     />
                   </div>
                 </div>
+
+                {benchmarkCaveatText !== null && (
+                  <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
+                    {benchmarkCaveatText}
+                  </p>
+                )}
 
                 {benchmarkAccuracy !== null && benchmarkAccuracy > 0 && (
                   <div className="mt-3 space-y-1.5">

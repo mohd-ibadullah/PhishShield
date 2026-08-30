@@ -1,4 +1,4 @@
-import { formatBenchmarkFpr, formatBenchmarkMetric } from './metricFormatters';
+import { formatBenchmarkCaveat, formatBenchmarkFpr, formatBenchmarkMetric } from './metricFormatters';
 
 type OfflineMetricPayload = { accuracy: number | null; precision: number | null; recall: number | null; f1_score: number | null; false_positive_rate: number | null };
 
@@ -110,6 +110,35 @@ function runTests() {
   console.log('Case F2 (0.9652 f1_score):', JSON.stringify(realF1));
   if (realF1 !== '96.5%') {
     throw new Error(`f1_score 0.9652: expected '96.5%', got '${realF1}'`);
+  }
+
+  // ── BENCHMARK CAVEAT (computed by diagnostics/reproduce_headlines.py) ─────
+
+  // Case G1: harness-computed counts with 0 shared families → caveat present,
+  // matching the computed counts exactly.
+  const caveatZeroShared = formatBenchmarkCaveat({ csv_records: 2000, template_families: 1115, families_shared_between_classes: 0 });
+  console.log('Case G1 (0 shared families):', JSON.stringify(caveatZeroShared));
+  const expectedG1 = 'measured on the committed 2000-row set: 1115 template families, 0 shared between classes → not a generalization measurement';
+  if (caveatZeroShared !== expectedG1) {
+    throw new Error(`caveat 0-shared: expected '${expectedG1}', got '${caveatZeroShared}'`);
+  }
+
+  // Case G2: different computed counts must change the string — a hardcoded
+  // "0" (or any hardcoded count) fails here.
+  const caveatShared = formatBenchmarkCaveat({ csv_records: 500, template_families: 87, families_shared_between_classes: 3 });
+  console.log('Case G2 (3 shared families):', JSON.stringify(caveatShared));
+  if (caveatShared === null || !caveatShared.includes('500-row set') || !caveatShared.includes('87 template families') || !caveatShared.includes('3 shared between classes')) {
+    throw new Error(`caveat must reflect computed counts, got '${caveatShared}'`);
+  }
+  if (caveatShared.includes('0 shared between classes')) {
+    throw new Error(`caveat hardcodes '0': got '${caveatShared}'`);
+  }
+
+  // Case G3: harness output unavailable → render nothing, never a fabricated caveat.
+  const caveatMissing = formatBenchmarkCaveat(null);
+  console.log('Case G3 (no harness output):', JSON.stringify(caveatMissing));
+  if (caveatMissing !== null) {
+    throw new Error(`caveat null input: expected null, got '${caveatMissing}'`);
   }
 
   console.log('All metricFormatters tests PASSED!');

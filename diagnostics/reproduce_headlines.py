@@ -1,6 +1,13 @@
-"""Recompute committed TF-IDF headline measurements without writing artifacts."""
+"""Recompute committed TF-IDF headline measurements without writing artifacts.
+
+By default this script only prints machine-readable lines. Passing
+--write-json PATH additionally writes the measured dict to PATH; that is the
+supported way to regenerate the committed diagnostics/headlines_output.json
+that the backend serves to the dashboard.
+"""
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import re
@@ -21,6 +28,30 @@ LABEL_MAP = {"Phishing Email": 1, "Safe Email": 0, "phishing": 1, "safe": 0}
 def clean_text(text: str) -> str:
     text = str(text).lower()
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9\s]", " ", text)).strip()
+
+
+# The template-family masking rule lives here only — the one canonical copy.
+# Variable parts (URLs, email addresses, digit runs) are masked before the
+# same punctuation/whitespace normalization used for training, so rows that
+# differ only in those parts collapse into one template family.
+def template_family(text: str) -> str:
+    masked = str(text).lower()
+    masked = re.sub(r"https?://\S+|www\.\S+", "<url>", masked)
+    masked = re.sub(r"\S+@\S+", "<email>", masked)
+    masked = re.sub(r"\d+", "<n>", masked)
+    masked = re.sub(r"[^a-z0-9<>\s]", " ", masked)
+    return re.sub(r"\s+", " ", masked).strip()
+
+
+def template_family_stats(texts: list[str], labels: list[int]) -> dict[str, int]:
+    families: dict[str, set[int]] = {}
+    for text, label in zip(texts, labels):
+        families.setdefault(template_family(text), set()).add(label)
+    shared = sum(1 for family_labels in families.values() if len(family_labels) > 1)
+    return {
+        "template_families": len(families),
+        "families_shared_between_classes": shared,
+    }
 
 
 def read_training_rows() -> tuple[list[str], list[int]]:
@@ -45,6 +76,14 @@ def read_eval_count() -> int:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--write-json",
+        metavar="PATH",
+        help="Also write the measured dict as JSON to PATH (used to regenerate diagnostics/headlines_output.json).",
+    )
+    args = parser.parse_args()
+
     metadata = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
     texts, labels = read_training_rows()
     x_train, x_test, y_train, y_test = train_test_split(
@@ -65,8 +104,16 @@ def main() -> None:
         "f1_score": f1_score(y_test, predictions, zero_division=0),
         "fp": int(fp), "tn": int(tn), "false_positive_rate": float(fp / (fp + tn)) if fp + tn else None,
     }
+    caveat = {
+        "csv_records": len(texts),
+        **template_family_stats(texts, labels),
+    }
     print("metadata_metrics=" + json.dumps(metadata.get("metrics", {}), sort_keys=True))
     print("measured=" + json.dumps(measured, sort_keys=True))
+    print("caveat=" + json.dumps(caveat, sort_keys=True))
+    if args.write_json:
+        payload = {"measured": measured, "caveat": caveat}
+        Path(args.write_json).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
