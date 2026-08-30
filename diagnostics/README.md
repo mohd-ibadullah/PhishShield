@@ -17,6 +17,15 @@ recipe in `backend/train_model.py`. It never writes model artifacts.
 | False-positive rate | `python diagnostics/reproduce_headlines.py` | `fp / (fp + tn)` with both counts printed |
 | Evaluation-set record count | `python diagnostics/reproduce_headlines.py` | `eval_set_v1_records` in raw output |
 
+## Committed-dataset FPR caveat
+
+The 2,000-row committed set (`data/Phishing_Email.csv`) contains 319 template
+families with 0 families shared between classes, so a random holdout split
+never has to generalize across a near-duplicate template boundary. Its
+measured 0.0% FPR (FP 0 / TN 200) is therefore **not** a generalization
+measurement — treat it only as a same-distribution sanity check, not as
+evidence of real-world false-positive behavior.
+
 ## Currently unreproducible headlines
 
 The historical C1/C2/C3/C4 results cannot be reproduced from committed inputs:
