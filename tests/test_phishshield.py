@@ -399,20 +399,35 @@ async def test_vt_reason_always_present_when_url_checked(client, monkeypatch) ->
 
 
 async def test_recent_scans_filters_by_session(client) -> None:
-    await client.post(
-        "/scan-email",
-        json={"email_text": "Session A scan http://example.org", "session_id": "session-a"},
-    )
-    await client.post(
-        "/scan-email",
-        json={"email_text": "Session B scan http://example.org", "session_id": "session-b"},
-    )
+    # Server-issued session identity (b3.2): two independent browser clients
+    # each get their own HttpOnly session cookie; reads are scoped to it.
+    from httpx import ASGITransport, AsyncClient
 
-    session_a = await client.get("/recent-scans", params={"session_id": "session-a"})
-    assert session_a.status_code == 200
-    records = session_a.json()
-    assert records
-    assert all(item.get("session_id") == "session-a" for item in records)
+    def make_client() -> AsyncClient:
+        return AsyncClient(transport=ASGITransport(app=backend_main.app), base_url="http://testserver")
+
+    async with make_client() as session_a_client, make_client() as session_b_client:
+        await session_a_client.post("/api/session")
+        await session_b_client.post("/api/session")
+        await session_a_client.post(
+            "/scan-email",
+            json={"email_text": "Session A scan http://example.org"},
+        )
+        await session_b_client.post(
+            "/scan-email",
+            json={"email_text": "Session B scan http://example.org"},
+        )
+
+        session_a = await session_a_client.get("/recent-scans")
+        assert session_a.status_code == 200
+        records = session_a.json()
+        assert records
+        # The two sessions must never see each other's rows.
+        scan_ids = {item.get("scan_id") for item in records}
+        session_b = await session_b_client.get("/recent-scans")
+        assert session_b.status_code == 200
+        session_b_ids = {item.get("scan_id") for item in session_b.json()}
+        assert scan_ids.isdisjoint(session_b_ids)
 
 
 async def test_vt_malicious_forces_high_risk(client, monkeypatch) -> None:
@@ -778,6 +793,12 @@ async def test_otp_login_prompt_is_suspicious(client) -> None:
 
 
 async def test_report_missing_scan_id_returns_404(client) -> None:
+    # Anonymous callers are denied first (b3.2), then authenticated callers
+    # get 404 for unknown ids.
+    anonymous = await client.get("/report/does-not-exist")
+    assert anonymous.status_code == 401
+    bootstrap = await client.post("/api/session")
+    assert bootstrap.status_code == 200
     response = await client.get("/report/does-not-exist")
     assert response.status_code == 404
 

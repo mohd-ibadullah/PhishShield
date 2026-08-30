@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import secrets
 import sqlite3
 import time
 import threading
@@ -314,7 +315,132 @@ def validate_internal_key_configuration() -> None:
             "placeholder; refusing to start. Set a strong unique key."
         )
 
-app = FastAPI(title="PhishShield AI Backend", version="1.0")
+
+# ---------------------------------------------------------------------------
+# Server-issued session identity (W2 b3.2)
+#
+# Sessions are cryptographically random tokens delivered as HttpOnly cookies.
+# The server persists only the SHA-256 hash of the token; the raw token never
+# touches server storage. Caller identity for every read path is derived
+# exclusively from the cookie — client-supplied session_id values are never
+# authentication.
+# ---------------------------------------------------------------------------
+SESSION_COOKIE_NAME = "phishshield_session"
+SESSION_TTL_SECONDS = max(300, int(os.getenv("PHISHSHIELD_SESSION_TTL_SECONDS", str(7 * 24 * 3600))))
+SESSION_STORE_MAX = 10_000
+FEEDBACK_SESSION_CAP = max(1, int(os.getenv("PHISHSHIELD_FEEDBACK_SESSION_CAP", "100")))
+FEEDBACK_RATE_LIMIT_MAX = max(1, int(os.getenv("PHISHSHIELD_FEEDBACK_RATE_LIMIT_MAX", "10")))
+
+_session_records: dict[str, dict[str, Any]] = {}
+_session_store_lock = Lock()
+
+
+def hash_session_token(token: str) -> str:
+    return hashlib.sha256(str(token or "").encode("utf-8")).hexdigest()
+
+
+def session_records_snapshot() -> dict[str, dict[str, Any]]:
+    with _session_store_lock:
+        return {key: dict(record) for key, record in _session_records.items()}
+
+
+def _purge_expired_sessions_locked(now: float) -> None:
+    expired = [key for key, rec in _session_records.items() if now - float(rec.get("last_seen", now)) > SESSION_TTL_SECONDS]
+    for key in expired:
+        _session_records.pop(key, None)
+
+
+def create_session_record() -> tuple[str, str]:
+    """Mint a new session; returns (raw_token, session_key=sha256(token))."""
+    token = secrets.token_urlsafe(32)
+    session_key = hash_session_token(token)
+    now = time.time()
+    with _session_store_lock:
+        _purge_expired_sessions_locked(now)
+        while len(_session_records) >= SESSION_STORE_MAX:
+            oldest_key = min(_session_records, key=lambda k: float(_session_records[k].get("last_seen", 0)))
+            _session_records.pop(oldest_key, None)
+        _session_records[session_key] = {
+            "created_at": now,
+            "last_seen": now,
+            "feedback_count": 0,
+            "scan_count": 0,
+        }
+    return token, session_key
+
+
+def resolve_session_key(request: Request) -> str | None:
+    """Derive caller identity ONLY from the server-issued cookie."""
+    token = request.cookies.get(SESSION_COOKIE_NAME) or ""
+    if not token:
+        return None
+    session_key = hash_session_token(token)
+    now = time.time()
+    with _session_store_lock:
+        record = _session_records.get(session_key)
+        if record is None or now - float(record.get("last_seen", now)) > SESSION_TTL_SECONDS:
+            _session_records.pop(session_key, None)
+            return None
+        record["last_seen"] = now
+        return session_key
+
+
+def require_session_key(request: Request) -> str:
+    session_key = resolve_session_key(request)
+    if not session_key:
+        raise HTTPException(status_code=401, detail="Authentication required: missing or invalid session cookie")
+    return session_key
+
+
+def attach_session_cookie(response: Response, request: Request, token: str) -> None:
+    forwarded_proto = (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip().lower()
+    secure = request.url.scheme == "https" or forwarded_proto == "https"
+    response.set_cookie(
+        SESSION_COOKIE_NAME,
+        token,
+        max_age=SESSION_TTL_SECONDS,
+        expires=SESSION_TTL_SECONDS,
+        httponly=True,
+        secure=secure,
+        samesite="none" if secure else "lax",
+        path="/",
+    )
+
+
+def _session_matches_record(record: dict[str, Any] | None, session_key: str) -> bool:
+    if not isinstance(record, dict):
+        return False
+    record_session = str(record.get("session_id") or "")
+    if not record_session or not session_key:
+        return False
+    return hmac.compare_digest(record_session, session_key)
+
+
+def _ensure_explanation_owner(record: dict[str, Any] | None, session_key: str) -> None:
+    if not _session_matches_record(record, session_key):
+        # 404 (not 403) so responses never confirm a record exists for
+        # another session.
+        raise HTTPException(status_code=404, detail="Explanation not found for the provided scan_id")
+
+
+def enforce_feedback_session_limits(session_key: str) -> None:
+    enforce_scan_rate_limit(f"feedback:{session_key}", max_requests=FEEDBACK_RATE_LIMIT_MAX)
+    with _session_store_lock:
+        record = _session_records.get(session_key)
+        if record is None:
+            raise HTTPException(status_code=401, detail="Authentication required: session expired")
+        if int(record.get("feedback_count", 0) or 0) >= FEEDBACK_SESSION_CAP:
+            raise HTTPException(status_code=429, detail="Feedback cap reached for this session")
+
+# b3.5: /docs and /openapi.json gated behind explicit local flag.
+_enable_docs = os.getenv("PHISHSHIELD_ENABLE_DOCS", "").lower() == "true"
+app = FastAPI(
+    title="PhishShield AI Backend",
+    version="1.0",
+    docs_url="/docs" if _enable_docs else None,
+    redoc_url="/redoc" if _enable_docs else None,
+    openapi_url="/openapi.json" if _enable_docs else None,
+)
 app.include_router(metrics_router)
 
 MAX_REQUEST_BYTES = 1024 * 1024  # 1 MiB
@@ -480,6 +606,9 @@ class EmailScanRequest(BaseModel):
     email_text: str = Field(..., min_length=1, description="Full email content here")
     headers: str | None = None
     attachments: list[AttachmentContext] | None = None
+    # Deprecated: accepted for client compatibility but IGNORED. Session
+    # identity is server-issued (HttpOnly cookie); a client-supplied
+    # session_id is never authentication.
     session_id: str | None = None
 
     @field_validator("email_text")
@@ -1110,7 +1239,7 @@ def ensure_feedback_store() -> None:
                     "last_retrain": metadata.get("trained_at"),
                     "last_retrain_accuracy": baseline_accuracy,
                     "previous_accuracy": baseline_accuracy,
-                    "model_improving": True,
+                    "model_improving": False,
                 },
                 indent=2,
             ),
@@ -1122,12 +1251,14 @@ def load_feedback_state() -> dict[str, Any]:
     ensure_feedback_store()
     metadata = load_training_metadata()
     baseline_accuracy = float((metadata.get("metrics") or {}).get("accuracy", 0.0) or 0.0)
+    # D1 fix: model_improving defaults to False; only True after a successful retrain
+    # proves improvement, or when explicit feedback exists.
     state: dict[str, Any] = {
         "feedback_rows_consumed": 0,
         "last_retrain": metadata.get("trained_at"),
         "last_retrain_accuracy": baseline_accuracy,
         "previous_accuracy": baseline_accuracy,
-        "model_improving": True,
+        "model_improving": False,
     }
     if FEEDBACK_STATE_PATH.exists():
         try:
@@ -1272,10 +1403,13 @@ def build_explanation_record_from_scan_result(result: dict[str, Any], *, email_t
     risk_score = int(result.get("risk_score") or result.get("riskScore") or 0)
     explanation_block = result.get("explanation") if isinstance(result.get("explanation"), dict) else {}
     signals = result.get("signals") if isinstance(result.get("signals"), list) else []
+    # Data minimization (b3.4): store only sha256 of the email, never the raw body.
+    raw_email = str(email_text or result.get("email_text") or "")
+    email_sha256 = hashlib.sha256(raw_email.encode("utf-8")).hexdigest() if raw_email else ""
     return {
         "scan_id": scan_id,
         "session_id": str(session_id or result.get("session_id") or ""),
-        "email_text": str(email_text or result.get("email_text") or ""),
+        "email_sha256": email_sha256,
         "risk_score": risk_score,
         "verdict": str(result.get("verdict") or classification_from_risk(risk_score)),
         "confidence": int(result.get("confidence") or 0),
@@ -4009,12 +4143,24 @@ def predict_with_securebert(email_text: str) -> float | None:
     return float(probabilities.detach().cpu().numpy()[0][1])
 
 
+def _sanitize_explanation_for_response(record: dict[str, Any]) -> dict[str, Any]:
+    """b3.4: Strip raw email body from explanation records before returning."""
+    sanitized = dict(record)
+    sanitized.pop("email_text", None)
+    return sanitized
+
+
 def store_scan_explanation(scan_id: str, payload: dict[str, Any]) -> None:
     normalized_id = str(scan_id or "").strip()
     if not normalized_id:
         return
     payload = dict(payload)
     payload["scan_id"] = normalized_id
+    # b3.4: Ensure email_text is never persisted — only email_sha256.
+    raw_email = str(payload.get("email_text", ""))
+    if "email_sha256" not in payload and raw_email:
+        payload["email_sha256"] = hashlib.sha256(raw_email.encode("utf-8")).hexdigest()
+    payload.pop("email_text", None)
     app.state.scan_explanations[normalized_id] = payload
     while len(app.state.scan_explanations) > 200:
         app.state.scan_explanations.popitem(last=False)
@@ -4318,21 +4464,28 @@ def _retrain_tfidf_with_feedback_locked() -> dict[str, Any]:
 
 
 def get_feedback_stats_payload() -> dict[str, Any]:
-    memory_payload = app.state.feedback_memory if isinstance(app.state.feedback_memory, dict) else load_feedback_memory()
-    entries = memory_payload.get("entries", {}) if isinstance(memory_payload, dict) else {}
-    total_feedback = int(sum(int((entry or {}).get("count", 0) or 0) for entry in entries.values()))
+    # D1 fix: use pending_retrain (CSV row count) as the authoritative total,
+    # since in-memory entries may be stale after restart.
     pending_retrain = count_pending_retrain_samples()
+    total_feedback = pending_retrain
     needed_for_retrain = max(RETRAIN_THRESHOLD - pending_retrain, 0)
     adjustments = app.state.rule_weight_adjustments if isinstance(app.state.rule_weight_adjustments, dict) else {}
-    pattern_adjustment = int(adjustments.get("pattern_matching", 0) or 0)
     feedback_state = load_feedback_state()
+
+    # model_improving must be False when there is no feedback at all.
+    has_feedback = total_feedback > 0
+    stored_improving = feedback_state.get("model_improving")
+    if stored_improving is not None:
+        model_improving = bool(stored_improving)
+    else:
+        model_improving = has_feedback and bool(adjustments.get("pattern_matching", 0) <= 0)
 
     return {
         "total_feedback": total_feedback,
         "pending_retrain": pending_retrain,
         "needed_for_retrain": needed_for_retrain,
         "last_retrain": str(feedback_state.get("last_retrain") or artifacts.last_trained or "")[:10] or None,
-        "model_improving": bool(feedback_state.get("model_improving", pattern_adjustment <= 0)),
+        "model_improving": model_improving,
     }
 
 
@@ -4953,10 +5106,8 @@ def get_scan_client_key(session_id: str | None, request: Request | None, email_t
     return f"anon:{payload_hash}"
 
 
-def enforce_scan_rate_limit(client_key: str) -> None:
+def enforce_scan_rate_limit(client_key: str, *, max_requests: int = 10, window_seconds: int = 60) -> None:
     now = time.time()
-    window_seconds = 60
-    max_requests = 10
 
     with scan_rate_limit_lock:
         bucket = list(app.state.scan_rate_limits.get(client_key, []))
@@ -7577,23 +7728,26 @@ def analyze_text(payload: AnalyzeTextRequest) -> dict[str, Any]:
 
 
 @app.get("/api/history")
-def legacy_history(session_id: str | None = None) -> list[dict[str, Any]]:
+def legacy_history(request: Request) -> list[dict[str, Any]]:
+    session_key = require_session_key(request)
     items: list[dict[str, Any]] = []
     for record in reversed(list(app.state.scan_explanations.values())):
         record_session_id = str(record.get("session_id") or "")
-        if session_id and record_session_id != session_id:
+        if not record_session_id or record_session_id != session_key:
             continue
-        email_text = str(record.get("email_text", ""))
+        # b3.4: Never return raw email body. Use sha256 as a stable redacted preview.
+        email_sha = str(record.get("email_sha256") or "")
+        email_preview = email_sha[:16] + "..." if email_sha else "[redacted]"
         risk_score = int(record.get("risk_score", 0) or 0)
         items.append(
             {
                 "id": str(record.get("scan_id") or uuid4().hex[:12]),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "emailPreview": email_text[:80],
+                "emailPreview": email_preview,
                 "riskScore": risk_score,
                 "classification": classification_from_risk(risk_score),
-                "detectedLanguage": detect_language_code(email_text),
-                "urlCount": len(URL_PATTERN.findall(email_text)),
+                "detectedLanguage": record.get("analysis_meta", {}).get("detected_language", "EN"),
+                "urlCount": len((record.get("explanation") or {}).get("top_words", [])),
                 "reasonCount": len((record.get("explanation") or {}).get("top_words", [])),
             }
         )
@@ -7601,23 +7755,78 @@ def legacy_history(session_id: str | None = None) -> list[dict[str, Any]]:
 
 
 @app.get("/recent-scans")
-def recent_scans(session_id: str | None = None) -> list[dict[str, Any]]:
-    return get_recent_scans_from_db(session_id)
+def recent_scans(request: Request) -> list[dict[str, Any]]:
+    session_key = require_session_key(request)
+    return get_recent_scans_from_db(session_key)
 
 
 @app.delete("/api/history")
-def legacy_clear_history() -> dict[str, str]:
-    app.state.scan_explanations = OrderedDict()
+def legacy_clear_history(request: Request) -> dict[str, str]:
+    session_key = require_session_key(request)
+    # Session-scoped deletion: only remove records owned by this session.
+    # Never perform a global wipe.
+    # 1) Clear in-memory scan_explanations.
+    keys_to_remove = [
+        k for k, v in app.state.scan_explanations.items()
+        if _session_matches_record(v, session_key)
+    ]
+    for k in keys_to_remove:
+        app.state.scan_explanations.pop(k, None)
+    # 2) Clear persisted rows from SQLite (scans + scan_explanations tables).
+    try:
+        ensure_scans_db()
+        with sqlite3.connect(SCANS_DB_PATH) as conn:
+            # Collect owned scan_ids first, then delete from both tables.
+            owned_rows = conn.execute(
+                "SELECT scan_id FROM scans WHERE session_id = ?",
+                (session_key,),
+            ).fetchall()
+            if owned_rows:
+                scan_ids = [row[0] for row in owned_rows]
+                placeholders = ",".join("?" * len(scan_ids))
+                conn.execute(
+                    f"DELETE FROM scans WHERE scan_id IN ({placeholders})",
+                    scan_ids,
+                )
+                conn.execute(
+                    f"DELETE FROM scan_explanations WHERE scan_id IN ({placeholders})",
+                    scan_ids,
+                )
+    except Exception:  # pragma: no cover - best-effort DB cleanup
+        pass
     return {"status": "cleared"}
 
 
+@app.post("/api/session")
+def issue_session(request: Request, response: Response) -> dict[str, str]:
+    """Bootstrap endpoint: mints a server-issued HttpOnly session cookie.
+
+    The raw token lives only in the cookie; the server stores just its hash.
+    """
+    existing = resolve_session_key(request)
+    if existing:
+        return {"status": "session active"}
+    forwarded_proto = (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip().lower()
+    client_ip = request.client.host if request.client else "unknown"
+    enforce_scan_rate_limit(f"session-mint:{client_ip}:{forwarded_proto}", max_requests=60)
+    token, _session_key = create_session_record()
+    attach_session_cookie(response, request, token)
+    return {"status": "session issued"}
+
+
 @app.post("/scan-email")
-async def scan_email(payload: EmailScanRequest, request: Request) -> dict[str, Any]:
+async def scan_email(payload: EmailScanRequest, request: Request, response: Response) -> dict[str, Any]:
     started_at = time.perf_counter()
     try:
         if not payload.email_text or not payload.email_text.strip():
             raise HTTPException(status_code=400, detail="Empty email")
-        client_key = get_scan_client_key(payload.session_id, request, payload.email_text)
+        # Caller identity comes exclusively from the server-issued cookie.
+        # payload.session_id is ignored and never used for authentication.
+        session_key = resolve_session_key(request)
+        issued_token: str | None = None
+        if not session_key:
+            issued_token, session_key = create_session_record()
+        client_key = get_scan_client_key(session_key, request, payload.email_text)
         enforce_scan_rate_limit(client_key)
 
         cache_key = get_scan_cache_key(payload.email_text, payload.headers, payload.attachments)
@@ -7626,9 +7835,11 @@ async def scan_email(payload: EmailScanRequest, request: Request) -> dict[str, A
             ensure_scan_explanation_from_result(
                 cached,
                 email_text=payload.email_text,
-                session_id=payload.session_id,
+                session_id=session_key,
             )
             cached["processing_ms"] = 0
+            if issued_token:
+                attach_session_cookie(response, request, issued_token)
             return cached
         def _invoke_calculate_email_risk() -> dict[str, Any]:
             try:
@@ -7636,7 +7847,7 @@ async def scan_email(payload: EmailScanRequest, request: Request) -> dict[str, A
                     payload.email_text,
                     headers_text=payload.headers,
                     attachments=payload.attachments,
-                    session_id=payload.session_id,
+                    session_id=session_key,
                     cache_key=cache_key,
                 )
             except TypeError:
@@ -7654,12 +7865,11 @@ async def scan_email(payload: EmailScanRequest, request: Request) -> dict[str, A
         processing_ms = int(round((time.perf_counter() - started_at) * 1000))
         result["processing_ms"] = processing_ms
 
-        save_scan_to_db(result, payload.session_id)
+        save_scan_to_db(result, session_key)
 
         scan_id_val = result.get("scan_id") or result.get("id") or ""
-        preview = str(payload.email_text or "").strip()[:120]
-        if not preview:
-            preview = "Preview unavailable"
+        # b3.5: Never broadcast raw email body/preview. Use redacted label.
+        preview = f"Scan {scan_id_val[:8]}..."
         async def _broadcast_scan_complete() -> None:
             try:
                 await ws_manager.broadcast({
@@ -7679,6 +7889,8 @@ async def scan_email(payload: EmailScanRequest, request: Request) -> dict[str, A
 
         asyncio.create_task(_broadcast_scan_complete())
 
+        if issued_token:
+            attach_session_cookie(response, request, issued_token)
         return result
     except asyncio.TimeoutError as exc:
         processing_ms = int(round((time.perf_counter() - started_at) * 1000))
@@ -7724,24 +7936,28 @@ async def scan_email(payload: EmailScanRequest, request: Request) -> dict[str, A
 
 
 @app.post("/scan")
-async def scan_email_alias(payload: EmailScanRequest, request: Request) -> dict[str, Any]:
-    return await scan_email(payload, request)
+async def scan_email_alias(payload: EmailScanRequest, request: Request, response: Response) -> dict[str, Any]:
+    return await scan_email(payload, request, response)
 
 
 @app.get("/explain/{scan_id}")
-def get_explanation(scan_id: str) -> dict[str, Any]:
+def get_explanation(scan_id: str, request: Request) -> dict[str, Any]:
+    session_key = require_session_key(request)
     record = get_scan_explanation_record(scan_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Explanation not found for the provided scan_id")
-    return record
+    _ensure_explanation_owner(record, session_key)
+    return _sanitize_explanation_for_response(record)
 
 
 @app.post("/explain")
-def explain_scan(payload: ExplainRequest) -> dict[str, Any]:
+def explain_scan(payload: ExplainRequest, request: Request) -> dict[str, Any]:
+    session_key = require_session_key(request)
     scan_id = str(payload.scan_id or "").strip()
     record = get_scan_explanation_record(scan_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Explanation not found for the provided scan_id")
+    _ensure_explanation_owner(record, session_key)
 
     st = record.get("signal_trace") or {}
     fs = int(record.get("risk_score", 0) or 0)
@@ -7757,9 +7973,11 @@ def explain_scan(payload: ExplainRequest) -> dict[str, Any]:
         "math_check": record.get("math_check") or math_check(st, final_score=fs),
     }
 
+    # b3.4: Do not use raw email in prompts — use computed signals + score.
     prompt = (
         "Explain why this email is risky or safe in 2-3 short sentences.\n"
-        f"Email: {record.get('email_text', '')}\n"
+        f"Verdict: {record.get('verdict', 'Suspicious')}\n"
+        f"Risk score: {fs}\n"
         f"Signals: {', '.join(record.get('signals', []))}"
     )
 
@@ -7827,10 +8045,12 @@ def explain_scan(payload: ExplainRequest) -> dict[str, Any]:
 
 
 @app.get("/report/{scan_id}")
-def get_report(scan_id: str) -> StreamingResponse:
+def get_report(scan_id: str, request: Request) -> StreamingResponse:
+    session_key = require_session_key(request)
     record = get_scan_explanation_record(scan_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Report not found for the provided scan_id")
+    _ensure_explanation_owner(record, session_key)
 
     try:
         # Lazy import prevents service startup crashes if report dependencies are missing.
@@ -7842,7 +8062,9 @@ def get_report(scan_id: str) -> StreamingResponse:
         )
 
     pdf_bytes = generate_pdf_report(record)
-    filename = f"phishshield-report-{scan_id}.pdf"
+    # Sanitize scan_id to prevent CRLF/quote injection into Content-Disposition.
+    safe_id = re.sub(r'[^a-zA-Z0-9_\-]', '', scan_id)[:64]
+    filename = f"phishshield-report-{safe_id}.pdf"
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
@@ -7852,7 +8074,12 @@ def get_report(scan_id: str) -> StreamingResponse:
 
 @app.post("/feedback")
 @app.post("/api/feedback")
-def submit_feedback(payload: FeedbackRequest) -> dict[str, Any]:
+def submit_feedback(payload: FeedbackRequest, request: Request) -> dict[str, Any]:
+    # Feedback is a browser-session flow: authenticated via the server-issued
+    # cookie, rate limited, and capped per session. The internal API key is
+    # NOT accepted here by design.
+    session_key = require_session_key(request)
+    enforce_feedback_session_limits(session_key)
     retrain_result: dict[str, Any] | None = None
     try:
         with feedback_memory_lock:
@@ -7863,6 +8090,8 @@ def submit_feedback(payload: FeedbackRequest) -> dict[str, Any]:
             entries = feedback_memory.get("entries", {}) if isinstance(feedback_memory.get("entries", {}), dict) else {}
 
             scan_record = app.state.scan_explanations.get(str(payload.scan_id or ""), {})
+            if payload.scan_id and not _session_matches_record(scan_record, session_key):
+                raise HTTPException(status_code=404, detail="Explanation not found for the provided scan_id")
             predicted_value = payload.predicted or str(scan_record.get("verdict") or "Suspicious")
 
             corrected_value = payload.corrected
@@ -7920,6 +8149,10 @@ def submit_feedback(payload: FeedbackRequest) -> dict[str, Any]:
                 retrain_result = maybe_auto_retrain()
 
         pending_retrain = count_pending_retrain_samples()
+        with _session_store_lock:
+            session_record = _session_records.get(session_key)
+            if session_record is not None:
+                session_record["feedback_count"] = int(session_record.get("feedback_count", 0) or 0) + 1
         return {
             "saved": True,
             "feedback_count": total_feedback,
@@ -8457,7 +8690,16 @@ READ_TIMEOUT = 30         # wait this long for a client message before pinging
 @app.websocket("/ws/feed")
 async def scan_feed(websocket: WebSocket, session_id: str | None = None) -> None:
     try:
-        await ws_manager.connect(websocket, session_id=session_id)
+        # b3.5: Require valid session cookie for WebSocket connections.
+        token = websocket.cookies.get(SESSION_COOKIE_NAME) or ""
+        if token:
+            ws_session_key = resolve_session_key(websocket)
+        else:
+            ws_session_key = None
+        if not ws_session_key:
+            await websocket.close(code=4401, reason="Authentication required")
+            return
+        await ws_manager.connect(websocket, session_id=ws_session_key)
         await websocket.send_json({
             "type": "connected",
             "message": "PhishShield live feed connected",

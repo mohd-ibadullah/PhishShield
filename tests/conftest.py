@@ -56,7 +56,9 @@ def _reset_scan_cache_for_tests(tmp_path, monkeypatch) -> None:
     app.state.scan_explanations = OrderedDict()
     app.state.scan_rate_limits = {}
     monkeypatch.setattr(backend_main, "SCANS_DB_PATH", tmp_path / "scans.test.db")
+    backend_main._session_records.clear()
     yield
+    backend_main._session_records.clear()
 
 
 @pytest.fixture

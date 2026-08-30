@@ -8,6 +8,15 @@ import main as backend_main
 pytestmark = pytest.mark.asyncio
 
 
+async def _bootstrap_session(client) -> str:
+    """Mint a server session and return its server-side key (token hash)."""
+    response = await client.post("/api/session")
+    assert response.status_code == 200
+    token = response.cookies.get("phishshield_session")
+    assert token
+    return backend_main.hash_session_token(token)
+
+
 def _sample_scan_record(scan_id: str) -> dict:
     return {
         "scan_id": scan_id,
@@ -24,6 +33,7 @@ def _sample_scan_record(scan_id: str) -> dict:
 
 
 async def test_explain_not_found_returns_404(client) -> None:
+    await _bootstrap_session(client)
     response = await client.post("/explain", json={"scan_id": "does-not-exist"})
 
     assert response.status_code == 404
@@ -32,7 +42,10 @@ async def test_explain_not_found_returns_404(client) -> None:
 
 async def test_explain_uses_openrouter_on_success(client, monkeypatch) -> None:
     scan_id = "scan-openrouter-success"
-    backend_main.app.state.scan_explanations[scan_id] = _sample_scan_record(scan_id)
+    session_key = await _bootstrap_session(client)
+    record = _sample_scan_record(scan_id)
+    record["session_id"] = session_key  # b3.2: /explain enforces record ownership
+    backend_main.app.state.scan_explanations[scan_id] = record
 
     class _FakeResponse:
         status_code = 200
@@ -67,7 +80,10 @@ async def test_explain_uses_openrouter_on_success(client, monkeypatch) -> None:
 
 async def test_explain_falls_back_on_openrouter_http_error(client, monkeypatch) -> None:
     scan_id = "scan-openrouter-fallback"
-    backend_main.app.state.scan_explanations[scan_id] = _sample_scan_record(scan_id)
+    session_key = await _bootstrap_session(client)
+    record = _sample_scan_record(scan_id)
+    record["session_id"] = session_key  # b3.2: /explain enforces record ownership
+    backend_main.app.state.scan_explanations[scan_id] = record
 
     class _FakeResponse:
         status_code = 503
@@ -98,7 +114,10 @@ async def test_explain_falls_back_on_openrouter_http_error(client, monkeypatch) 
 
 async def test_explain_falls_back_when_key_missing(client, monkeypatch) -> None:
     scan_id = "scan-missing-key"
-    backend_main.app.state.scan_explanations[scan_id] = _sample_scan_record(scan_id)
+    session_key = await _bootstrap_session(client)
+    record = _sample_scan_record(scan_id)
+    record["session_id"] = session_key  # b3.2: /explain enforces record ownership
+    backend_main.app.state.scan_explanations[scan_id] = record
 
     monkeypatch.setattr(backend_main, "OPENROUTER_API_KEY", "")
     monkeypatch.setattr(backend_main, "GEMINI_API_KEY", "")
