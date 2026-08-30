@@ -24,8 +24,6 @@ collect_ignore = [
     "test_e2e_websocket.py",
     "test_10_cases.py",
     "test_phishshield_cases.py",
-    # Legacy offline suite — thresholds/fields drifted from current strict pipeline.
-    "test_regression.py",
 ]
 
 if str(BACKEND_DIR) not in sys.path:

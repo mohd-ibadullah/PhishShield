@@ -14,12 +14,15 @@ def evaluate_bec_no_link(
     behavior_urgency: bool,
     behavior_secrecy: bool,
 ) -> tuple[bool, str]:
-    import main as m
+    """Evaluate the no-link BEC (business email compromise) contract.
 
-    return m._evaluate_bec_no_link_impl(
-        email_text,
-        linked_domains=linked_domains,
-        action_money_requested=action_money_requested,
-        behavior_urgency=behavior_urgency,
-        behavior_secrecy=behavior_secrecy,
-    )
+    Returns (True, reason) only when the message requests money/action,
+    shows urgency or secrecy pressure, and contains no linked domains —
+    the classic CEO-fraud / vendor-payment-switch shape. Any linked domain
+    moves the message out of the no-link BEC contract.
+    """
+    if linked_domains:
+        return False, "Linked domains present — outside the no-link BEC contract"
+    if action_money_requested and (behavior_urgency or behavior_secrecy):
+        return True, "BEC no-link pattern: money/action request with urgency or secrecy and no links"
+    return False, "No-link BEC contract not satisfied"
