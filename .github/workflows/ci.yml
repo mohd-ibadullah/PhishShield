@@ -33,6 +33,10 @@ jobs:
         run: pnpm build
         working-directory: frontend
 
+      - name: Run frontend unit tests
+        run: pnpm --filter @workspace/phishshield test
+        working-directory: frontend
+
   backend-syntax-check:
     runs-on: ubuntu-latest
 
