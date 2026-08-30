@@ -104,6 +104,31 @@ SENDER_PROFILE_PATH = BASE_DIR / "sender_profiles.json"
 THREAT_INTEL_PATH = BASE_DIR.parent / "data" / "threat_intel_feed.json"
 SCANS_DB_PATH = BASE_DIR / "scans.db"
 FEEDBACK_COLUMNS = ["email_text", "user_label", "model_prediction", "timestamp", "scan_id"]
+
+from data_constants import (
+    PERSISTABLE_HASH_KEYS,
+    FORBIDDEN_RAW_CONTENT_KEYS,
+    HASH_VALUE_PATTERN,
+)
+# Back-compat alias for any code referencing the old name
+FORBIDDEN_EMAIL_CONTENT_KEYS = FORBIDDEN_RAW_CONTENT_KEYS
+
+# HMAC key for pseudonymizing email content in logs.
+# Dedicated secret — never falls back to INTERNAL_API_KEY or a hardcoded value.
+_PREVIEW_HMAC_KEY: bytes | None = None
+
+def _get_preview_hmac_key() -> bytes:
+    global _PREVIEW_HMAC_KEY
+    if _PREVIEW_HMAC_KEY is None:
+        raw = os.getenv("PHISHSHIELD_PREVIEW_HMAC_KEY", "")
+        if not raw:
+            raise RuntimeError(
+                "PHISHSHIELD_PREVIEW_HMAC_KEY is unset; refusing to start. "
+                "Set a unique secret for log pseudonymization."
+            )
+        _PREVIEW_HMAC_KEY = raw.encode("utf-8")
+    return _PREVIEW_HMAC_KEY
+
 RETRAIN_THRESHOLD = max(1, int(os.getenv("PHISHSHIELD_RETRAIN_SAMPLE_THRESHOLD", "50")))
 INDICBERT_MODEL_DIR = BASE_DIR / "indicbert_model"
 INDICBERT_REQUIRED_FILES = (
@@ -2350,10 +2375,18 @@ def _rule_signal(signals: list[str], message: str) -> None:
 
 
 def build_safe_preview(text: str, limit: int = 160) -> str:
-    normalized = re.sub(r"\s+", " ", str(text or "")).strip()
-    if len(normalized) <= limit:
-        return normalized
-    return f"{normalized[:limit].rstrip()}â€¦"
+    """Return an HMAC'd pseudonym for the email, never its content.
+
+    b3.4: Previously truncated email text to 160 chars — still leaked
+    email-derived free text into scan_logs.jsonl.
+    b3.4-fix: Now returns HMAC-SHA256 prefix (server-keyed).
+    WARNING: hashed, not anonymized; short-message content remains
+    recoverable by brute force against a small candidate dictionary.
+    """
+    raw = str(text or "")
+    if not raw:
+        return ""
+    return hmac.new(_get_preview_hmac_key(), raw.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
 
 
 def extract_received_ips(headers: str) -> list[str]:
