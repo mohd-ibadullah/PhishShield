@@ -1429,9 +1429,9 @@ def build_explanation_record_from_scan_result(result: dict[str, Any], *, email_t
     risk_score = int(result.get("risk_score") or result.get("riskScore") or 0)
     explanation_block = result.get("explanation") if isinstance(result.get("explanation"), dict) else {}
     signals = result.get("signals") if isinstance(result.get("signals"), list) else []
-    # Data minimization (b3.4): store only sha256 of the email, never the raw body.
+    # §2.1: Store keyed HMAC digest of email, never raw body.
     raw_email = str(email_text or result.get("email_text") or "")
-    email_sha256 = hashlib.sha256(raw_email.encode("utf-8")).hexdigest() if raw_email else ""
+    email_sha256 = hmac.new(_get_preview_hmac_key(), raw_email.encode("utf-8"), hashlib.sha256).hexdigest()[:16] if raw_email else ""
     return {
         "scan_id": scan_id,
         "session_id": str(session_id or result.get("session_id") or ""),
@@ -4207,10 +4207,10 @@ def store_scan_explanation(scan_id: str, payload: dict[str, Any]) -> None:
         return
     payload = dict(payload)
     payload["scan_id"] = normalized_id
-    # b3.4: Ensure email_text is never persisted — only email_sha256.
+    # §2.1: Ensure email_text is never persisted — only keyed HMAC digest.
     raw_email = str(payload.get("email_text", ""))
     if "email_sha256" not in payload and raw_email:
-        payload["email_sha256"] = hashlib.sha256(raw_email.encode("utf-8")).hexdigest()
+        payload["email_sha256"] = hmac.new(_get_preview_hmac_key(), raw_email.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
     payload.pop("email_text", None)
     app.state.scan_explanations[normalized_id] = payload
     while len(app.state.scan_explanations) > 200:
@@ -7785,9 +7785,9 @@ def legacy_history(request: Request) -> list[dict[str, Any]]:
         record_session_id = str(record.get("session_id") or "")
         if not record_session_id or record_session_id != session_key:
             continue
-        # b3.4: Never return raw email body. Use sha256 as a stable redacted preview.
-        email_sha = str(record.get("email_sha256") or "")
-        email_preview = email_sha[:16] + "..." if email_sha else "[redacted]"
+        # §1.2: Use scan_id[:8] as preview — unique, not person-linked, no hash needed.
+        scan_id_val = str(record.get("scan_id") or "")
+        email_preview = scan_id_val[:8] + "..." if scan_id_val else "[redacted]"
         risk_score = int(record.get("risk_score", 0) or 0)
         items.append(
             {

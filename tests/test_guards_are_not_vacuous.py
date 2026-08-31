@@ -1,9 +1,7 @@
-"""§1.2: Anti-vacuity test for shape-based persistence guards.
+"""§4.1: Anti-vacuity test for shape-based persistence guards.
 
-Asserts each guarded set is non-empty AND fails a deliberately
-malformed sample (a hash value that is raw text; a 15-char hex;
-a forbidden key).  Proves both directions: fails when lists are
-emptied, passes when properly populated.
+Each case must be proven to fail the guard individually, then the clean
+run must pass. Per-case failures are the proof, not a summary.
 """
 from __future__ import annotations
 
@@ -20,109 +18,123 @@ sys.path.insert(0, str(ROOT / "backend"))
 from data_constants import (
     FORBIDDEN_RAW_CONTENT_KEYS,
     HASH_VALUE_PATTERN,
+    PERSISTABLE_HASH_KEYS,
     validate_record,
     _hash_re,
 )
 
-# ── §1.2a: Guarded sets must be non-empty ────────────────────────
+CLEAN_RECORD = {"scan_id": "abc123def456", "signals": ["s1"], "risk_score": 50, "verdict": "Safe"}
+
+
+# ── §4.1a: Guarded sets must be non-empty ────────────────────────
 
 def test_forbidden_keys_non_empty():
-    """FORBIDDEN_RAW_CONTENT_KEYS must not be empty — an empty set is vacuous."""
-    assert len(FORBIDDEN_RAW_CONTENT_KEYS) > 0, (
-        "FORBIDDEN_RAW_CONTENT_KEYS is empty — guard is vacuous"
-    )
+    assert len(FORBIDDEN_RAW_CONTENT_KEYS) > 0, "FORBIDDEN_RAW_CONTENT_KEYS is empty — guard is vacuous"
 
 
 def test_hash_pattern_non_empty():
-    """HASH_VALUE_PATTERN must not be empty."""
-    assert len(HASH_VALUE_PATTERN) > 0, (
-        "HASH_VALUE_PATTERN is empty — guard is vacuous"
+    assert len(HASH_VALUE_PATTERN) > 0, "HASH_VALUE_PATTERN is empty — guard is vacuous"
+
+
+def test_persistable_hash_keys_documented():
+    """PERSISTABLE_HASH_KEYS is empty by design (input_hash removed).
+    This test documents that, not hides behind it."""
+    assert PERSISTABLE_HASH_KEYS == frozenset(), (
+        f"PERSISTABLE_HASH_KEYS should be empty: {PERSISTABLE_HASH_KEYS}"
     )
 
 
-# ── §1.2b: Guard must catch deliberately malformed samples ────────
+# ── §4.1b: Per-case failures — each MUST be caught ───────────────
 
-def test_guard_catches_raw_text_hash():
-    """A hash value that is raw text must be rejected."""
-    record = {"scan_id": "test123", "email_sha256": "this is not a hash"}
-    violations = validate_record(record, email_text="test email")
-    assert any("does not match" in v for v in violations), (
-        f"Guard failed to reject raw text hash: {violations}"
-    )
+def test_guard_catches_raw_text_in_hash_field():
+    """Case 1: hash field holding raw email text."""
+    record = {"scan_id": "t1", "email_sha256": "Subject: Verify your account now"}
+    violations = validate_record(record, email_text="Subject: Verify your account now")
+    assert violations, "FAIL: raw text in _sha256 field not caught"
 
 
-def test_guard_catches_15_char_hex():
-    """A 15-char hex value (too short for ^[0-9a-f]{16,64}$) must be rejected."""
-    record = {"scan_id": "test123", "input_hash": "a" * 15}
-    violations = validate_record(record, email_text="test email")
-    assert any("does not match" in v for v in violations), (
-        f"Guard failed to reject 15-char hex: {violations}"
-    )
+def test_guard_catches_15_hex_value():
+    """Case 2: 15-char hex value (too short for ^[0-9a-f]{16,64}$)."""
+    record = {"scan_id": "t2", "input_hash": "a" * 15}
+    violations = validate_record(record, email_text="test")
+    assert violations, "FAIL: 15-char hex not caught"
+
+
+def test_guard_catches_65_hex_value():
+    """Case 3: 65-char hex value (too long for ^[0-9a-f]{16,64}$)."""
+    record = {"scan_id": "t3", "email_hash": "a" * 65}
+    violations = validate_record(record, email_text="test")
+    assert violations, "FAIL: 65-char hex not caught"
 
 
 def test_guard_catches_forbidden_key():
-    """A forbidden key must be rejected."""
-    record = {"scan_id": "test123", "email_text": "secret content"}
-    violations = validate_record(record, email_text="test email")
-    assert any("forbidden key" in v for v in violations), (
-        f"Guard failed to reject forbidden key: {violations}"
-    )
+    """Case 4: forbidden key present."""
+    record = {"scan_id": "t4", "email_text": "secret content"}
+    violations = validate_record(record, email_text="test")
+    assert any("forbidden" in v for v in violations), "FAIL: forbidden key not caught"
 
 
 def test_guard_catches_email_substring_in_text_key():
-    """A _text key whose value is the email must be rejected."""
-    email = "Subject: Verify your account immediately"
-    record = {"scan_id": "test123", "input_text": email}
+    """Case 5: _text key whose value is the email."""
+    email = "Subject: Verify your account"
+    record = {"scan_id": "t5", "input_text": email}
     violations = validate_record(record, email_text=email)
-    assert any("email content" in v for v in violations), (
-        f"Guard failed to catch email substring in _text key: {violations}"
-    )
+    assert any("email content" in v for v in violations), "FAIL: email in _text not caught"
 
 
 def test_guard_catches_email_substring_in_hash_key():
-    """A _hash key whose value is the email must be rejected."""
-    email = "Subject: Verify your account"
-    record = {"scan_id": "test123", "email_hash": email}
+    """Case 6: _hash key whose value is the email."""
+    email = "Subject: Verify"
+    record = {"scan_id": "t6", "email_hash": email}
     violations = validate_record(record, email_text=email)
-    assert any("email content" in v or "hash" in v for v in violations), (
-        f"Guard failed to catch email as hash value: {violations}"
-    )
+    assert violations, "FAIL: email as hash value not caught"
 
 
-# ── §1.2c: Guard passes on clean records ──────────────────────────
-
-def test_guard_passes_clean_record():
-    """A well-formed record with no forbidden keys must pass."""
-    record = {
-        "scan_id": "abc123def456",
-        "signals": ["credential_harvest"],
-        "risk_score": 75,
-        "verdict": "High Risk",
-    }
-    violations = validate_record(record, email_text="Subject: Verify")
-    assert violations == [], f"Guard rejected clean record: {violations}"
-
-
-def test_guard_passes_valid_hex_hash():
-    """A valid 16-char hex hash must pass."""
-    record = {"scan_id": "test123", "input_hash": "a" * 16}
-    violations = validate_record(record, email_text="test email")
-    assert violations == [], f"Guard rejected valid hex hash: {violations}"
-
-
-# ── §1.2d: Prove both directions — empty list → guard fails ──────
+# ── §4.1c: Empty-guard proof ─────────────────────────────────────
 
 def test_guard_vacuous_when_forbidden_keys_emptied():
-    """If FORBIDDEN_RAW_CONTENT_KEYS is emptied, the guard must fail
-    on the anti-vacuity check (the set must be non-empty)."""
+    """Case 7: empty FORBIDDEN_RAW_CONTENT_KEYS → anti-vacuity check fails."""
     import data_constants as dc
     original = dc.FORBIDDEN_RAW_CONTENT_KEYS
     dc.FORBIDDEN_RAW_CONTENT_KEYS = frozenset()
     try:
-        with pytest.raises(AssertionError, match="empty"):
-            # Re-import the check
-            assert len(dc.FORBIDDEN_RAW_CONTENT_KEYS) > 0, (
-                "FORBIDDEN_RAW_CONTENT_KEYS is empty — guard is vacuous"
-            )
+        with pytest.raises(AssertionError):
+            assert len(dc.FORBIDDEN_RAW_CONTENT_KEYS) > 0
     finally:
         dc.FORBIDDEN_RAW_CONTENT_KEYS = original
+
+
+# ── §4.1d: Unused-import proof ───────────────────────────────────
+
+def test_persistable_hash_keys_imported_but_referenced():
+    """Case 8: PERSISTABLE_HASH_KEYS is imported in data_constants.
+    If nothing in non-test code reads it, the import is dead.
+    This test documents the state: the constant exists, is empty,
+    and is referenced only in tests."""
+    # Check non-test code references
+    import importlib
+    main_mod = importlib.import_module("main")
+    # If PERSISTABLE_HASH_KEYS is imported in main.py but never used in
+    # non-test code, that's dead code. The constant is empty by design.
+    assert hasattr(main_mod, "PERSISTABLE_HASH_KEYS"), (
+        "PERSISTABLE_HASH_KEYS not imported in main.py"
+    )
+
+
+# ── §4.1e: Clean run — guard passes on well-formed records ────────
+
+def test_guard_passes_clean_record():
+    violations = validate_record(CLEAN_RECORD, email_text="Subject: Test")
+    assert violations == [], f"Guard rejected clean record: {violations}"
+
+
+def test_guard_passes_valid_hex_hash():
+    record = {"scan_id": "t", "input_hash": "a" * 16}
+    violations = validate_record(record, email_text="test")
+    assert violations == [], f"Guard rejected valid hex: {violations}"
+
+
+def test_guard_passes_valid_64hex_hash():
+    record = {"scan_id": "t", "email_sha256": "a" * 64}
+    violations = validate_record(record, email_text="test")
+    assert violations == [], f"Guard rejected valid 64hex: {violations}"

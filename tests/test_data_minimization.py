@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sqlite3
 from collections import OrderedDict
 
@@ -72,11 +73,10 @@ async def test_scan_explanation_does_not_persist_raw_email_body(client, tmp_path
 
 @pytest.mark.asyncio
 async def test_scan_explanation_persists_email_sha256(client, tmp_path) -> None:
-    """The explanation record must contain a sha256 hash of the email, not the body."""
+    """The explanation record must contain a keyed HMAC digest of the email, not the body."""
     backend_main.SCANS_DB_PATH = tmp_path / "scans-hash.db"
     backend_main.ensure_scans_db()
     email = "Subject: Hash test\nUnique body content here."
-    expected_hash = hashlib.sha256(email.encode("utf-8")).hexdigest()
     async with make_client() as session:
         await _bootstrap_session(session)
         result = await _scan(session, email)
@@ -87,7 +87,13 @@ async def test_scan_explanation_persists_email_sha256(client, tmp_path) -> None:
             (scan_id,),
         ).fetchone()
     payload = json.loads(row[0])
-    assert payload.get("email_sha256") == expected_hash
+    # §2.1: Now uses keyed HMAC (16 hex chars), not plain sha256 (64 hex chars)
+    stored = payload.get("email_sha256", "")
+    assert len(stored) == 16, f"Expected 16-char HMAC, got {len(stored)} chars: {stored!r}"
+    assert re.match(r'^[0-9a-f]{16}$', stored), f"HMAC value not hex: {stored!r}"
+    # Verify it differs from plain sha256 (proving keyed HMAC is in use)
+    plain_sha = hashlib.sha256(email.encode("utf-8")).hexdigest()[:16]
+    assert stored != plain_sha, f"HMAC equals plain sha256 prefix: {stored!r}"
 
 
 # ---------------------------------------------------------------------------
