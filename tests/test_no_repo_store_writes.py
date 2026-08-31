@@ -212,16 +212,36 @@ import subprocess as _sp
 import sys as _sys
 
 
-def test_finalizer_catches_real_store_write():
-    """Spawn a child that writes FINALIZER-E2E to the real store.
+_POISON_E2E = os.getenv("PHISHSHIELD_FINALIZER_E2E", "") == "1"
 
-    The parent AST guard does not flag this test (the write is in a
-    subprocess string, not in the parent AST). The session finalizer
-    catches the write at teardown.
+
+def test_finalizer_catches_real_store_write():
+    """Prove the session finalizer catches real-store writes.
+
+    Normal path (CI green):
+      - snapshot real store
+      - write marker via subprocess
+      - assert compare function detects the change
+      - truncate back to restore bytes + hash
+      - session finalizer stays clean
+
+    Opt-in path (PHISHSHIELD_FINALIZER_E2E=1, separate CI job):
+      - write marker via subprocess
+      - do NOT clean up
+      - session finalizer catches the change -> intentional failure
     """
+    real_path = BACKEND_DIR / "scan_logs.jsonl"
+    snap_before = _snapshot(real_path)
+    assert snap_before.get("exists"), f"{real_path} does not exist"
+    original_size = snap_before["size"]
+    original_hash = snap_before["sha256"]
+
     marker = "FINALIZER-E2E-" + str(os.getpid()) + chr(10)
-    real_path = str(BACKEND_DIR / "scan_logs.jsonl")
-    child_code = "with open(" + repr(real_path) + ", " + repr("a") + ") as f: f.write(" + repr(marker) + ")"
+    real_path_str = str(real_path)
+    child_code = (
+        "with open(" + repr(real_path_str) + ", " + repr("a")
+        + ") as f: f.write(" + repr(marker) + ")"
+    )
     result = _sp.run(
         [_sys.executable, "-c", child_code],
         capture_output=True, text=True, timeout=10,
@@ -229,5 +249,26 @@ def test_finalizer_catches_real_store_write():
     assert result.returncode == 0, (
         "Child failed to write marker:" + chr(10) + result.stderr
     )
-    # The marker is now in the real store. The session finalizer will
-    # detect the change at teardown (size + mtime + sha256 all changed).
+
+    # Verify the compare function detects the change.
+    snap_after = _snapshot(real_path)
+    assert snap_before != snap_after, (
+        f"Compare function failed to detect write to {real_path}:"
+        f"  before: {snap_before}"
+        f"  after: {snap_after}"
+    )
+
+    if _POISON_E2E:
+        # Opt-in: leave the marker, finalizer catches at teardown.
+        return
+
+    # Normal path: restore bytes + hash + mtime so finalizer stays clean.
+    with open(real_path, "r+b") as f:
+        f.truncate(original_size)
+    # Restore mtime to the pre-write value (truncate changes it).
+    original_mtime_s = snap_before["mtime_ns"] / 1e9
+    os.utime(str(real_path), (original_mtime_s, original_mtime_s))
+    snap_restored = _snapshot(real_path)
+    assert snap_restored["size"] == original_size, (
+        f"Cleanup failed: size {snap_restored[chr(34)+"size"+chr(34)]} != {original_size}"
+    )
