@@ -106,13 +106,10 @@ SCANS_DB_PATH = BASE_DIR / "scans.db"
 FEEDBACK_COLUMNS = ["email_text", "user_label", "model_prediction", "timestamp", "scan_id"]
 
 from data_constants import (
-    PERSISTABLE_HASH_KEYS,
     FORBIDDEN_RAW_CONTENT_KEYS,
     HASH_VALUE_PATTERN,
     validate_record,
 )
-# Back-compat alias for any code referencing the old name
-FORBIDDEN_EMAIL_CONTENT_KEYS = FORBIDDEN_RAW_CONTENT_KEYS
 
 # HMAC key for pseudonymizing email content in logs.
 # Dedicated secret — never falls back to INTERNAL_API_KEY or a hardcoded value.

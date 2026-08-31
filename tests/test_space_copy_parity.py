@@ -47,17 +47,6 @@ def _load_main_module(label: str, path: Path):
 
 # ── §3.1a: frozenset equality ───────────────────────────────────
 
-def test_persistable_hash_keys_value_parity():
-    """PERSISTABLE_HASH_KEYS must be identical in both trees."""
-    backend_dc = _load_data_constants("backend", BACKEND_DIR / "data_constants.py")
-    space_dc = _load_data_constants("space", SPACE_DIR / "data_constants.py")
-    assert backend_dc.PERSISTABLE_HASH_KEYS == space_dc.PERSISTABLE_HASH_KEYS, (
-        f"PERSISTABLE_HASH_KEYS diverges:\n"
-        f"  backend: {backend_dc.PERSISTABLE_HASH_KEYS}\n"
-        f"  space:   {space_dc.PERSISTABLE_HASH_KEYS}"
-    )
-
-
 def test_forbidden_raw_content_keys_value_parity():
     """FORBIDDEN_RAW_CONTENT_KEYS must be identical in both trees."""
     backend_dc = _load_data_constants("backend2", BACKEND_DIR / "data_constants.py")
@@ -113,22 +102,22 @@ def test_build_safe_preview_digest_parity():
 
 def test_value_guard_fails_on_break(tmp_path):
     """If we change a constant in a scratch copy, the guard must fail."""
-    import os, shutil
+    import os
     os.environ["PHISHSHIELD_PREVIEW_HMAC_KEY"] = "parity-test-key"
 
     # Create a broken copy of data_constants.py
     scratch = tmp_path / "data_constants_broken.py"
     original = (BACKEND_DIR / "data_constants.py").read_text(encoding="utf-8")
     broken = original.replace(
-        'PERSISTABLE_HASH_KEYS: frozenset[str] = frozenset()',
-        'PERSISTABLE_HASH_KEYS: frozenset[str] = frozenset({"spurious"})',
+        'FORBIDDEN_RAW_CONTENT_KEYS: frozenset[str] = frozenset({',
+        'FORBIDDEN_RAW_CONTENT_KEYS: frozenset[str] = frozenset({"spurious", ',
     )
     scratch.write_text(broken, encoding="utf-8")
 
     backend_dc = _load_data_constants("backend_ok", BACKEND_DIR / "data_constants.py")
     space_dc = _load_data_constants("space_broken", scratch)
 
-    assert backend_dc.PERSISTABLE_HASH_KEYS != space_dc.PERSISTABLE_HASH_KEYS, (
+    assert backend_dc.FORBIDDEN_RAW_CONTENT_KEYS != space_dc.FORBIDDEN_RAW_CONTENT_KEYS, (
         "Guard failed to detect broken constant"
     )
 
@@ -137,7 +126,6 @@ def test_value_guard_passes_on_clean():
     """Both trees' constants must be equal (the normal case)."""
     backend_dc = _load_data_constants("backend_clean", BACKEND_DIR / "data_constants.py")
     space_dc = _load_data_constants("space_clean", SPACE_DIR / "data_constants.py")
-    assert backend_dc.PERSISTABLE_HASH_KEYS == space_dc.PERSISTABLE_HASH_KEYS
     assert backend_dc.FORBIDDEN_RAW_CONTENT_KEYS == space_dc.FORBIDDEN_RAW_CONTENT_KEYS
 
 

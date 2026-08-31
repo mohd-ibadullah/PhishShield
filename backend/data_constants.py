@@ -13,10 +13,6 @@ from __future__ import annotations
 import re
 from typing import Any
 
-# Keys that are ALLOWED in persisted stores.  Currently empty —
-# input_hash was removed (scan_id serves correlation, no external consumer).
-PERSISTABLE_HASH_KEYS: frozenset[str] = frozenset()
-
 # ── Keys that must NEVER appear in any persisted store ────────────
 # These contain email-derived free text or client-identifying info.
 # Checked by name (exact match).

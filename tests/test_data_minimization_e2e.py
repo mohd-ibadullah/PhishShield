@@ -24,7 +24,6 @@ from conftest import app, BACKEND_DIR
 import importlib
 _main = importlib.import_module("main")
 from data_constants import (
-    PERSISTABLE_HASH_KEYS,
     FORBIDDEN_RAW_CONTENT_KEYS,
     HASH_VALUE_PATTERN,
 )
@@ -146,10 +145,6 @@ def test_forbidden_keys_constant_is_correct() -> None:
     assert FORBIDDEN_RAW_CONTENT_KEYS == frozenset({
         "email_text", "input_preview", "headers", "client_ip",
     }), f"FORBIDDEN_RAW_CONTENT_KEYS drifted: {FORBIDDEN_RAW_CONTENT_KEYS}"
-    # input_hash was removed: scan_id serves correlation, no external consumer.
-    assert PERSISTABLE_HASH_KEYS == frozenset(), (
-        f"PERSISTABLE_HASH_KEYS should be empty (input_hash removed): {PERSISTABLE_HASH_KEYS}"
-    )
 
 
 # ── §4.2: No persistable hash fields in new records ──────────

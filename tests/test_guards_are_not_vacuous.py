@@ -18,7 +18,6 @@ sys.path.insert(0, str(ROOT / "backend"))
 from data_constants import (
     FORBIDDEN_RAW_CONTENT_KEYS,
     HASH_VALUE_PATTERN,
-    PERSISTABLE_HASH_KEYS,
     validate_record,
     _hash_re,
 )
@@ -36,15 +35,6 @@ def test_hash_pattern_non_empty():
     assert len(HASH_VALUE_PATTERN) > 0, "HASH_VALUE_PATTERN is empty — guard is vacuous"
 
 
-def test_persistable_hash_keys_documented():
-    """PERSISTABLE_HASH_KEYS is empty by design (input_hash removed).
-    This test documents that, not hides behind it."""
-    assert PERSISTABLE_HASH_KEYS == frozenset(), (
-        f"PERSISTABLE_HASH_KEYS should be empty: {PERSISTABLE_HASH_KEYS}"
-    )
-
-
-# ── §4.1b: Per-case failures — each MUST be caught ───────────────
 
 def test_guard_catches_raw_text_in_hash_field():
     """Case 1: hash field holding raw email text."""
@@ -106,22 +96,6 @@ def test_guard_vacuous_when_forbidden_keys_emptied():
 
 # ── §4.1d: Unused-import proof ───────────────────────────────────
 
-def test_persistable_hash_keys_imported_but_referenced():
-    """Case 8: PERSISTABLE_HASH_KEYS is imported in data_constants.
-    If nothing in non-test code reads it, the import is dead.
-    This test documents the state: the constant exists, is empty,
-    and is referenced only in tests."""
-    # Check non-test code references
-    import importlib
-    main_mod = importlib.import_module("main")
-    # If PERSISTABLE_HASH_KEYS is imported in main.py but never used in
-    # non-test code, that's dead code. The constant is empty by design.
-    assert hasattr(main_mod, "PERSISTABLE_HASH_KEYS"), (
-        "PERSISTABLE_HASH_KEYS not imported in main.py"
-    )
-
-
-# ── §4.1e: Clean run — guard passes on well-formed records ────────
 
 def test_guard_passes_clean_record():
     violations = validate_record(CLEAN_RECORD, email_text="Subject: Test")
