@@ -65,7 +65,7 @@ jobs:
         working-directory: backend
 
       - name: Compile-check tests
-        run: python -c 'import py_compile, glob; [py_compile.compile(f, doraise=True) for f in glob.glob("tests/*.py")]; print("All tests/*.py compile-clean")'
+        run: python -c 'import py_compile, glob; patterns = glob.glob("tests/*.py") + glob.glob("tools/*.py"); [py_compile.compile(f, doraise=True) for f in patterns]; print(len(patterns), "files compile-clean")'
         working-directory: .
 
       - name: Run pytest

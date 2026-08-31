@@ -279,5 +279,6 @@ print("=" * 70)
 print(f"  RESULTS: {PASS} passed, {FAIL} failed out of {PASS + FAIL}")
 print("=" * 70)
 
-if FAIL > 0:
-    sys.exit(1)
+if __name__ == "__main__":
+    if FAIL > 0:
+        sys.exit(1)
