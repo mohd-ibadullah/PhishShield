@@ -26,6 +26,8 @@
 
 **What:** Session-scoped fixture captures `{exists, size, mtime_ns, lines}` of every store file before any test. Final assertion compares the full dict (`before != after`). The guard compares **size, mtime_ns, AND lines** — not size-only.
 
+**Scope:** The guard asserts content equality (size + mtime_ns + lines + sha256). Filesystem touches that restore original content are not flagged (accepted, so a self-restoring proof can exist).
+
 **Weakness (proven by experiment):** The guard is a point-in-time check. Forward order (meta-test first, detector second): both pass. Reverse order (detector first, meta-test second): meta-test **FAILS** because mtime changed. A write+truncate that restores size but not mtime is invisible to the guard if it happens after the check. The guard's field coverage is complete; its temporal coverage is not.
 
 **Evidence:**

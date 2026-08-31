@@ -76,3 +76,28 @@ jobs:
             echo "Skipping mypy: optional provider modules not present in checkout"
           fi
         working-directory: .
+  finalizer-e2e:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, 'finalizer')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-dev.txt
+        working-directory: backend
+
+      - name: Train TF-IDF artifacts for CI
+        run: python train_model.py
+        working-directory: backend
+
+      - name: Run finalizer e2e (opt-in poisoning)
+        run: PHISHSHIELD_FINALIZER_E2E=1 python -m pytest tests/test_no_repo_store_writes.py -v
+        working-directory: .
