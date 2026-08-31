@@ -9,9 +9,8 @@ module-level constant (which the conftest session fixture redirected to
 tmp) and asserts the REAL store file is unchanged — proving the redirect
 works on every run, not just when an env var is set.
 
-The deliberate-violation test (test_deliberate_repo_write) writes
-directly to the real file and is skipped by default — it exists only
-for one-shot manual proof.
+The deliberate-violation test was removed: test_detector_actually_catches_a_write
+on a synthetic tmp store provides the same proof without touching the repo.
 """
 from __future__ import annotations
 
@@ -202,22 +201,3 @@ def test_detector_actually_catches_a_write(tmp_path):
                 f"  initial: {initial}\n  now: {snap_check}"
             )
 
-
-# ── Deliberate-violation proof (skipped by default) ─────────────
-# Unique coverage: writes to the REAL file (not the redirected path).
-# The self-proving test proves the redirect works; this proves the
-# meta-test catches violations on the actual store file.
-# Run with: _TEST_PROVE_META_CATCHES_VIOLATION=1
-_PROVE = os.getenv("_TEST_PROVE_META_CATCHES_VIOLATION", "") == "1"
-
-
-@pytest.mark.skipif(
-    not _PROVE,
-    reason="One-shot proof: writes to real file. Unique coverage vs self-proving test."
-)
-def test_deliberate_repo_write():
-    """Write to the real scan_logs.jsonl to prove the meta-test catches it."""
-    violation_marker = f"VIOLATION-PROOF-{os.getpid()}"
-    real_path = ROOT / "backend" / "scan_logs.jsonl"
-    with open(real_path, "a", encoding="utf-8") as f:
-        f.write(violation_marker + "\n")

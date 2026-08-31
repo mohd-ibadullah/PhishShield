@@ -197,7 +197,33 @@ def _is_write_mode(node: ast.AST) -> bool:
     return any(m in mode for m in _WRITE_MODES)
 
 
-def _repo_write_offenders(tree: ast.Module, src_text: str, filename: str) -> list[str]:
+def _collect_assignments(tree: ast.Module) -> dict[str, ast.AST]:
+    """Collect NAME = expr assignments from module-level and function bodies."""
+    out: dict[str, ast.AST] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name):
+                    out[t.id] = node.value
+    return out
+
+
+def _extract_string_literals(node: ast.AST) -> list[str]:
+    """Extract all string constant values from an AST subtree."""
+    return [n.value for n in ast.walk(node)
+            if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+
+
+def _path_may_target_repo(node: ast.AST) -> str | None:
+    """Check if a Path expression (including BinOp / concatenation) contains a repo store dir."""
+    for s in _extract_string_literals(node):
+        store = _resolve_inside_repo(s)
+        if store:
+            return store
+    return None
+
+
+def _repo_write_offenders(tree: ast.Module, src_text: str, filename: str, assigns: dict | None = None) -> list[str]:
     """AST-scan for open()/Path.write*/os.remove/shutil.write targeting repo stores."""
     found: list[str] = []
     for node in ast.walk(tree):
@@ -208,14 +234,29 @@ def _repo_write_offenders(tree: ast.Module, src_text: str, filename: str) -> lis
         # open(path, mode) / open(path, mode, ...)
         if isinstance(func, ast.Name) and func.id == "open" and node.args:
             first_arg = node.args[0]
+            # Check string literal directly
+            store = None
+            label = None
             if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
                 store = _resolve_inside_repo(first_arg.value)
-                if store:
-                    # Check if any arg is a write mode
-                    for arg in node.args[1:] + [kw.value for kw in node.keywords if kw.arg == "mode"]:
-                        if _is_write_mode(arg):
-                            found.append(f"line {node.lineno}: open({first_arg.value!r}, ...) writing to {store}/")
-                            break
+                label = first_arg.value
+            else:
+                # Resolve variable references via module-level assignments
+                if isinstance(first_arg, ast.Name) and first_arg.id in assigns:
+                    store = _path_may_target_repo(assigns[first_arg.id])
+                    if store:
+                        label = f"{first_arg.id} (assigned to repo path)"
+                else:
+                    # Check Path expressions: ROOT / "backend" / "file", etc.
+                    store = _path_may_target_repo(first_arg)
+                    if store:
+                        label = ast.dump(first_arg)[:60]
+            if store:
+                # Check if any arg is a write mode
+                for arg in node.args[1:] + [kw.value for kw in node.keywords if kw.arg == "mode"]:
+                    if _is_write_mode(arg):
+                        found.append(f"line {node.lineno}: open({label}, ...) writing to {store}/")
+                        break
 
         # Path(...).write_text() / Path(...).write_bytes()
         if isinstance(func, ast.Attribute) and func.attr in _FILE_METHODS_WRITE:
@@ -256,7 +297,8 @@ def test_no_test_opens_repo_store_for_writing():
     for py in _iter_test_files():
         src_text = py.read_text(encoding="utf-8")
         tree = ast.parse(src_text, filename=str(py))
-        hits = _repo_write_offenders(tree, src_text, py.name)
+        assigns = _collect_assignments(tree)
+        hits = _repo_write_offenders(tree, src_text, py.name, assigns)
         if hits:
             offenders.append(f"{py.name}: " + "; ".join(hits))
     assert not offenders, (
