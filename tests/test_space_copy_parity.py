@@ -26,8 +26,14 @@ SPACE_MAIN = SPACE_DIR / "main.py"
 
 # ── §3.1: Value-based parity via importlib ──────────────────────
 
-def _import_module_from_path(name: str, path: Path):
-    """Import a module from an explicit file path."""
+def _import_module_from_path(name: str, path: Path, guard) -> object:
+    """Import a module from an explicit file path.
+
+    `guard` is the conftest sys_modules_guard fixture: every sys.modules
+    mutation MUST be registered with it so the original namespace is
+    restored (enforced by tests/test_subprocess_and_sysmodules_hygiene.py).
+    """
+    guard(name)
     spec = importlib.util.spec_from_file_location(name, str(path))
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
@@ -35,22 +41,22 @@ def _import_module_from_path(name: str, path: Path):
     return mod
 
 
-def _load_data_constants(label: str, path: Path):
+def _load_data_constants(label: str, path: Path, guard):
     """Load data_constants from a specific tree."""
-    return _import_module_from_path(f"data_constants_{label}", path)
+    return _import_module_from_path(f"data_constants_{label}", path, guard)
 
 
-def _load_main_module(label: str, path: Path):
+def _load_main_module(label: str, path: Path, guard):
     """Load a main.py module (mocking heavy imports)."""
-    return _import_module_from_path(f"main_{label}", path)
+    return _import_module_from_path(f"main_{label}", path, guard)
 
 
-# ── §3.1a: frozenset equality ───────────────────────────────────
+# ── §3.1a: frozenset equality ──────────────────────────────────
 
-def test_forbidden_raw_content_keys_value_parity():
+def test_forbidden_raw_content_keys_value_parity(sys_modules_guard):
     """FORBIDDEN_RAW_CONTENT_KEYS must be identical in both trees."""
-    backend_dc = _load_data_constants("backend2", BACKEND_DIR / "data_constants.py")
-    space_dc = _load_data_constants("space2", SPACE_DIR / "data_constants.py")
+    backend_dc = _load_data_constants("backend2", BACKEND_DIR / "data_constants.py", sys_modules_guard)
+    space_dc = _load_data_constants("space2", SPACE_DIR / "data_constants.py", sys_modules_guard)
     assert backend_dc.FORBIDDEN_RAW_CONTENT_KEYS == space_dc.FORBIDDEN_RAW_CONTENT_KEYS, (
         f"FORBIDDEN_RAW_CONTENT_KEYS diverges:\n"
         f"  backend: {backend_dc.FORBIDDEN_RAW_CONTENT_KEYS}\n"
@@ -58,10 +64,10 @@ def test_forbidden_raw_content_keys_value_parity():
     )
 
 
-def test_hash_value_pattern_parity():
+def test_hash_value_pattern_parity(sys_modules_guard):
     """HASH_VALUE_PATTERN must be identical in both trees."""
-    backend_dc = _load_data_constants("backend3", BACKEND_DIR / "data_constants.py")
-    space_dc = _load_data_constants("space3", SPACE_DIR / "data_constants.py")
+    backend_dc = _load_data_constants("backend3", BACKEND_DIR / "data_constants.py", sys_modules_guard)
+    space_dc = _load_data_constants("space3", SPACE_DIR / "data_constants.py", sys_modules_guard)
     assert backend_dc.HASH_VALUE_PATTERN == space_dc.HASH_VALUE_PATTERN
 
 
@@ -76,7 +82,7 @@ SAMPLE_INPUTS = [
 ]
 
 
-def test_build_safe_preview_digest_parity():
+def test_build_safe_preview_digest_parity(sys_modules_guard):
     """build_safe_preview must produce the same HMAC digest in both trees.
 
     Both trees need _get_preview_hmac_key and HMAC — we set the env var
@@ -85,8 +91,8 @@ def test_build_safe_preview_digest_parity():
     import os
     os.environ["PHISHSHIELD_PREVIEW_HMAC_KEY"] = "parity-test-key"
 
-    backend_main = _load_main_module("bm_parity", BACKEND_MAIN)
-    space_main = _load_main_module("sm_parity", SPACE_MAIN)
+    backend_main = _load_main_module("bm_parity", BACKEND_MAIN, sys_modules_guard)
+    space_main = _load_main_module("sm_parity", SPACE_MAIN, sys_modules_guard)
 
     for sample in SAMPLE_INPUTS:
         b = backend_main.build_safe_preview(sample)
@@ -100,7 +106,7 @@ def test_build_safe_preview_digest_parity():
 
 # ── §3.2: Prove the value guard fails on break ─────────────────
 
-def test_value_guard_fails_on_break(tmp_path):
+def test_value_guard_fails_on_break(tmp_path, sys_modules_guard):
     """If we change a constant in a scratch copy, the guard must fail."""
     import os
     os.environ["PHISHSHIELD_PREVIEW_HMAC_KEY"] = "parity-test-key"
@@ -114,18 +120,18 @@ def test_value_guard_fails_on_break(tmp_path):
     )
     scratch.write_text(broken, encoding="utf-8")
 
-    backend_dc = _load_data_constants("backend_ok", BACKEND_DIR / "data_constants.py")
-    space_dc = _load_data_constants("space_broken", scratch)
+    backend_dc = _load_data_constants("backend_ok", BACKEND_DIR / "data_constants.py", sys_modules_guard)
+    space_dc = _load_data_constants("space_broken", scratch, sys_modules_guard)
 
     assert backend_dc.FORBIDDEN_RAW_CONTENT_KEYS != space_dc.FORBIDDEN_RAW_CONTENT_KEYS, (
         "Guard failed to detect broken constant"
     )
 
 
-def test_value_guard_passes_on_clean():
+def test_value_guard_passes_on_clean(sys_modules_guard):
     """Both trees' constants must be equal (the normal case)."""
-    backend_dc = _load_data_constants("backend_clean", BACKEND_DIR / "data_constants.py")
-    space_dc = _load_data_constants("space_clean", SPACE_DIR / "data_constants.py")
+    backend_dc = _load_data_constants("backend_clean", BACKEND_DIR / "data_constants.py", sys_modules_guard)
+    space_dc = _load_data_constants("space_clean", SPACE_DIR / "data_constants.py", sys_modules_guard)
     assert backend_dc.FORBIDDEN_RAW_CONTENT_KEYS == space_dc.FORBIDDEN_RAW_CONTENT_KEYS
 
 
