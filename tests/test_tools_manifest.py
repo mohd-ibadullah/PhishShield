@@ -47,20 +47,42 @@ def test_all_tools_py_are_compiled():
 
 
 def test_all_tools_import_safely_as_module():
-    """Every tools/*.py must import without side effects (no sys.exit)."""
+    """Every tools/*.py must import without blocking or sys.exit.
+
+    Checks three failure modes:
+    1. sys.exit on import (SystemExit in stderr)
+    2. Traceback on import (non-zero exit + traceback in stderr)
+    3. Timeout (script blocks on import, e.g. requests.get or input())
+    """
     import subprocess
     import sys
     tools_dir = Path(__file__).resolve().parents[1] / "tools"
-    failures = []
+    sys_exit_failures = []
+    import_failures = []
+    timeout_failures = []
     for py in sorted(tools_dir.glob("*.py")):
         if py.name == "__init__.py":
             continue
-        result = subprocess.run(
-            [sys.executable, "-c", f"import importlib.util; s=importlib.util.spec_from_file_location('m','{py}'); m=importlib.util.module_from_spec(s); s.loader.exec_module(m)"],
-            capture_output=True, text=True, timeout=10,
-        )
-        if result.returncode != 0 and "SystemExit" in (result.stderr or ""):
-            failures.append((py.name, result.stderr.strip()[:200]))
-    assert not failures, (
-        f"tools/*.py files that call sys.exit on import: {failures}"
-    )
+        try:
+            result = subprocess.run(
+                [sys.executable, "-c",
+                 f"import importlib.util; s=importlib.util.spec_from_file_location('m','{py}'); " +
+                 f"m=importlib.util.module_from_spec(s); s.loader.exec_module(m)"],
+                capture_output=True, text=True, timeout=10,
+            )
+        except subprocess.TimeoutExpired:
+            timeout_failures.append(py.name)
+            continue
+        stderr = result.stderr or ""
+        if "SystemExit" in stderr:
+            sys_exit_failures.append((py.name, stderr.strip()[:200]))
+        elif result.returncode != 0 and "Traceback" in stderr:
+            import_failures.append((py.name, stderr.strip()[:200]))
+    errors = []
+    if sys_exit_failures:
+        errors.append(f"sys.exit on import: {sys_exit_failures}")
+    if import_failures:
+        errors.append(f"import traceback: {import_failures}")
+    if timeout_failures:
+        errors.append(f"blocks on import (timeout 10s): {timeout_failures}")
+    assert not errors, "tools/*.py import failures: " + " | ".join(errors)
