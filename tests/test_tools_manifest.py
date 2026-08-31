@@ -44,3 +44,23 @@ def test_all_tools_py_are_compiled():
     import py_compile
     for py in sorted(TOOLS_DIR.glob("*.py")):
         py_compile.compile(str(py), doraise=True)
+
+
+def test_all_tools_import_safely_as_module():
+    """Every tools/*.py must import without side effects (no sys.exit)."""
+    import subprocess
+    import sys
+    tools_dir = Path(__file__).resolve().parents[1] / "tools"
+    failures = []
+    for py in sorted(tools_dir.glob("*.py")):
+        if py.name == "__init__.py":
+            continue
+        result = subprocess.run(
+            [sys.executable, "-c", f"import importlib.util; s=importlib.util.spec_from_file_location('m','{py}'); m=importlib.util.module_from_spec(s); s.loader.exec_module(m)"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0 and "SystemExit" in (result.stderr or ""):
+            failures.append((py.name, result.stderr.strip()[:200]))
+    assert not failures, (
+        f"tools/*.py files that call sys.exit on import: {failures}"
+    )

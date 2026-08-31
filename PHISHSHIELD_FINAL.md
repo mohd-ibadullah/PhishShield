@@ -11,11 +11,11 @@
 ### Test Suite
 
 ```
-378 collected, 377 passed, 1 skipped
+381 collected, 380 passed, 1 skipped
 ```
 
-- N1 = 378 collected across 40 pytest files (collected via `python -m pytest --co -q`)
-- Collected (365) ≠ passed (364) because 1 test is intentionally skipped: `test_deliberate_repo_write` writes to the REAL store file (unique coverage vs the self-proving test). Skip reason documented.
+- N1 = 381 collected across 42 pytest files (collected via `python -m pytest --co -q`)
+- 1 test intentionally skipped: `test_deliberate_repo_write` (writes to real store). Skip reason documented.
 - 10 new tests: anti-vacuity (10), self-proving isolation (1), data-minimization (7), parity (8), concurrency (1), meta-test (3)
 
 **Ignored-file table:**
@@ -196,7 +196,7 @@ No security-relevant changes remain uncommitted.
 - PORT=0 fixed: `PORT=0 pnpm build` passes, `pnpm typecheck` passes
 - Duplicates: 1713 dup scan_ids (12422 rows), all pre-lock, mechanism UNCONFIRMED
 - Skipped test: documented unique coverage (writes to real file)
-- Full suite: `python -m pytest tests/ -q` → 378 collected, 377 passed, 1 skipped
+- Full suite: `python -m pytest tests/ -q` → 381 collected, 380 passed, 1 skipped
 
 **UNCONFIRMED** (each with what would confirm it):
 - Duplicate mechanism: would need old server logs or a repro with the pre-lock code

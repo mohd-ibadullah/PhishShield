@@ -7,8 +7,8 @@ server on `http://127.0.0.1:8000` and hit the HTTP API directly.
 
 | File | Description | Requires |
 |------|-------------|----------|
-| test_scan_simple.py | `test_scan_and_broadcast()` — async scan + WebSocket broadcast test | Live server on :8000 |
-| test_wsbroadcast.py | `test_websocket_broadcast()` — WebSocket marker broadcast test | Live server on :8000 |
+| test_scan_simple.py | `test_scan_and_broadcast()` — async scan + WebSocket broadcast test | **Converted** to tests/test_scan_broadcast.py (TestClient, no live server) |
+| test_wsbroadcast.py | `test_websocket_broadcast()` — WebSocket marker broadcast test | **Converted** to tests/test_scan_broadcast.py (TestClient, no live server) |
 | test_10_cases.py | 10-case production validation suite (phishing vectors) | Live server on :8000 |
 | test_advanced_detection.py | Advanced detection vector testing | Live server on :8000 |
 | test_e2e.py | End-to-end certification against /scan endpoint | Live server on :8000 + combined_test_dataset.json |
