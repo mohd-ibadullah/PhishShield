@@ -64,6 +64,10 @@ jobs:
         run: python -m py_compile main.py explain.py train_model.py train_indicbert.py
         working-directory: backend
 
+      - name: Compile-check tests
+        run: python -c 'import py_compile, glob; [py_compile.compile(f, doraise=True) for f in glob.glob("tests/test_*.py")]; print("All tests/*.py compile-clean")'
+        working-directory: .
+
       - name: Run pytest
         run: python -m pytest
         working-directory: .
