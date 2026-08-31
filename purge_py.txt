@@ -1,0 +1,58 @@
+-- purge_py.txt
+-- Purge historical rows containing raw email_text from scans.db
+-- DATE: 2026-08-31 (updated)
+-- STATUS: NOT EXECUTED — running this is the operator's decision.
+--
+-- TARGET DB: C:\Users\froms\Desktop\2\backend\scans.db  (737,280 bytes)
+-- DO NOT run against a different copy. Verify with:
+--   sqlite3 "C:\Users\froms\Desktop\2\backend\scans.db" "SELECT COUNT(*) FROM scan_explanations;"
+
+-- ============================================================
+-- BEFORE counts (measured at 2026-08-31T03:00:55, absolute path):
+--   scan_explanations total rows: 137
+--   rows containing email_text (any spacing): 86
+--   rows containing email_sha256: 51
+--   scans table total rows: 121
+--   scans table columns: scan_id, session_id, verdict, risk_score, timestamp, language, sender_domain
+--   (scans table has no email body column — no purge needed there)
+--   scan_logs.jsonl: C:\Users\froms\Desktop\2\backend\scan_logs.jsonl
+--     Size: 39,497,768 bytes (37.7 MB), 77,743 lines
+--     JSON parse OK: 77,739 | Parse FAIL: 4 (truncated writes)
+--     All 77,739 parsed records have input_hash (HMAC'd, post-fix)
+--     NOTE: pre-fix records use input_preview (email-derived, ≤160 chars)
+--     email_text=0, email_sha256=0
+-- ============================================================
+
+-- STEP 1: Delete old scan_explanations rows that contain raw email_text.
+-- Both serialization patterns are covered (json.dumps produces no space after colon
+-- on this codebase, but we match broadly to be safe).
+DELETE FROM scan_explanations
+WHERE payload_json LIKE '%email_text%';
+
+-- STEP 2: Verify — this should return 0 after purge.
+SELECT COUNT(*) AS remaining_email_text_rows
+FROM scan_explanations
+WHERE payload_json LIKE '%email_text%';
+
+-- STEP 3: Verify remaining rows all have email_sha256.
+SELECT COUNT(*) AS remaining_total,
+       SUM(CASE WHEN payload_json LIKE '%email_sha256%' THEN 1 ELSE 0 END) AS with_sha256
+FROM scan_explanations;
+
+-- NOTE: scan_logs.jsonl is append-only and not managed by SQL.
+-- Pre-fix records (77,739 lines) still contain input_preview with email-derived
+-- content. Post-fix code writes input_hash (HMAC'd) instead.
+--
+-- ORPHAN TEST MARKERS (written by one-shot proof during 2026-08-31 session):
+--   Line 80076: VIOLATION-PROOF-13244
+--   Line 80077: VIOLATION-PROOF-8088
+--   These are test artifacts from the deliberate-violation proof run.
+--   Remove with: sed/discard the last 2 lines, or truncate to 80,075 lines.
+--
+-- Options for the JSONL:
+--   A) Rotate: archive/delete the historical file and start fresh.
+--      No rotation/retention code exists — proposal: add daily rotation with 7-day cap.
+--   B) Rewrite: filter out lines containing input_preview and keep only input_hash lines.
+--      This destroys the historical log. Not recommended.
+--   C) Remove orphan markers: truncate last 2 lines (80076-80077).
+-- Neither option is executed here. The operator decides.

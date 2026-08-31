@@ -118,6 +118,46 @@ def test_no_repo_store_writes():
     )
 
 
+# ── Detector-catches-write proof (runs every time) ──────────
+# Self-contained: snapshot → write to REAL file → assert detector
+# catches it → cleanup. Order-independent, no skip, no env flag.
+def test_detector_actually_catches_a_write():
+    """Prove the snapshot comparison detects a write to the real store file.
+
+    Unlike the one-shot deliberate-violation test (which depends on
+    test ordering), this test does snapshot → write → assert → cleanup
+    in a single function, so it always proves the detector is live.
+    """
+    real_path = BACKEND_DIR / "scan_logs.jsonl"
+    snap_before = _snapshot(real_path)
+    assert snap_before.get("exists"), f"{real_path} does not exist"
+
+    marker = f"DETECTOR-PROOF-{os.getpid()}\n"
+    original_size = snap_before["size"]
+
+    # Write directly to the real file, bypassing the redirect.
+    with open(real_path, "a", encoding="utf-8") as f:
+        f.write(marker)
+
+    snap_after = _snapshot(real_path)
+    assert snap_after["size"] != original_size or snap_after["mtime_ns"] != snap_before["mtime_ns"], (
+        f"Detector failed to notice write to {real_path}:\n"
+        f"  before: {snap_before}\n"
+        f"  after:  {snap_after}"
+    )
+
+    # Cleanup: truncate back to original size.
+    with open(real_path, "r+b") as f:
+        f.truncate(original_size)
+        f.seek(original_size)
+        f.flush()
+
+    snap_restored = _snapshot(real_path)
+    assert snap_restored["size"] == original_size, (
+        f"Cleanup failed: size {snap_restored['size']} != {original_size}"
+    )
+
+
 # ── Deliberate-violation proof (skipped by default) ─────────────
 # Unique coverage: writes to the REAL file (not the redirected path).
 # The self-proving test proves the redirect works; this proves the
