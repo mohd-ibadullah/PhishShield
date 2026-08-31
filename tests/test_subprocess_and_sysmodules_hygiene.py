@@ -32,6 +32,7 @@ import pytest
 from conftest import _ORIGINAL_MAIN
 
 TESTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = TESTS_DIR.parent
 
 RESTORE_MARKERS = ("sys_modules_guard", "register_sys_modules_restore")
 STORE_REDIRECT_KNOB = "PHISHSHIELD_STORE_DIR"
@@ -39,6 +40,13 @@ _WHOLE_SUITE_TARGETS = {"tests", "tests/", "tests\\"}
 
 _SUBPROCESS_CALLS = {"run", "Popen", "check_output", "check_call", "call"}
 _OS_SPAWN_CALLS = {"system", "popen"}
+
+_REPO_STORE_DIRS = ("backend", "data")
+_WRITE_MODES = ("w", "a", "x", "w+", "a+")
+_TRUNCATE_METHODS = ("truncate",)
+_FILE_METHODS_WRITE = ("write_text", "write_bytes")
+_SHUTIL_WRITE_CALLS = ("move", "copy", "copy2", "copytree")
+_OS_REMOVE_CALLS = ("remove", "unlink")
 
 
 def _iter_test_files():
@@ -160,6 +168,101 @@ def test_subprocess_pytest_invocations_are_bounded_and_redirect_stores():
                     f"{py.name}: line {call.lineno}: no explicit tests/test_*.py target — subset not provably bounded"
                 )
     assert not offenders, "Unbounded or unredirected subprocess pytest invocations: " + "; ".join(offenders)
+
+
+# ── Class 3: no test opens a repo store path for writing ────────────
+
+def _resolve_inside_repo(path_str: str) -> str | None:
+    """If path_str resolves to a file inside backend/ or data/, return the dir name.
+    Only checks string literals — dynamic paths are caught by runtime, not AST."""
+    try:
+        resolved = (REPO_ROOT / path_str).resolve()
+    except (OSError, ValueError):
+        return None
+    for store_dir in _REPO_STORE_DIRS:
+        store_prefix = (REPO_ROOT / store_dir).resolve()
+        try:
+            resolved.relative_to(store_prefix)
+            return store_dir
+        except ValueError:
+            continue
+    return None
+
+
+def _is_write_mode(node: ast.AST) -> bool:
+    """Check if an open()-style call has a write mode string."""
+    if not isinstance(node, ast.Constant) or not isinstance(node.value, str):
+        return False
+    mode = node.value
+    return any(m in mode for m in _WRITE_MODES)
+
+
+def _repo_write_offenders(tree: ast.Module, src_text: str, filename: str) -> list[str]:
+    """AST-scan for open()/Path.write*/os.remove/shutil.write targeting repo stores."""
+    found: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+
+        # open(path, mode) / open(path, mode, ...)
+        if isinstance(func, ast.Name) and func.id == "open" and node.args:
+            first_arg = node.args[0]
+            if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
+                store = _resolve_inside_repo(first_arg.value)
+                if store:
+                    # Check if any arg is a write mode
+                    for arg in node.args[1:] + [kw.value for kw in node.keywords if kw.arg == "mode"]:
+                        if _is_write_mode(arg):
+                            found.append(f"line {node.lineno}: open({first_arg.value!r}, ...) writing to {store}/")
+                            break
+
+        # Path(...).write_text() / Path(...).write_bytes()
+        if isinstance(func, ast.Attribute) and func.attr in _FILE_METHODS_WRITE:
+            if isinstance(func.value, ast.Call) and isinstance(func.value.func, ast.Name) and func.value.func.id == "Path":
+                if func.value.args and isinstance(func.value.args[0], ast.Constant) and isinstance(func.value.args[0].value, str):
+                    store = _resolve_inside_repo(func.value.args[0].value)
+                    if store:
+                        found.append(f"line {node.lineno}: Path({func.value.args[0].value!r}).{func.attr}() writing to {store}/")
+
+        # os.remove() / os.unlink()
+        if isinstance(func, ast.Attribute) and func.attr in _OS_REMOVE_CALLS:
+            if isinstance(func.value, ast.Name) and func.value.id == "os" and node.args:
+                if isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+                    store = _resolve_inside_repo(node.args[0].value)
+                    if store:
+                        found.append(f"line {node.lineno}: os.{func.attr}({node.args[0].value!r}) in {store}/")
+
+        # shutil.move() / shutil.copy()
+        if isinstance(func, ast.Attribute) and func.attr in _SHUTIL_WRITE_CALLS:
+            if isinstance(func.value, ast.Name) and func.value.id == "shutil" and len(node.args) >= 2:
+                dest = node.args[1]
+                if isinstance(dest, ast.Constant) and isinstance(dest.value, str):
+                    store = _resolve_inside_repo(dest.value)
+                    if store:
+                        found.append(f"line {node.lineno}: shutil.{func.attr}(..., {dest.value!r}) into {store}/")
+
+    return found
+
+
+def test_no_test_opens_repo_store_for_writing():
+    """Class 3: no test file may open a path resolving inside backend/ or data/ for writing.
+
+    Modes w/a/x/w+/a+, Path.write_text/write_bytes, os.remove/unlink,
+    shutil.move/copy targeting repo store dirs are all flagged.
+    If a test legitimately needs a file write, it must use a tmp dir.
+    """
+    offenders: list[str] = []
+    for py in _iter_test_files():
+        src_text = py.read_text(encoding="utf-8")
+        tree = ast.parse(src_text, filename=str(py))
+        hits = _repo_write_offenders(tree, src_text, py.name)
+        if hits:
+            offenders.append(f"{py.name}: " + "; ".join(hits))
+    assert not offenders, (
+        "Tests open repo store paths for writing (use tmp dirs instead):\n"
+        + "\n".join(offenders)
+    )
 
 
 # ── Runtime identity net ─────────────────────────────────────────────
