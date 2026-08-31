@@ -44,15 +44,21 @@ FROM scan_explanations;
 -- content. Post-fix code writes input_hash (HMAC'd) instead.
 --
 -- ORPHAN TEST MARKERS (written by one-shot proof during 2026-08-31 session):
---   Line 80076: VIOLATION-PROOF-13244
---   Line 80077: VIOLATION-PROOF-8088
+--   VIOLATION-PROOF-13244, VIOLATION-PROOF-8088
 --   These are test artifacts from the deliberate-violation proof run.
---   Remove with: sed/discard the last 2 lines, or truncate to 80,075 lines.
+--   Current file: 40,321,425 bytes, 80,077 lines, 2 marker lines.
+--
+--   Option C: Predicate-based removal via scripts/remove_violation_markers.py
+--     --dry-run  → shows what would be removed, modifies nothing
+--     --execute  → writes scan_logs.jsonl.cleaned, keeps original
+--     Safety: pre-flight size check (refuses if file grew), marker-count
+--       check (refuses if count changed), idempotent (dry-run twice = same).
+--     To apply: rename .cleaned → original after verifying.
 --
 -- Options for the JSONL:
 --   A) Rotate: archive/delete the historical file and start fresh.
 --      No rotation/retention code exists — proposal: add daily rotation with 7-day cap.
 --   B) Rewrite: filter out lines containing input_preview and keep only input_hash lines.
 --      This destroys the historical log. Not recommended.
---   C) Remove orphan markers: truncate last 2 lines (80076-80077).
+--   C) Remove orphan markers: scripts/remove_violation_markers.py --dry-run
 -- Neither option is executed here. The operator decides.
