@@ -109,6 +109,7 @@ from data_constants import (
     PERSISTABLE_HASH_KEYS,
     FORBIDDEN_RAW_CONTENT_KEYS,
     HASH_VALUE_PATTERN,
+    validate_record,
 )
 # Back-compat alias for any code referencing the old name
 FORBIDDEN_EMAIL_CONTENT_KEYS = FORBIDDEN_RAW_CONTENT_KEYS
@@ -2817,12 +2818,23 @@ def calibrate_confidence(
 
 _scan_log_lock = __import__("threading").Lock()
 
-def append_structured_scan_log(entry: dict[str, Any]) -> None:
+def append_structured_scan_log(entry: dict[str, Any], *, _email_text: str = "") -> None:
+    """Append a JSONL line. Shape-based guard runs before write."""
     logger = logging.getLogger("uvicorn.error")
     log_entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         **entry,
     }
+
+    # §1.1: Shape-based validation before write
+    violations = validate_record(log_entry, email_text=_email_text)
+    if violations:
+        logger.warning(
+            "Shape guard REJECTED record scan_id=%s: %s",
+            log_entry.get("scan_id"),
+            "; ".join(violations),
+        )
+        return
 
     try:
         SCAN_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -7624,7 +7636,8 @@ def calculate_email_risk(
             "verdict": final_verdict,
             "confidence": confidence,
             "model_used": model_used,
-        }
+        },
+        _email_text=email_text,
     )
     record_scan_metrics(verdict=final_verdict, risk_score=risk_score, signals=final_signals)
     return response_payload
