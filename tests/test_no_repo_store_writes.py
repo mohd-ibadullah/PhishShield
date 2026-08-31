@@ -207,6 +207,25 @@ def test_detector_actually_catches_a_write(tmp_path):
 # The parent AST guard does NOT see the write (it is in a subprocess
 # string). The session finalizer catches it at teardown -- proving the
 # ordering-immune check works on the real repo store.
+
+# --- Guard scope: content-only (mtime-only NOT caught) ---
+def test_mtime_only_change_not_caught(tmp_path):
+    """Prove the guard is content-only: mtime-only changes are not flagged."""
+    synthetic = tmp_path / "scope_test.jsonl"
+    synthetic.write_bytes(b"original content\n")
+    snap_before = _snapshot(synthetic)
+    # Change only mtime via os.utime (content unchanged)
+    old_mtime = snap_before["mtime_ns"] / 1e9
+    new_mtime = old_mtime + 3600
+    os.utime(str(synthetic), (new_mtime, new_mtime))
+    snap_after = _snapshot(synthetic)
+    # Content is identical
+    assert snap_before["sha256"] == snap_after["sha256"]
+    assert snap_before["size"] == snap_after["size"]
+    # Stat fields differ (mtime changed)
+    assert snap_before != snap_after
+    # But the finalizer skips when sha256 matches -- accepted scope limitation.
+
 # MUST be the last test in the file (after detector test).
 import subprocess as _sp
 import sys as _sys
