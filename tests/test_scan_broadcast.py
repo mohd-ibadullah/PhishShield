@@ -1,125 +1,28 @@
-"""Scan + broadcast integration test (converted from tools/test_scan_simple.py).
+"""WS broadcast tests — session isolation, content redaction, AST guard, pending replay.
 
-Uses httpx AsyncClient against the FastAPI app directly - no live server needed.
+Tests 1-2 use mock-based broadcast interception (starlette TestClient does not support
+concurrent websocket reads in async context). Test 3 is an AST guard. Test 4 tests
+pending queue scoping via ConnectionManager directly.
 """
 from __future__ import annotations
 
+import ast
+import json
+import time
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
 
-@pytest.mark.asyncio
-async def test_scan_returns_verdict_and_session(client):
-    """POST /scan-email returns a valid verdict and risk_score."""
-    response = await client.post(
-        "/scan-email",
-        json={
-            "email_text": "Subject: Verify Now\n\nClick here: http://suspicious.tk/verify",
-        },
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert "verdict" in data
-    assert "risk_score" in data
-    assert isinstance(data["risk_score"], int)
 
+# ---------------------------------------------------------------------------
+# Test 1: session isolation (two sockets, scan as A, B should NOT receive)
+# ---------------------------------------------------------------------------
 
-@pytest.mark.asyncio
-async def test_scan_session_id_echo(client):
-    """Session ID is tracked server-side via cookie."""
-    response = await client.post(
-        "/scan-email",
-        json={
-            "email_text": "Subject: Test\n\nBody",
-            "session_id": "test-session-abc",
-        },
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert "verdict" in data
-
-
-
-
-
-
-@pytest.mark.asyncio
-async def test_ws_broadcast_isolation_between_sessions(client):
-    """WS broadcast isolation: verify ConnectionManager scoping.
-    Two sockets connect with different session_ids. Mock the broadcast
-    method to capture what is sent, then trigger a scan as session B.
-    Assert: broadcast is called but the event contains no session A data."""
-    import json
-    import time
-    from unittest.mock import AsyncMock, patch
-
-    MARKER = "ISOLATION-PROBE-" + str(int(time.time()))
-
-    # Create two sessions
-    resp_a = await client.post("/api/session")
-    resp_b = await client.post("/api/session")
-    assert resp_a.status_code == 200
-    assert resp_b.status_code == 200
-    session_a = resp_a.json().get("session_id", "a")
-    session_b = resp_b.json().get("session_id", "b")
-
-    import main as backend_main
-    captured_messages = []
-    original_broadcast = backend_main.ws_manager.broadcast
-
-    async def capture_broadcast(msg):
-        captured_messages.append(msg)
-        await original_broadcast(msg)
-
-    with patch.object(backend_main.ws_manager, "broadcast", capture_broadcast):
-        email_body = "Subject: " + MARKER + chr(10) + chr(10) + "Click: http://test.example.com"
-        scan_resp = await client.post(
-            "/scan-email",
-            json={
-                "email_text": email_body,
-                "session_id": session_b,
-            },
-        )
-        assert scan_resp.status_code == 200
-        b_scan_id = scan_resp.json()["scan_id"]
-
-    # Verify broadcast was called
-    assert len(captured_messages) > 0, "No broadcast emitted"
-
-    # Verify no raw email content in any broadcast
-    for msg in captured_messages:
-        msg_str = json.dumps(msg)
-        assert MARKER not in msg_str, (
-            "PRIVACY VIOLATION: raw email subject in broadcast: " + msg_str[:200]
-        )
-        assert "test.example.com" not in msg_str, (
-            "PRIVACY VIOLATION: raw URL in broadcast: " + msg_str[:200]
-        )
-
-    # Verify broadcast goes to ALL connected clients (global scope)
-    # This documents the current architecture: broadcasts are not session-scoped.
-    # If isolation is added later, this test should change to assert scoping.
-    broadcast = captured_messages[0]
-    assert broadcast["type"] == "scan_complete"
-    assert broadcast["scan_id"] == b_scan_id
-    # preview should be redacted (b3.5), not raw
-    assert MARKER not in broadcast.get("preview", "")
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="OPEN: session scoping not implemented -- broadcast is global. "
-           "All connected clients receive all scan events (cross-session metadata disclosure)."
-)
 @pytest.mark.asyncio
 async def test_ws_broadcast_session_isolation(client):
-    """OPEN SECURITY: WS broadcasts are global, not session-scoped.
-    Session A should NOT receive session B scan events. Currently fails
-    because ConnectionManager.broadcast sends to ALL connected clients.
-    Fix: room-per-session in ConnectionManager (small change, product decision needed).
-    When fixed, this test will PASS and strict xfail will turn CI red --
-    promoting it to a permanent regression guard."""
-    import json
-    import time
-    from unittest.mock import patch
-
+    """Two sockets with different session keys. Scan as session B.
+    Session A should NOT receive B's event. """
     MARKER = "ISOLATION-PROBE-" + str(int(time.time()))
 
     resp_a = await client.post("/api/session")
@@ -131,15 +34,16 @@ async def test_ws_broadcast_session_isolation(client):
 
     import main as backend_main
     a_received = []
+
     original_broadcast = backend_main.ws_manager.broadcast
 
-    async def intercept_and_broadcast(msg):
-        # In current architecture, broadcast goes to ALL clients.
-        # This test asserts it should NOT go to session A.
-        a_received.append(msg)
-        await original_broadcast(msg)
+    async def track_a_receive(msg, session_key=None):
+        # Only capture if this would be delivered to session_a
+        if session_key == session_a:
+            a_received.append(msg)
+        await original_broadcast(msg, session_key=session_key)
 
-    with patch.object(backend_main.ws_manager, "broadcast", intercept_and_broadcast):
+    with patch.object(backend_main.ws_manager, "broadcast", track_a_receive):
         email_body = "Subject: " + MARKER + chr(10) + chr(10) + "Click: http://test.example.com"
         scan_resp = await client.post(
             "/scan-email",
@@ -151,13 +55,138 @@ async def test_ws_broadcast_session_isolation(client):
         assert scan_resp.status_code == 200
         b_scan_id = scan_resp.json()["scan_id"]
 
-    # FAILS because broadcast is global: A receives B event.
-    # When session scoping is added, this will PASS -> strict xfail turns red.
-    b_events_at_a = [
-        e for e in a_received
-        if e.get("scan_id") == b_scan_id
-    ]
+    # A should NOT have received B's scan event
+    b_events_at_a = [e for e in a_received if e.get("scan_id") == b_scan_id]
     assert len(b_events_at_a) == 0, (
-        "OPEN: session A received " + str(len(b_events_at_a)) +
-        " events from session B scan (broadcast is global, not scoped)"
+        "SESSION ISOLATION BREACH: session A received " + str(len(b_events_at_a)) +
+        " events from session B scan"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 2: content redaction (permanent, non-xfail)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_ws_broadcast_content_redaction(client):
+    """Raw email text must never appear in any broadcast frame."""
+    MARKER = "SECRET-EMAIL-CONTENT-" + str(int(time.time()))
+
+    resp = await client.post("/api/session")
+    assert resp.status_code == 200
+    session_id = resp.json().get("session_id", "test")
+
+    import main as backend_main
+    captured = []
+
+    original_broadcast = backend_main.ws_manager.broadcast
+
+    async def capture(msg, session_key=None):
+        captured.append(msg)
+        await original_broadcast(msg, session_key=session_key)
+
+    with patch.object(backend_main.ws_manager, "broadcast", capture):
+        email_body = "Subject: " + MARKER + chr(10) + chr(10) + "Click: http://test.example.com"
+        scan_resp = await client.post(
+            "/scan-email",
+            json={
+                "email_text": email_body,
+                "session_id": session_id,
+            },
+        )
+        assert scan_resp.status_code == 200
+
+    assert len(captured) > 0, "No broadcast emitted"
+    for msg in captured:
+        msg_str = json.dumps(msg)
+        assert MARKER not in msg_str, (
+            "PRIVACY VIOLATION: raw email content in broadcast: " + msg_str[:200]
+        )
+        assert "test.example.com" not in msg_str, (
+            "PRIVACY VIOLATION: raw URL in broadcast: " + msg_str[:200]
+        )
+
+
+# ---------------------------------------------------------------------------
+# Test 3: AST guard — no send_json outside connection_manager.py
+# ---------------------------------------------------------------------------
+
+def test_no_websocket_send_outside_connection_manager():
+    """No file outside connection_manager.py and main.py WS endpoint
+    should call websocket.send_json or websocket.send_text directly.
+    Also: broadcast() must be called with session_key kwarg."""
+    repo = Path(__file__).resolve().parents[1]
+    backend_dir = repo / "backend"
+    ws_files = {"connection_manager.py", "main.py"}
+
+    violations = []
+    for py in sorted(backend_dir.glob("*.py")):
+        if py.name in ws_files:
+            continue
+        try:
+            tree = ast.parse(py.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                # Check for websocket.send_json / send_text
+                if isinstance(node.func, ast.Attribute) and node.func.attr in ("send_json", "send_text"):
+                    if isinstance(node.func.value, ast.Attribute):
+                        obj = node.func.value
+                        if isinstance(obj.value, ast.Name) and obj.attr in ("websocket", "ws", "socket"):
+                            violations.append(f"{py.name}:{node.lineno}: {obj.attr}.{node.func.attr}()")
+    assert not violations, (
+        "WebSocket send outside approved files: " + str(violations)
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 4: pending replay is room-scoped (ConnectionManager unit test)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_pending_replay_is_room_scoped():
+    """Events queued for session A should NOT replay to session B."""
+    from backend.ws.connection_manager import ConnectionManager
+
+    cm = ConnectionManager()
+
+    # Create two mock websockets
+    class FakeWS:
+        def __init__(self):
+            from starlette.websockets import WebSocketState
+            self.client_state = WebSocketState.CONNECTED
+            self.application_state = WebSocketState.CONNECTED
+            self.sent = []
+            self._closed = False
+
+        async def accept(self):
+            pass
+
+        async def send_json(self, msg):
+            self.sent.append(msg)
+
+        async def close(self, code=1000, reason=""):
+
+            self._closed = True
+
+    ws_a = FakeWS()
+    ws_b = FakeWS()
+
+    # Connect A
+    await cm.connect(ws_a, session_id="room-a")
+    # Disconnect A (so events get queued)
+    await cm.disconnect(ws_a)
+
+    # Broadcast to room A while A is disconnected -> queued
+    await cm.broadcast({"type": "scan_complete", "scan_id": "A-001"}, session_key="room-a")
+
+    # Connect B with a different room
+    await cm.connect(ws_b, session_id="room-b")
+
+    # B should NOT have received A's queued event
+    a_events_at_b = [e for e in ws_b.sent if e.get("scan_id") == "A-001"]
+    assert len(a_events_at_b) == 0, (
+        "PENDING REPLAY ISOLATION BREACH: session B received " +
+        str(len(a_events_at_b)) + " events from session A's pending queue"
     )

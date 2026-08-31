@@ -1444,6 +1444,7 @@ def build_explanation_record_from_scan_result(result: dict[str, Any], *, email_t
     email_sha256 = hmac.new(_get_preview_hmac_key(), raw_email.encode("utf-8"), hashlib.sha256).hexdigest()[:16] if raw_email else ""
     return {
         "scan_id": scan_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "session_id": str(session_id or result.get("session_id") or ""),
         "email_sha256": email_sha256,
         "risk_score": risk_score,
@@ -7801,8 +7802,8 @@ def legacy_history(request: Request) -> list[dict[str, Any]]:
         risk_score = int(record.get("risk_score", 0) or 0)
         items.append(
             {
-                "id": str(record.get("scan_id") or uuid4().hex[:12]),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "id": str(record.get("scan_id") or None),
+                "timestamp": str(record.get("timestamp") or None),
                 "emailPreview": email_preview,
                 "riskScore": risk_score,
                 "classification": classification_from_risk(risk_score),
@@ -7943,7 +7944,7 @@ async def scan_email(payload: EmailScanRequest, request: Request, response: Resp
                     "language": detect_language_code(payload.email_text),
                     "has_url": bool(result.get("url_results")),
                     "processing_ms": processing_ms,
-                })
+                }, session_key=session_key)
             except Exception as exc:
                 logger.warning("WebSocket broadcast failed for scan %s: %s", scan_id_val, exc)
 

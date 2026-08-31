@@ -13,26 +13,31 @@ logger = logging.getLogger("phishshield.ws")
 
 
 class ConnectionManager:
-    """Manages active WebSocket connections for live scan feed."""
+    """Manages active WebSocket connections for live scan feed.
+
+    Session-scoped: broadcasts are sent only to sockets in the same room.
+    Pending events are queued per room.
+    """
 
     def __init__(self) -> None:
         self._active: dict[str, WebSocket] = {}
         self._session_by_ws: dict[WebSocket, str] = {}
         self._lock = asyncio.Lock()
-        self._pending: list[tuple[dict[str, Any], datetime]] = []
+        self._pending: dict[str, list[tuple[dict[str, Any], datetime]]] = {}
         self._PENDING_MAX = 20
         self._PENDING_TTL_SECONDS = 60
 
-    def _prune_pending_locked(self) -> list[dict[str, Any]]:
+    def _prune_pending_locked(self, room: str) -> list[dict[str, Any]]:
         now = datetime.now(timezone.utc)
+        room_pending = self._pending.get(room, [])
         fresh: list[dict[str, Any]] = []
         kept: list[tuple[dict[str, Any], datetime]] = []
-        for event, created_at in self._pending:
+        for event, created_at in room_pending:
             age = (now - created_at).total_seconds()
             if age < self._PENDING_TTL_SECONDS:
                 fresh.append(event)
                 kept.append((event, created_at))
-        self._pending = kept
+        self._pending[room] = kept
         return fresh
 
     def _is_open(self, ws: WebSocket) -> bool:
@@ -41,23 +46,25 @@ class ConnectionManager:
     async def connect(self, ws: WebSocket, session_id: str | None = None) -> str:
         await ws.accept()
         session_key = session_id or f"anonymous-{uuid4().hex}"
-        replaced_ws: WebSocket | None = None
         fresh: list[dict[str, Any]] = []
 
         async with self._lock:
-            replaced_ws = self._active.get(session_key)
+            existing = self._active.get(session_key)
+            if existing is not None and existing is not ws:
+                # 1c: Same session key from different identity -> reject new socket.
+                try:
+                    await ws.close(code=1008, reason="Session already connected")
+                except Exception:
+                    pass
+                logger.warning("[WS] Rejected duplicate session key: %s", session_key)
+                return session_key
+
             self._active[session_key] = ws
             self._session_by_ws[ws] = session_key
-            fresh = self._prune_pending_locked()
+            fresh = self._prune_pending_locked(session_key)
             if fresh:
-                self._pending.clear()
+                self._pending.pop(session_key, None)
             logger.info("[WS] Connection accepted; replaying %s pending events", len(fresh))
-
-        if replaced_ws is not None and replaced_ws is not ws:
-            try:
-                await replaced_ws.close(code=1000)
-            except Exception:
-                pass
 
         for event in fresh:
             try:
@@ -80,34 +87,44 @@ class ConnectionManager:
                         break
             logger.info("[WS] Client disconnected (%s active)", len(self._active))
 
-    async def broadcast(self, message: dict[str, Any]) -> None:
-        async with self._lock:
-            snapshot = list(self._active.items())
+    async def broadcast(self, message: dict[str, Any], session_key: str | None = None) -> None:
+        """Broadcast to all sockets in the given room (session_key).
 
-        if not snapshot:
-            async with self._lock:
-                self._pending.append((message, datetime.now(timezone.utc)))
-                if len(self._pending) > self._PENDING_MAX:
-                    self._pending = self._pending[-self._PENDING_MAX :]
-            logger.debug("[WS] No active connections; event queued")
+        session_key=None sends to nobody (not to all).
+        """
+        if session_key is None:
+            logger.debug("[WS] broadcast with no session_key; dropping message")
             return
 
+        async with self._lock:
+            # Only send to the specific session socket.
+            ws = self._active.get(session_key)
+            if ws is None:
+                # Queue for later replay, scoped to this room.
+                room_pending = self._pending.setdefault(session_key, [])
+                room_pending.append((message, datetime.now(timezone.utc)))
+                if len(room_pending) > self._PENDING_MAX:
+                    self._pending[session_key] = room_pending[-self._PENDING_MAX:]
+                logger.debug("[WS] No active connection for session %s; event queued", session_key)
+                return
+            snapshot = [(session_key, ws)]
+
         dead: list[tuple[str, WebSocket]] = []
-        for session_key, ws in snapshot:
-            if not self._is_open(ws):
-                dead.append((session_key, ws))
+        for key, sock in snapshot:
+            if not self._is_open(sock):
+                dead.append((key, sock))
                 continue
             try:
-                await asyncio.wait_for(ws.send_json(message), timeout=3.0)
+                await asyncio.wait_for(sock.send_json(message), timeout=3.0)
             except (asyncio.TimeoutError, Exception):
-                dead.append((session_key, ws))
+                dead.append((key, sock))
 
         if dead:
             async with self._lock:
-                for session_key, ws in dead:
-                    if self._active.get(session_key) is ws:
-                        self._active.pop(session_key, None)
-                    self._session_by_ws.pop(ws, None)
+                for key, sock in dead:
+                    if self._active.get(key) is sock:
+                        self._active.pop(key, None)
+                    self._session_by_ws.pop(sock, None)
 
     async def ping_all(self) -> None:
         return

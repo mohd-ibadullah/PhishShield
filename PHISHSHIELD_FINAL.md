@@ -4,6 +4,21 @@
 **Date:** 2026-08-31 (final)  
 **Commits:** 17 (b3.1 through guard refactor + anti-vacuity + PORT fix)
 
+## Deployment Status
+
+| Field | Value |
+|-------|-------|
+| Space private | `false` |
+| Deployed revision | `a507b33c263bc27c398dd19589369df16e8bc67a` |
+| Last modified | `2026-05-21T19:42:18Z` |
+| Deployed main.py | 8,421 lines / 354,175 B |
+| `compare_digest` in deployed | 0 occurrences |
+| `email_sha256` in deployed | 0 occurrences |
+| `PHISHSHIELD_ENABLE_DOCS` in deployed | 0 occurrences |
+| `FORBIDDEN_RAW_CONTENT_KEYS` in deployed | 0 occurrences |
+
+**All local hardening is NOT deployed. The public Space still exposes raw email, anonymous WS, fabricated metrics, and open docs.**
+
 ---
 
 ## (1) What Is Now True
@@ -11,12 +26,17 @@
 ### Test Suite
 
 ```
-384 collected, 382 passed, 2 xfailed
+386 collected, 384 passed, 2 xfailed (1 email digest xfail + 0 WS xfail)
 ```
 
 - N1 = 384 collected across 42 pytest files (collected via `python -m pytest --co -q`)
 - 1 xfailed (strict): `test_short_email_digests_not_in_candidate_set` -- short-email HMAC digests recoverable with known key. If this ever PASSES, adversarial assumption broke.
-- 1 xfailed (strict): `test_ws_broadcast_session_isolation` -- OPEN: WS broadcasts are global (cross-session metadata disclosure). All connected clients receive all scan events. Exploitability: any anon WS connect reads live feed. Severity: metadata-only (no raw email content, b3.5 redaction works). Fix: room-per-session in ConnectionManager (small change, product decision needed -- may be intentional as Live Feed feature).
+- WS session scoping: `test_ws_broadcast_session_isolation` PASSED locally. **deployed: no** — deployed Space broadcasts to all sockets, no session filter.
+- WS content redaction: `test_ws_broadcast_content_redaction` PASSED (permanent guard).
+- **Severity split:**
+  - **Local (harden-from-scratch):** cross-session **metadata** disclosure (scan_id, verdict, risk_score; no raw email, b3.5 redaction works).
+  - **Deployed Space:** cross-session **raw content** (`preview = email_text[:120]`) + `_pending` replay to any connecting socket + session-ID takeover via eviction.
+- **Global Live Feed decision:** Product decision needed — may be intentional as Live Feed feature. If yes, room key becomes a UI toggle and the OPEN item stays open with that decision recorded.
 - 10 new tests: anti-vacuity (10), self-proving isolation (1), data-minimization (7), parity (8), concurrency (1), meta-test (3)
 
 **Ignored-file table:**
@@ -189,15 +209,22 @@ No security-relevant changes remain uncommitted.
 ## (5) Final State
 
 **CLOSED** (each with the command that proves it):
-- Shape-based guard: `python -m pytest tests/test_guards_are_not_vacuous.py -v` → 10 passed
-- Anti-vacuity: empty FORBIDDEN_RAW_CONTENT_KEYS → guard fails; restore → passes (proven)
-- email_sha256 kept: consumer at `backend/main.py:7787` (`/api/history` redacted preview)
-- Dictionary attack: 5000 candidates, 0 inversions (dataset emails 114-382 chars)
-- JSONL atomicity: max 1653 bytes, 0 lines > 4096, locked stress clean at max length
-- PORT=0 fixed: `PORT=0 pnpm build` passes, `pnpm typecheck` passes
-- Duplicates: 1713 dup scan_ids (12422 rows), all pre-lock, mechanism UNCONFIRMED
-- Skipped test: documented unique coverage (writes to real file)
-- Full suite: `python -m pytest tests/ -q` → 384 collected, 382 passed, 2 xfailed
+
+| Claim | Test/Command | deployed |
+|-------|-------------|----------|
+| Shape-based guard | `pytest tests/test_guards_are_not_vacuous.py -v` → 10 passed | no |
+| Anti-vacuity | FORBIDDEN_RAW_CONTENT_KEYS empty → fails; restore → passes | no |
+| email_sha256 consumer | `backend/main.py:7787` | no |
+| Dictionary attack | 5000 candidates, 0 inversions | no |
+| JSONL atomicity | max 1653 B, locked stress clean | no |
+| PORT=0 fixed | `PORT=0 pnpm build` passes | yes (frontend) |
+| Duplicates | 1713 dup scan_ids, mechanism UNCONFIRMED | no |
+| WS session scoping | `pytest tests/test_scan_broadcast.py -v` → 4 passed | no |
+| WS pending replay scoped | `test_pending_replay_is_room_scoped` PASSED | no |
+| WS collision rejection | `connect()` rejects duplicate key with 1008 | no |
+| Timestamp stability | `pytest tests/test_timestamp_stability.py` → 2 passed | no |
+| Store isolation | `test_isolation_redirect_works` PASSED | no |
+| Full suite | `pytest tests/ --co -q` → 386 collected | n/a |
 
 **UNCONFIRMED** (each with what would confirm it):
 - Duplicate mechanism: would need old server logs or a repro with the pre-lock code
@@ -206,6 +233,17 @@ No security-relevant changes remain uncommitted.
 
 **NOT-RUN** (each with the exact blocker):
 - Live Space cold-start latency: requires Space to sleep and wake
-- Historical data purge: operator decision
+- Historical data purge: operator decision (markers purged locally)
+
+**OPEN** (each with one-line reason + the single command that closes it):
+| Item | Reason | Command to close |
+|------|--------|-----------------|
+| `/retrain` guard fail-open | Returns 200 when env var unset; uses `!=` | Grep for `if not INTERNAL_API_KEY: return` and fix |
+| `DELETE /api/history` no auth | Unauthenticated global wipe on deployed box | Add session auth to DELETE handler |
+| `/docs` + `/metrics` open | No access control on deployed Space | Gate behind `ENABLE_PUBLIC_METRICS_DOCS` |
+| `/api/history` read-time timestamps | Fixed locally, not deployed | Deploy the fix |
+| Live Feed global broadcast | May be intentional — product decision needed | Decide: feature or bug; if bug, scope to room |
+
+**Purge result (2026-08-31):** purged 4 marker lines from `scan_logs.jsonl` (80,108 → 80,104 lines); the pre-W2 rows and the 1,713 duplicate-scan_id lines are still on disk; the duplicate-append mechanism is still unidentified.
 
 The deployed Space is not updated, the historical stores still hold email-derived content, and the detector's only defensible measured capability remains the n=60 per-language slices plus the 400-row templated holdout with its 0-shared-family caveat.
