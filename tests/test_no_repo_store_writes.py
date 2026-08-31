@@ -119,43 +119,70 @@ def test_no_repo_store_writes():
 
 
 # ── Detector-catches-write proof (runs every time) ──────────
-# Self-contained: snapshot → write to REAL file → assert detector
-# catches it → cleanup. Order-independent, no skip, no env flag.
-def test_detector_actually_catches_a_write():
-    """Prove the snapshot comparison detects a write to the real store file.
+# Self-contained on a SYNTHETIC store in tmp — never touches repo.
+# Uses the same _snapshot() routine the meta-test uses.
+def test_detector_actually_catches_a_write(tmp_path):
+    """Prove the snapshot comparison detects writes to a store file.
 
-    Unlike the one-shot deliberate-violation test (which depends on
-    test ordering), this test does snapshot → write → assert → cleanup
-    in a single function, so it always proves the detector is live.
+    Three scenarios on a synthetic tmp file:
+      1. Append → size changes → guard catches via size (and mtime).
+      2. Append + truncate back → size restored, mtime changed →
+         guard catches via mtime.
+      3. No-write control → guard passes (no false positive).
+
+    No path under the repo is opened for writing.
     """
-    real_path = BACKEND_DIR / "scan_logs.jsonl"
-    snap_before = _snapshot(real_path)
-    assert snap_before.get("exists"), f"{real_path} does not exist"
+    synthetic = tmp_path / "store.jsonl"
+    original_content = b"line-0\nline-1\nline-2\n"
+    synthetic.write_bytes(original_content)
 
-    marker = f"DETECTOR-PROOF-{os.getpid()}\n"
-    original_size = snap_before["size"]
+    # ── Scenario 1: append (size changes) ──
+    snap_before = _snapshot(synthetic)
+    synthetic.write_bytes(b"line-3-appended\n")
+    snap_after = _snapshot(synthetic)
+    assert snap_before != snap_after, (
+        f"Guard failed to notice append:\n  before: {snap_before}\n  after: {snap_after}"
+    )
+    assert snap_after["size"] != snap_before["size"], "size should differ after append"
+    # Undo for scenario 2.
+    synthetic.write_bytes(original_content)
 
-    # Write directly to the real file, bypassing the redirect.
-    with open(real_path, "a", encoding="utf-8") as f:
-        f.write(marker)
-
-    snap_after = _snapshot(real_path)
-    assert snap_after["size"] != original_size or snap_after["mtime_ns"] != snap_before["mtime_ns"], (
-        f"Detector failed to notice write to {real_path}:\n"
-        f"  before: {snap_before}\n"
-        f"  after:  {snap_after}"
+    # ── Scenario 2: append + truncate (size restored, mtime dirty) ──
+    snap_before2 = _snapshot(synthetic)
+    synthetic.write_bytes(b"line-3-temp\n")
+    # Truncate back to original size — restores size but not mtime.
+    with open(synthetic, "r+b") as f:
+        f.truncate(len(original_content))
+    snap_after2 = _snapshot(synthetic)
+    assert snap_before2 != snap_after2, (
+        f"Guard failed to notice append+truncate (mtime change):\n"
+        f"  before: {snap_before2}\n  after: {snap_after2}"
+    )
+    assert snap_after2["size"] == snap_before2["size"], "size restored after truncate"
+    assert snap_after2["mtime_ns"] != snap_before2["mtime_ns"], (
+        "mtime should differ after append+truncate (guard catches via mtime)"
     )
 
-    # Cleanup: truncate back to original size.
-    with open(real_path, "r+b") as f:
-        f.truncate(original_size)
-        f.seek(original_size)
-        f.flush()
-
-    snap_restored = _snapshot(real_path)
-    assert snap_restored["size"] == original_size, (
-        f"Cleanup failed: size {snap_restored['size']} != {original_size}"
+    # ── Scenario 3: no-write control (no false positive) ──
+    snap_before3 = _snapshot(synthetic)
+    snap_after3 = _snapshot(synthetic)
+    assert snap_before3 == snap_after3, (
+        f"False positive: no write but snapshot differs:\n"
+        f"  before: {snap_before3}\n  after: {snap_after3}"
     )
+
+    # ── Confirm no repo file was opened ──
+    assert str(synthetic).startswith(str(tmp_path)), (
+        f"Synthetic file {synthetic} is not under tmp_path {tmp_path}"
+    )
+    for repo_file in STORE_FILES:
+        if repo_file.exists():
+            snap_check = _snapshot(repo_file)
+            initial = _initial.get(str(repo_file), {"exists": False})
+            assert snap_check == initial, (
+                f"Detector test modified repo file {repo_file}:\n"
+                f"  initial: {initial}\n  now: {snap_check}"
+            )
 
 
 # ── Deliberate-violation proof (skipped by default) ─────────────
