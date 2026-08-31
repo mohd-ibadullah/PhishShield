@@ -3,13 +3,10 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-const rawPort = process.env.PORT ?? "5173";
-const port = Number(rawPort);
-
-// Treat 0 or negative as unset — fall back to default.
-const resolvedPort = port > 0 ? port : 5173;
-
 const basePath = process.env.BASE_PATH || "/";
+
+// §4.2: PORT is only used for the dev server. vite build never reads it.
+const devPort = Number(process.env.VITE_DEV_PORT || process.env.PORT || "5173");
 
 export default defineConfig(async () => {
   const plugins = [react(), tailwindcss()];
@@ -38,7 +35,7 @@ export default defineConfig(async () => {
       chunkSizeWarningLimit: 1200,
     },
     server: {
-      port: resolvedPort,
+      port: devPort > 0 ? devPort : 5173,
       host: "0.0.0.0",
       allowedHosts: true,
       proxy: {
@@ -78,7 +75,7 @@ export default defineConfig(async () => {
       },
     },
     preview: {
-      port: resolvedPort,
+      port: 4173,
       host: "0.0.0.0",
       allowedHosts: true,
     },
