@@ -15,6 +15,7 @@ for one-shot manual proof.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 
@@ -46,6 +47,20 @@ def _line_count(p: Path) -> int | None:
         return None
 
 
+def _content_hash(p: Path) -> str | None:
+    """SHA-256 of file content. Catches equal-size overwrite evasions."""
+    if not p.exists():
+        return None
+    h = hashlib.sha256()
+    try:
+        with open(p, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
 def _snapshot(p: Path) -> dict:
     if not p.exists():
         return {"exists": False}
@@ -55,6 +70,7 @@ def _snapshot(p: Path) -> dict:
         "size": st.st_size,
         "mtime_ns": st.st_mtime_ns,
         "lines": _line_count(p),
+        "sha256": _content_hash(p),
     }
 
 
@@ -63,10 +79,25 @@ _initial: dict[str, dict] = {}
 
 @pytest.fixture(scope="session", autouse=True)
 def _record_initial_store_state():
-    """Capture baseline state of every store file before any test runs."""
+    """Capture baseline state of every store file before any test runs.
+
+    The teardown (after yield) asserts no store file changed — this runs
+    at session end, after ALL tests, making the check ordering-immune.
+    """
     for p in STORE_FILES:
         _initial[str(p)] = _snapshot(p)
     yield
+    # ── Session-end assertion: ordering-immune by construction ──
+    failures = []
+    for p in STORE_FILES:
+        key = str(p)
+        before = _initial.get(key, {"exists": False})
+        after = _snapshot(p)
+        if before != after:
+            failures.append(f"  {key}:\n    before: {before}\n    after:  {after}")
+    assert not failures, (
+        "Store files changed during the test suite:\n" + "\n".join(failures)
+    )
 
 
 # ── Self-proving: redirect works on every run ────────────────────
@@ -99,22 +130,6 @@ def test_isolation_redirect_works():
         f"  real_path: {real_path}\n"
         f"  before: {real_before}\n"
         f"  after: {real_after}"
-    )
-
-
-# ── The actual suite-wide assertion ──────────────────────────────
-
-def test_no_repo_store_writes():
-    """§1.2: Assert no store file under backend/ or data/ was modified."""
-    failures = []
-    for p in STORE_FILES:
-        key = str(p)
-        before = _initial.get(key, {"exists": False})
-        after = _snapshot(p)
-        if before != after:
-            failures.append(f"  {key}:\n    before: {before}\n    after:  {after}")
-    assert not failures, (
-        "Store files changed during the test suite:\n" + "\n".join(failures)
     )
 
 
