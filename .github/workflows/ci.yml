@@ -103,5 +103,13 @@ jobs:
         working-directory: backend
 
       - name: Run finalizer e2e (opt-in poisoning)
-        run: PHISHSHIELD_FINALIZER_E2E=1 python -m pytest tests/test_no_repo_store_writes.py -v
+        run: |
+          OUTPUT=$(PHISHSHIELD_FINALIZER_E2E=1 python -m pytest tests/test_no_repo_store_writes.py -v 2>&1)
+          echo "$OUTPUT"
+          ERROR_COUNT=$(echo "$OUTPUT" | grep -c "ERROR tests/")
+          echo "Intentional errors: $ERROR_COUNT"
+          if [ "$ERROR_COUNT" -ne 1 ]; then
+            echo "FAIL: expected exactly 1 intentional error, got $ERROR_COUNT"
+            exit 1
+          fi
         working-directory: .

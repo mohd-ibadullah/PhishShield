@@ -1,3 +1,4 @@
+# SUPERSEDED by tests/test_scan_broadcast.py -- kept for manual/live-server use
 #!/usr/bin/env python3
 """Simple test to verify WebSocket event flow."""
 import asyncio
