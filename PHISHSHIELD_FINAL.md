@@ -11,25 +11,17 @@
 ### Test Suite
 
 ```
-365 collected, 364 passed, 1 skipped in 476.51s
+378 collected, 377 passed, 1 skipped
 ```
 
-- N1 = 365 collected (conftest active, 8 files excluded by collect_ignore)
+- N1 = 378 collected across 40 pytest files (collected via `python -m pytest --co -q`)
 - Collected (365) ≠ passed (364) because 1 test is intentionally skipped: `test_deliberate_repo_write` writes to the REAL store file (unique coverage vs the self-proving test). Skip reason documented.
 - 10 new tests: anti-vacuity (10), self-proving isolation (1), data-minimization (7), parity (8), concurrency (1), meta-test (3)
 
 **Ignored-file table:**
 
-| File | Test functions | Reason excluded |
-|------|---------------|-----------------|
-| test_advanced_detection.py | 0 | sys.exit on import, manual script |
-| test_harness.py | 0 | manual harness, no pytest tests |
-| test_e2e.py | 0 | manual harness, no pytest tests |
-| test_script.py | 0 | manual script, no pytest tests |
-| test_scan_simple.py | 1 | hits live server |
-| test_wsbroadcast.py | 1 | hits live server |
-| test_10_cases.py | 0 | manual script, no pytest tests |
-| test_phishshield_cases.py | 0 | manual script, no pytest tests |
+**Excluded from CI suite:** 9 scripts moved to `tools/` — see `tools/README.md` for manifest.
+2 files in `tools/` contain real pytest test functions (`test_scan_simple.py` → `test_scan_and_broadcast`, `test_wsbroadcast.py` → `test_websocket_broadcast`); they require a live server on :8000 and are not part of the automated suite.
 
 ### Shape-Based Guard (§1)
 
@@ -204,7 +196,7 @@ No security-relevant changes remain uncommitted.
 - PORT=0 fixed: `PORT=0 pnpm build` passes, `pnpm typecheck` passes
 - Duplicates: 1713 dup scan_ids (12422 rows), all pre-lock, mechanism UNCONFIRMED
 - Skipped test: documented unique coverage (writes to real file)
-- Full suite: `python -m pytest tests/ -q` → 364 passed, 1 skipped
+- Full suite: `python -m pytest tests/ -q` → 378 collected, 377 passed, 1 skipped
 
 **UNCONFIRMED** (each with what would confirm it):
 - Duplicate mechanism: would need old server logs or a repro with the pre-lock code
