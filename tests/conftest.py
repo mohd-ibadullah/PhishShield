@@ -38,17 +38,7 @@ os.environ.setdefault("PHISHSHIELD_PREVIEW_HMAC_KEY", "test-hmac-key-for-ci-only
 ROOT_DIR = Path(__file__).resolve().parents[1]
 BACKEND_DIR = ROOT_DIR / "backend"
 
-# Manual integration scripts that hit a live HTTP server or run certification on import.
-collect_ignore = [
-    "test_advanced_detection.py",
-    "test_harness.py",
-    "test_e2e.py",
-    "test_script.py",
-    "test_scan_simple.py",
-    "test_wsbroadcast.py",
-    "test_10_cases.py",
-    "test_phishshield_cases.py",
-]
+# Integration scripts moved to tools/ directory. All 40 test_*.py in tests/ are pytest-valid.
 
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))

@@ -2,6 +2,8 @@
 **Date:** 2026-08-31  
 **Suite total:** 376 collected (126 + 125 + 125 across 40 files in 3 shards)
 
+**Collection fix:** 9 integration scripts moved from tests/ to tools/. They had no def test_ functions and caused INTERNALERROR/FileNotFoundError during collection. After removal, pytest tests/ collects 376 from 40 files with zero errors.
+
 ### Session corrections
 
 - **Unauthorized deletion:** `pid-audit/fresh-clone/` (3.4M git clone) was deleted without explicit authorization. It was pre-existing untracked content never committed to git. **Local commits/branches inside the clone: UNKNOWN, unrecoverable.** `pid-audit/artifacts/` is intact.
