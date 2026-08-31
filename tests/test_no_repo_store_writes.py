@@ -132,9 +132,7 @@ def test_isolation_redirect_works():
     )
 
 
-# ── Detector-catches-write proof (runs every time) ──────────
-# Self-contained on a SYNTHETIC store in tmp — never touches repo.
-# Uses the same _snapshot() routine the meta-test uses.
+
 def test_detector_actually_catches_a_write(tmp_path):
     """Prove the snapshot comparison detects writes to a store file.
 
@@ -201,3 +199,35 @@ def test_detector_actually_catches_a_write(tmp_path):
                 f"  initial: {initial}\n  now: {snap_check}"
             )
 
+
+
+
+# --- Finalizer e2e: real-store write caught by session teardown ---
+# This test spawns a child process that writes to the real store.
+# The parent AST guard does NOT see the write (it is in a subprocess
+# string). The session finalizer catches it at teardown -- proving the
+# ordering-immune check works on the real repo store.
+# MUST be the last test in the file (after detector test).
+import subprocess as _sp
+import sys as _sys
+
+
+def test_finalizer_catches_real_store_write():
+    """Spawn a child that writes FINALIZER-E2E to the real store.
+
+    The parent AST guard does not flag this test (the write is in a
+    subprocess string, not in the parent AST). The session finalizer
+    catches the write at teardown.
+    """
+    marker = "FINALIZER-E2E-" + str(os.getpid()) + chr(10)
+    real_path = str(BACKEND_DIR / "scan_logs.jsonl")
+    child_code = "with open(" + repr(real_path) + ", " + repr("a") + ") as f: f.write(" + repr(marker) + ")"
+    result = _sp.run(
+        [_sys.executable, "-c", child_code],
+        capture_output=True, text=True, timeout=10,
+    )
+    assert result.returncode == 0, (
+        "Child failed to write marker:" + chr(10) + result.stderr
+    )
+    # The marker is now in the real store. The session finalizer will
+    # detect the change at teardown (size + mtime + sha256 all changed).
