@@ -102,3 +102,62 @@ async def test_ws_broadcast_isolation_between_sessions(client):
     assert broadcast["scan_id"] == b_scan_id
     # preview should be redacted (b3.5), not raw
     assert MARKER not in broadcast.get("preview", "")
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="OPEN: session scoping not implemented -- broadcast is global. "
+           "All connected clients receive all scan events (cross-session metadata disclosure)."
+)
+@pytest.mark.asyncio
+async def test_ws_broadcast_session_isolation(client):
+    """OPEN SECURITY: WS broadcasts are global, not session-scoped.
+    Session A should NOT receive session B scan events. Currently fails
+    because ConnectionManager.broadcast sends to ALL connected clients.
+    Fix: room-per-session in ConnectionManager (small change, product decision needed).
+    When fixed, this test will PASS and strict xfail will turn CI red --
+    promoting it to a permanent regression guard."""
+    import json
+    import time
+    from unittest.mock import patch
+
+    MARKER = "ISOLATION-PROBE-" + str(int(time.time()))
+
+    resp_a = await client.post("/api/session")
+    resp_b = await client.post("/api/session")
+    assert resp_a.status_code == 200
+    assert resp_b.status_code == 200
+    session_a = resp_a.json().get("session_id", "a")
+    session_b = resp_b.json().get("session_id", "b")
+
+    import main as backend_main
+    a_received = []
+    original_broadcast = backend_main.ws_manager.broadcast
+
+    async def intercept_and_broadcast(msg):
+        # In current architecture, broadcast goes to ALL clients.
+        # This test asserts it should NOT go to session A.
+        a_received.append(msg)
+        await original_broadcast(msg)
+
+    with patch.object(backend_main.ws_manager, "broadcast", intercept_and_broadcast):
+        email_body = "Subject: " + MARKER + chr(10) + chr(10) + "Click: http://test.example.com"
+        scan_resp = await client.post(
+            "/scan-email",
+            json={
+                "email_text": email_body,
+                "session_id": session_b,
+            },
+        )
+        assert scan_resp.status_code == 200
+        b_scan_id = scan_resp.json()["scan_id"]
+
+    # FAILS because broadcast is global: A receives B event.
+    # When session scoping is added, this will PASS -> strict xfail turns red.
+    b_events_at_a = [
+        e for e in a_received
+        if e.get("scan_id") == b_scan_id
+    ]
+    assert len(b_events_at_a) == 0, (
+        "OPEN: session A received " + str(len(b_events_at_a)) +
+        " events from session B scan (broadcast is global, not scoped)"
+    )

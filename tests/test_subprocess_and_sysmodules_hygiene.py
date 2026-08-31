@@ -321,3 +321,33 @@ def test_main_module_is_unchanged_by_earlier_tests():
         "sys.modules['main'] was replaced during the session and not restored: "
         f"got {current!r}, expected the conftest-imported {_ORIGINAL_MAIN!r}"
     )
+
+
+
+def test_no_websocket_send_outside_connection_manager():
+    """Class 4: no websocket.send_json calls in backend files other than main.py (WS endpoint).
+
+    Direct websocket sends bypass the ConnectionManager (connection tracking,
+    dead-client pruning, pending queue). Any send_json outside the manager
+    is a leak path that bypasses the broadcast infrastructure.
+    """
+    backend_dir = REPO_ROOT / "backend"
+    offenders: list[str] = []
+    for py in sorted(backend_dir.glob("**/*.py")):
+        if "__pycache__" in str(py) or "connection_manager" in py.name or py.name == "main.py":
+            continue
+        src_text = py.read_text(encoding="utf-8")
+        tree = ast.parse(src_text, filename=str(py))
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "send_json"):
+                # Check if this is a websocket.send_json call
+                if isinstance(node.func.value, ast.Name):
+                    name = node.func.value.id
+                    if name in ("websocket", "ws", "socket"):
+                        offenders.append(f"{py.name}:{node.lineno}: {name}.send_json() outside ConnectionManager")
+    assert not offenders, (
+        "WebSocket send_json calls found outside ConnectionManager"
+        + chr(10).join(offenders)
+    )

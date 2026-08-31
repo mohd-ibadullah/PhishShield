@@ -11,11 +11,12 @@
 ### Test Suite
 
 ```
-382 collected, 381 passed, 1 xfailed
+384 collected, 382 passed, 2 xfailed
 ```
 
-- N1 = 382 collected across 42 pytest files (collected via `python -m pytest --co -q`)
+- N1 = 384 collected across 42 pytest files (collected via `python -m pytest --co -q`)
 - 1 xfailed (strict): `test_short_email_digests_not_in_candidate_set` -- short-email HMAC digests recoverable with known key. If this ever PASSES, adversarial assumption broke.
+- 1 xfailed (strict): `test_ws_broadcast_session_isolation` -- OPEN: WS broadcasts are global (cross-session metadata disclosure). All connected clients receive all scan events. Exploitability: any anon WS connect reads live feed. Severity: metadata-only (no raw email content, b3.5 redaction works). Fix: room-per-session in ConnectionManager (small change, product decision needed -- may be intentional as Live Feed feature).
 - 10 new tests: anti-vacuity (10), self-proving isolation (1), data-minimization (7), parity (8), concurrency (1), meta-test (3)
 
 **Ignored-file table:**
@@ -196,7 +197,7 @@ No security-relevant changes remain uncommitted.
 - PORT=0 fixed: `PORT=0 pnpm build` passes, `pnpm typecheck` passes
 - Duplicates: 1713 dup scan_ids (12422 rows), all pre-lock, mechanism UNCONFIRMED
 - Skipped test: documented unique coverage (writes to real file)
-- Full suite: `python -m pytest tests/ -q` → 382 collected, 381 passed, 1 xfailed
+- Full suite: `python -m pytest tests/ -q` → 384 collected, 382 passed, 2 xfailed
 
 **UNCONFIRMED** (each with what would confirm it):
 - Duplicate mechanism: would need old server logs or a repro with the pre-lock code

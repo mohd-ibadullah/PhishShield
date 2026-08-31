@@ -1,4 +1,6 @@
 # SUPERSEDED by tests/test_scan_broadcast.py -- kept for manual/live-server use
+# To run: cd backend && uvicorn main:app --host 127.0.0.1 --port 8000 &
+# Then: python tools/test_scan_simple.py
 #!/usr/bin/env python3
 """Simple test to verify WebSocket event flow."""
 import asyncio
