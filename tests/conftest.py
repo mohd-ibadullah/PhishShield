@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import os
 import sys
+import tempfile
 from collections import OrderedDict
 from pathlib import Path
 
@@ -10,10 +11,16 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-# ── §1.1: Store-isolation session fixture ──────────────────────
-# Redirect every persisted store to a per-run tmp dir so the test suite
-# never writes to backend/ or data/.  Patched at module-level constants;
-# call sites are not touched.
+# ── §1.1: Store-isolation via PHISHSHIELD_STORE_DIR ─────────────
+# ONE knob, used by both this process and every spawned child: main.py
+# resolves ALL persisted-store paths from PHISHSHIELD_STORE_DIR at import
+# time, so isolation is driven by config the child inherits — not by an
+# in-process fixture patch (which a sys.modules eviction would defeat).
+#
+# This MUST run before importlib.import_module("main") below.
+_STORE_TMP_DIR = Path(tempfile.mkdtemp(prefix="phishshield-stores-"))
+os.environ["PHISHSHIELD_STORE_DIR"] = str(_STORE_TMP_DIR)
+
 STORE_PATH_ATTRS = (
     "SCAN_LOG_PATH",
     "SCANS_DB_PATH",
@@ -49,20 +56,84 @@ if str(BACKEND_DIR) not in sys.path:
 backend_main = importlib.import_module("main")
 app = backend_main.app
 
+# Runtime self-check: the env knob really redirected every store path, and
+# none of them points into the repo working tree.
+for _attr in STORE_PATH_ATTRS:
+    _p = getattr(backend_main, _attr)
+    assert str(_p).startswith(str(_STORE_TMP_DIR)), (
+        f"store isolation broken: {_attr}={_p} is not under {_STORE_TMP_DIR}"
+    )
+
+# Session guard: any test that evicts/re-imports app modules must restore the
+# original objects (see sys_modules_guard below); this finalizer is the
+# session-level safety net that makes the eviction leak structurally visible.
+_ORIGINAL_MAIN = backend_main
+
+# Registry used by register_sys_modules_restore() / sys_modules_guard.
+_SYS_MODULES_RESTORES: list[tuple[str, object | None]] = []
+
 
 @pytest.fixture(scope="session", autouse=True)
-def _isolate_stores_to_tmp(tmp_path_factory) -> None:
-    """§1.1: Redirect every persisted store to a per-run tmp dir.
+def _restore_sys_modules_at_session_end():
+    """Session-level restore of sys.modules entries registered via
+    register_sys_modules_restore() by tests that mutate them."""
+    yield
+    while _SYS_MODULES_RESTORES:
+        _name, _mod = _SYS_MODULES_RESTORES.pop()
+        if _mod is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _mod
 
-    Patches the module-level constants in backend.main so that all writes
-    (scan_logs.jsonl, scans.db, feedback.csv, etc.) go to an ephemeral
-    directory.  Call sites are NOT touched.
+
+def register_sys_modules_restore(name: str) -> None:
+    """Register the CURRENT sys.modules[name] (or its absence) for restore.
+
+    Any test that mutates sys.modules for an app module MUST call this BEFORE
+    the mutation (directly, or via the sys_modules_guard fixture).  The
+    hygiene meta-test (tests/test_subprocess_and_sysmodules_hygiene.py)
+    enforces this structurally.
     """
-    tmp_dir = tmp_path_factory.mktemp("stores")
+    _SYS_MODULES_RESTORES.append((name, sys.modules.get(name)))
+
+
+@pytest.fixture
+def sys_modules_guard():
+    """Function-scoped guard for tests that mutate sys.modules.
+
+    Usage: guard("main") immediately before the mutation.  The original
+    object is restored at test teardown AND registered for session-end
+    restore as a second net.
+    """
+    saved: dict[str, object | None] = {}
+
+    def _register(name: str) -> None:
+        if name not in saved:
+            saved[name] = sys.modules.get(name)
+        register_sys_modules_restore(name)
+
+    yield _register
+
+    for _name, _mod in saved.items():
+        if _mod is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _mod
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _isolate_stores_to_tmp() -> None:
+    """§1.1: Verify every persisted store resolves to the throwaway tmp dir.
+
+    Since PHISHSHIELD_STORE_DIR is set before main.py is imported (above),
+    the paths are correct by construction; this fixture asserts it so a
+    regression fails loudly instead of silently writing to the repo.
+    """
     for attr in STORE_PATH_ATTRS:
-        original = getattr(backend_main, attr, None)
-        if original is not None:
-            setattr(backend_main, attr, tmp_dir / Path(original).name)
+        p = getattr(backend_main, attr, None)
+        assert p is not None and str(p).startswith(str(_STORE_TMP_DIR)), (
+            f"{attr}={p} not redirected to {_STORE_TMP_DIR}"
+        )
     yield
 
 

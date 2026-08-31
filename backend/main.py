@@ -91,18 +91,31 @@ except Exception:  # pragma: no cover - optional runtime dependency for fallback
     AutoTokenizer = None
 
 BASE_DIR = Path(__file__).resolve().parent
+
+# Single source of truth for every persisted-store path.  When
+# PHISHSHIELD_STORE_DIR is set (tests set it to a throwaway tmp dir), ALL
+# stores resolve inside that directory; the env var is inherited by
+# subprocesses, so child pytest runs are isolated by config, not by an
+# in-process fixture patch that a module re-import would defeat.
+_ENV_STORE_DIR = os.environ.get("PHISHSHIELD_STORE_DIR") or ""
+
+def _store_path(name: str, default: Path) -> Path:
+    if _ENV_STORE_DIR:
+        return Path(_ENV_STORE_DIR) / name
+    return default
+
 DATASET_PATH = BASE_DIR.parent / "data" / "Phishing_Email.csv"
 MODEL_PATH = BASE_DIR / "model.pkl"
 VECTORIZER_PATH = BASE_DIR / "vectorizer.pkl"
 METADATA_PATH = BASE_DIR.parent / "data" / "training_meta.json"
 RETRAINING_METADATA_PATH = BASE_DIR.parent / "data" / "retraining_metadata.json"
-FEEDBACK_CSV_PATH = BASE_DIR / "feedback.csv"
-FEEDBACK_STATE_PATH = BASE_DIR.parent / "data" / "feedback_state.json"
-FEEDBACK_MEMORY_PATH = BASE_DIR.parent / "data" / "feedback_memory.json"
-SCAN_LOG_PATH = BASE_DIR / "scan_logs.jsonl"
-SENDER_PROFILE_PATH = BASE_DIR / "sender_profiles.json"
+FEEDBACK_CSV_PATH = _store_path("feedback.csv", BASE_DIR / "feedback.csv")
+FEEDBACK_STATE_PATH = _store_path("feedback_state.json", BASE_DIR.parent / "data" / "feedback_state.json")
+FEEDBACK_MEMORY_PATH = _store_path("feedback_memory.json", BASE_DIR.parent / "data" / "feedback_memory.json")
+SCAN_LOG_PATH = _store_path("scan_logs.jsonl", BASE_DIR / "scan_logs.jsonl")
+SENDER_PROFILE_PATH = _store_path("sender_profiles.json", BASE_DIR / "sender_profiles.json")
 THREAT_INTEL_PATH = BASE_DIR.parent / "data" / "threat_intel_feed.json"
-SCANS_DB_PATH = BASE_DIR / "scans.db"
+SCANS_DB_PATH = _store_path("scans.db", BASE_DIR / "scans.db")
 FEEDBACK_COLUMNS = ["email_text", "user_label", "model_prediction", "timestamp", "scan_id"]
 
 from data_constants import (
