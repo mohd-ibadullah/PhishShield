@@ -210,7 +210,11 @@ def test_detector_actually_catches_a_write(tmp_path):
 
 # --- Guard scope: content-only (mtime-only NOT caught) ---
 def test_mtime_only_change_not_caught(tmp_path):
-    """Prove the guard is content-only: mtime-only changes are not flagged."""
+    """Prove the guard is content-only: mtime-only changes are not flagged.
+
+    If this test fails because the guard NOW catches mtime-only changes,
+    the guard got stronger -- DELETE this test, don't weaken the guard.
+    """
     synthetic = tmp_path / "scope_test.jsonl"
     synthetic.write_bytes(b"original content\n")
     snap_before = _snapshot(synthetic)

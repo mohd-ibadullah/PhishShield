@@ -61,11 +61,11 @@ jobs:
         run: git diff --exit-code -- data/training_meta.json
 
       - name: Python syntax check
-        run: python -m py_compile main.py explain.py train_model.py train_indicbert.py
+        run: python -m py_compile main.py explain.py train_model.py train_indicbert.py data_constants.py
         working-directory: backend
 
       - name: Compile-check tests
-        run: python -c 'import py_compile, glob; [py_compile.compile(f, doraise=True) for f in glob.glob("tests/test_*.py")]; print("All tests/*.py compile-clean")'
+        run: python -c 'import py_compile, glob; [py_compile.compile(f, doraise=True) for f in glob.glob("tests/*.py")]; print("All tests/*.py compile-clean")'
         working-directory: .
 
       - name: Run pytest

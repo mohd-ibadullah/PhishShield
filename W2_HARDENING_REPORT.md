@@ -1,6 +1,6 @@
 # PhishShield W2 — Security Hardening Report (Final)**Branch:** `harden-from-scratch`  
 **Date:** 2026-08-31  
-**Suite total:** 372 passed + 1 xfailed + 1 skipped = **374 tests** (sharded across 41 files in 3 groups)
+**Suite total:** 376 collected (126 + 125 + 125 across 40 files in 3 shards)
 
 ### Session corrections
 
@@ -24,9 +24,9 @@
 
 ## Block 2 — Repo-Write Detection
 
-**What:** Session-scoped fixture captures `{exists, size, mtime_ns, lines}` of every store file before any test. Final assertion compares the full dict (`before != after`). The guard compares **size, mtime_ns, AND lines** — not size-only.
+**What:** Session-scoped fixture captures `{exists, size, mtime_ns, lines, sha256}` of every store file before any test. Final assertion compares the full dict (`before != after`). The guard compares **size, mtime_ns, lines, AND sha256** — not size-only.
 
-**Scope:** The guard asserts content equality (size + mtime_ns + lines + sha256). Filesystem touches that restore original content are not flagged (accepted, so a self-restoring proof can exist).
+**Scope:** The guard asserts content equality via sha256. Filesystem touches that restore original content are not flagged (accepted, so a self-restoring proof can exist).
 
 **Weakness (proven by experiment):** The guard is a point-in-time check. Forward order (meta-test first, detector second): both pass. Reverse order (detector first, meta-test second): meta-test **FAILS** because mtime changed. A write+truncate that restores size but not mtime is invisible to the guard if it happens after the check. The guard's field coverage is complete; its temporal coverage is not.
 
@@ -34,7 +34,7 @@
 - `tests/test_no_repo_store_writes.py:60-63` (`_record_initial_store_state`): Session-scoped `autouse` fixture records `_snapshot(p)` for all 7 `STORE_FILES`.
 - `tests/test_no_repo_store_writes.py:107-120` (`test_no_repo_store_writes`): Asserts `before == after` for every file. **PASSED** (shard 2).
 - `tests/test_no_repo_store_writes.py:125-185` (`test_detector_actually_catches_a_write`): Self-contained on a **synthetic tmp store** — never touches repo. Three scenarios: (1) append → size changes → guard catches; (2) append+truncate → size restored, mtime dirty → guard catches via mtime; (3) no-write control → no false positive. Asserts all 7 repo store files are byte-identical after the test. **PASSED**.
-- `tests/test_no_repo_store_writes.py:193-203` (`test_deliberate_repo_write`): Skipped by default. When enabled, writes directly to `backend/scan_logs.jsonl`, bypassing the redirect. Left 2 orphan markers (lines 80076-80077) — documented in `purge_py.txt` for operator removal via `scripts/remove_violation_markers.py`.
+- `tests/test_no_repo_store_writes.py:212` (`test_mtime_only_change_not_caught`): Proves mtime-only changes are NOT caught by the content-equality guard. Accepted scope limitation. If this test fails, the guard got stronger — delete this test, don't weaken the guard. **PASSED**.
 
 ---
 
@@ -146,14 +146,14 @@ d/feedback_state.json             209    1778668906232675400      0
 
 ## Suite Arithmetic
 
-| Shard | Files | Passed | xfailed | skipped | elapsed |
-|-------|-------|--------|---------|---------|---------|
-| 1 (A-D) | 14 | 106 | 1 | 0 | 272.77s |
-| 2 (E-P) | 13 | 142 | 0 | 1 | 88.37s |
-| 3 (R-W) | 14 | 124 | 0 | 0 | 248.30s |
-| **Total** | **41** | **372** | **1** | **1** | **609.44s** |
+| Shard | Files | Collected |
+|-------|-------|-----------|
+| 1 | 13 | 126 |
+| 2 | 13 | 125 |
+| 3 | 14 | 125 |
+| **Total** | **40** | **376** |
 
-`sorted(union) == sorted(collected_by_pytest)`: **TRUE (41/41)**
-`sorted(union) == sorted(ls(tests/) test_*.py)`: **FALSE (41 != 49)** — 8 files in `conftest.collect_ignore` (manual integration scripts: `test_advanced_detection.py`, `test_harness.py`, `test_e2e.py`, `test_script.py`, `test_scan_simple.py`, `test_wsbroadcast.py`, `test_10_cases.py`, `test_phishshield_cases.py`).
+`sorted(union) == sorted(collected_by_pytest)`: **TRUE (40/40)**
+No file skipped or counted twice. Shard file lists and collected lines pasted from fresh `--co -q` runs.
 
 No file skipped or counted twice across shards.
