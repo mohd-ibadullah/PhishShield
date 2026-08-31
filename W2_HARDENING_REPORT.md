@@ -1,8 +1,8 @@
 # PhishShield W2 — Security Hardening Report (Final)**Branch:** `harden-from-scratch`  
 **Date:** 2026-08-31  
-**Suite total:** 381 collected across 42 files in 3 shards
+**Suite total:** 382 collected across 42 files in 3 shards
 
-**Collection fix:** 9 integration scripts moved from tests/ to tools/. They had no def test_ functions and caused INTERNALERROR/FileNotFoundError during collection. After removal, pytest tests/ collects 381 from 42 files with zero errors.
+**Collection fix:** 9 integration scripts moved from tests/ to tools/. They had no def test_ functions and caused INTERNALERROR/FileNotFoundError during collection. After removal, pytest tests/ collects 382 from 42 files with zero errors.
 
 ### Session corrections
 

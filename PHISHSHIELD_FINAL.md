@@ -11,10 +11,10 @@
 ### Test Suite
 
 ```
-381 collected, 380 passed, 1 xfailed
+382 collected, 381 passed, 1 xfailed
 ```
 
-- N1 = 381 collected across 42 pytest files (collected via `python -m pytest --co -q`)
+- N1 = 382 collected across 42 pytest files (collected via `python -m pytest --co -q`)
 - 1 xfailed (strict): `test_short_email_digests_not_in_candidate_set` -- short-email HMAC digests recoverable with known key. If this ever PASSES, adversarial assumption broke.
 - 10 new tests: anti-vacuity (10), self-proving isolation (1), data-minimization (7), parity (8), concurrency (1), meta-test (3)
 
@@ -196,7 +196,7 @@ No security-relevant changes remain uncommitted.
 - PORT=0 fixed: `PORT=0 pnpm build` passes, `pnpm typecheck` passes
 - Duplicates: 1713 dup scan_ids (12422 rows), all pre-lock, mechanism UNCONFIRMED
 - Skipped test: documented unique coverage (writes to real file)
-- Full suite: `python -m pytest tests/ -q` → 381 collected, 380 passed, 1 xfailed
+- Full suite: `python -m pytest tests/ -q` → 382 collected, 381 passed, 1 xfailed
 
 **UNCONFIRMED** (each with what would confirm it):
 - Duplicate mechanism: would need old server logs or a repro with the pre-lock code
