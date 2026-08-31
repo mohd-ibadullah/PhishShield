@@ -119,11 +119,17 @@ def test_no_repo_store_writes():
 
 
 # ── Deliberate-violation proof (skipped by default) ─────────────
-# Only for one-shot manual proof: _TEST_PROVE_META_CATCHES_VIOLATION=1
+# Unique coverage: writes to the REAL file (not the redirected path).
+# The self-proving test proves the redirect works; this proves the
+# meta-test catches violations on the actual store file.
+# Run with: _TEST_PROVE_META_CATCHES_VIOLATION=1
 _PROVE = os.getenv("_TEST_PROVE_META_CATCHES_VIOLATION", "") == "1"
 
 
-@pytest.mark.skipif(not _PROVE, reason="set _TEST_PROVE_META_CATCHES_VIOLATION=1 to run")
+@pytest.mark.skipif(
+    not _PROVE,
+    reason="One-shot proof: writes to real file. Unique coverage vs self-proving test."
+)
 def test_deliberate_repo_write():
     """Write to the real scan_logs.jsonl to prove the meta-test catches it."""
     violation_marker = f"VIOLATION-PROOF-{os.getpid()}"
