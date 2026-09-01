@@ -1,8 +1,8 @@
 # PhishShield W2 — Security Hardening Report (Final)**Branch:** `harden-from-scratch`  
 **Date:** 2026-08-31  
-**Suite total:** 394 collected across 43 files (verified by `pytest --co -q`)
+**Suite total:** 404 collected (measured via --collect-only); 403 passed + 1 xfailed (sum of the two shard runs below); elapsed 134.86s + 177.30s = 312.16s (shard sum, not a single-run wall time)
 
-**Collection fix:** 9 integration scripts moved from tests/ to tools/. They had no def test_ functions and caused INTERNALERROR/FileNotFoundError during collection. After removal, pytest tests/ collects 394 from 43 files with zero errors.
+**Collection fix:** 9 integration scripts moved from tests/ to tools/. 7 have no `def test_` functions; 2 (`tools/test_scan_simple.py:10`, `tools/test_wsbroadcast.py:12`) contain `async def test_` functions that require a live server on :8000 — they are not collected (`testpaths = tests`) and are documented in `tools/README.md:10-11` as converted to `tests/test_scan_broadcast.py`. Collection errors were observed in the pre-move run; causality was not isolated. After the move, `pytest tests/` collects 404 across 43 files with zero errors.
 
 ### Session corrections
 
@@ -172,6 +172,6 @@ d/feedback_state.json             209    1778668906232675400      0
 | **Total** | **43** | **386** |
 
 `sorted(union) == sorted(collected_by_pytest)`: **TRUE (40/40)**
-Suite verified: `pytest --co -q` → 394 collected across 43 files.
+Suite verified: 404 collected (measured via --collect-only); 403 passed + 1 xfailed (sum of the two shard runs below); elapsed 134.86s + 177.30s = 312.16s (shard sum, not a single-run wall time).
 
 No file skipped or counted twice across shards.

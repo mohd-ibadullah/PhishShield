@@ -22,36 +22,38 @@ _STORE_TMP_DIR = Path(tempfile.mkdtemp(prefix="phishshield-stores-"))
 os.environ["PHISHSHIELD_STORE_DIR"] = str(_STORE_TMP_DIR)
 
 # ── §1.1: The 7 guarded stores — SINGLE SOURCE OF TRUTH.
-# This list matches the STORE_FILES in tests/test_no_repo_store_writes.py
-# and is used by both the guard fixture and the manifest test.
-# Keeping here avoids fragile import-across-package mechanics.
-_STORE_FILES = [
-    # Backend-dir stores (watched by AST guard)
-    Path(__file__).resolve().parents[1] / "backend" / "scan_logs.jsonl",
-    Path(__file__).resolve().parents[1] / "backend" / "scans.db",
-    Path(__file__).resolve().parents[1] / "backend" / "feedback.csv",
-    Path(__file__).resolve().parents[1] / "backend" / "sender_profiles.json",
-    # Data-dir stores (watched by guard session-finalizer)
-    Path(__file__).resolve().parents[1] / "data" / "feedback.csv",
-    Path(__file__).resolve().parents[1] / "data" / "feedback_memory.json",
-    Path(__file__).resolve().parents[1] / "data" / "feedback_state.json",
-]
+# Import from tests/store_manifest.py (the single canonical list).
+# All guards, fixtures, and manifest tests share this source.
+from store_manifest import STORE_FILES, STORE_LABELS as _STORE_LABELS
 
-# Map of label -> Path for the fixture's per-test binding check
-_STORE_LABELS = [
-    ("scan_logs.jsonl", _STORE_FILES[0]),
-    ("scans.db", _STORE_FILES[1]),
-    ("feedback.csv", _STORE_FILES[2]),
-    ("sender_profiles.json", _STORE_FILES[3]),
-    ("data/feedback.csv", _STORE_FILES[4]),
-    ("feedback_memory.json", _STORE_FILES[5]),
-    ("feedback_state.json", _STORE_FILES[6]),
-]
-
-# ── §3: Set a dedicated HMAC key for tests — never falls back to INTERNAL_API_KEY
-# The scan endpoint requires this key for HMAC pseudonymization of email content.
-# test_hmac_key_required temporarily clears both env var and cache to verify refusal.
 os.environ.setdefault("PHISHSHIELD_PREVIEW_HMAC_KEY", "test-hmac-key-for-tests")
+
+# ── HMAC preflight: fail clearly instead of mass-cascading 134 failures ──
+def pytest_configure(config):
+    """Preflight check: PHISHSHIELD_PREVIEW_HMAC_KEY must be set before collection.
+
+    If the key is absent and no dotenv fills it, the backend refuses to start.
+    Without this hook, every test that touches the backend would fail with the
+    same RuntimeError — a 134-test cascade that obscures the real cause.
+    """
+    key = os.environ.get("PHISHSHIELD_PREVIEW_HMAC_KEY")
+    if not key:
+        try:
+            import backend.main as _bm  # noqa: F401
+            _key_val = getattr(_bm, "_get_preview_hmac_key", None)
+            if _key_val:
+                try:
+                    _key_val()
+                    return  # dotenv or env provided the key
+                except RuntimeError:
+                    pass  # will fall through to error
+        except Exception:
+            pass
+        config.error(
+            "PHISHSHIELD_PREVIEW_HMAC_KEY is not set. "
+            "Set it in the environment or .env file before running tests. "
+            "This prevents the 134-test RuntimeError cascade seen in L8."
+        )
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 BACKEND_DIR = ROOT_DIR / "backend"

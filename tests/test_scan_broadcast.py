@@ -195,7 +195,16 @@ async def test_pending_replay_is_room_scoped():
 
 @pytest.mark.asyncio
 async def test_pending_queue_is_bounded_across_rooms():
-    """Global caps: MAX_ROOMS and MAX_TOTAL_EVENTS are enforced."""
+    """Global caps: MAX_ROOMS and MAX_TOTAL_EVENTS are enforced.
+
+    Fills the queue past both caps to prove eviction binds, then asserts
+    total_queued == MAX_TOTAL_EVENTS. Also proves caps fail when enforcement
+    is removed (mutation test).
+
+    Note: cap=10000 is at or below the previously observed 20x903=18060
+    burst estimate. During such bursts, behavior is lossy (older events
+    evicted), not "headroom".
+    """
     from backend.ws.connection_manager import ConnectionManager
 
     cm = ConnectionManager()
@@ -210,26 +219,48 @@ async def test_pending_queue_is_bounded_across_rooms():
         async def send_json(self, msg): self.sent.append(msg)
         async def close(self, code=1000, reason=""): pass
 
-    # Flood with unknown keys to exceed MAX_ROOMS
-    for i in range(cm._MAX_ROOMS + 10):
+    # ── Positive proof: fill past both caps ──
+    # PENDING_MAX_PER_ROOM=20; fill 500 rooms x 20 events = 10000,
+    # then overflow to trigger eviction.
+    for i in range(cm._MAX_ROOMS + 50):
         ws = FakeWS()
-        await cm.connect(ws, session_id=f"overflow-room-{i}")
+        await cm.connect(ws, session_id=f"fill-room-{i}")
         await cm.disconnect(ws)
-        await cm.broadcast({"type": "flood", "i": i}, session_key=f"overflow-room-{i}")
+        for j in range(25):  # 25 > PENDING_MAX_PER_ROOM; truncated to 20
+            await cm.broadcast({"type": "event", "i": i, "j": j},
+                               session_key=f"fill-room-{i}")
+
+    total = sum(len(q) for q in cm._pending.values())
+    assert total == cm._MAX_TOTAL_EVENTS, (
+        f"Cap did not bind: total_queued={total} != MAX_TOTAL_EVENTS={cm._MAX_TOTAL_EVENTS}"
+    )
 
     # Room count must be at most MAX_ROOMS
     assert len(cm._pending) <= cm._MAX_ROOMS, (
         f"Room cap violated: {len(cm._pending)} rooms > {cm._MAX_ROOMS}"
     )
 
-    # Total events must be at most MAX_TOTAL_EVENTS
-    total = sum(len(q) for q in cm._pending.values())
-    assert total <= cm._MAX_TOTAL_EVENTS, (
-        f"Total event cap violated: {total} > {cm._MAX_TOTAL_EVENTS}"
+    # ── Mutation test: prove caps fail when enforcement is removed ──
+    original_evict = cm._evict_global_pending_locked
+    cm._evict_global_pending_locked = lambda: None  # disable eviction
+
+    cm._pending.clear()
+    for i in range(cm._MAX_ROOMS + 50):
+        ws = FakeWS()
+        await cm.connect(ws, session_id=f"mutant-room-{i}")
+        await cm.disconnect(ws)
+        for j in range(25):
+            await cm.broadcast({"type": "event", "i": i, "j": j},
+                               session_key=f"mutant-room-{i}")
+
+    total_mutant = sum(len(q) for q in cm._pending.values())
+    assert total_mutant > cm._MAX_TOTAL_EVENTS, (
+        f"Mutation test failed: without enforcement, total={total_mutant} "
+        f"should exceed MAX_TOTAL_EVENTS={cm._MAX_TOTAL_EVENTS}"
     )
 
+    cm._evict_global_pending_locked = original_evict
 
-@pytest.mark.asyncio
 async def test_broadcast_without_session_key_sends_nothing():
     """broadcast(None), broadcast("") and broadcast(unknown) must not deliver."""
     from backend.ws.connection_manager import ConnectionManager

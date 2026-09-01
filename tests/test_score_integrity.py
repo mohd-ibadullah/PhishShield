@@ -87,3 +87,35 @@ def test_math_check_matches_build_signal_trace() -> None:
     chk = score_engine.math_check(trace, final_score=73)
     assert chk["matches"]
 
+
+
+
+# --- Cross-case contamination test (Item B) ---
+
+_SENTINEL_KEY = "_CONTAMINATION_SENTINEL_PROBE_"
+
+
+def test_case_1_sets_sentinel():
+    """Case 1: inject a sentinel into app.state.scan_cache.
+
+    The autouse _reset_scan_cache_for_tests fixture must clear this
+    before the next test runs. If case 2 sees this sentinel, isolation
+    is broken.
+    """
+    from collections import OrderedDict
+    main.app.state.scan_cache = OrderedDict()
+    main.app.state.scan_cache[_SENTINEL_KEY] = "CONTAMINATED"
+    assert main.app.state.scan_cache[_SENTINEL_KEY] == "CONTAMINATED"
+
+
+def test_case_2_must_not_see_sentinel():
+    """Case 2: assert the sentinel from case 1 is gone.
+
+    The autouse _reset_scan_cache_for_tests fixture replaces
+    scan_cache with a fresh OrderedDict() between every test.
+    If this assertion fails, per-test isolation is broken.
+    """
+    assert _SENTINEL_KEY not in main.app.state.scan_cache, (
+        f"CONTAMINATION DETECTED: '{_SENTINEL_KEY}' set by case 1 "
+        f"survived into case 2 — autouse fixture did not clear it"
+    )

@@ -9,10 +9,10 @@
 ### Test Suite
 
 ```
-394 collected, 393 passed, 2 xfailed (1 email digest xfail + 0 WS xfail)
+    404 collected (measured via --collect-only); 403 passed + 1 xfailed (sum of the two shard runs below); elapsed 134.86s + 177.30s = 312.16s (shard sum, not a single-run wall time)
 ```
 
-- N1 = 394 collected across 43 pytest files (collected via `python -m pytest --co -q`)
+- N1 = 404 collected across 43 pytest files (measured via --collect-only); 403 passed + 1 xfailed = 404 (sum of two shard runs: 323 + 80 = 403 passed, 1 + 0 = 1 xfailed)
 - 1 xfailed (strict): `test_short_email_digests_not_in_candidate_set` -- short-email HMAC digests recoverable with known key. If this ever PASSES, adversarial assumption broke.
 - WS session scoping: `test_ws_broadcast_session_isolation` PASSED locally. **deployed: no**.
 - WS content redaction: `test_ws_broadcast_content_redaction` PASSED (permanent guard).
@@ -200,7 +200,7 @@ No security-relevant changes remain uncommitted.
 | WS collision rejection | `connect()` rejects duplicate key with 1008 | no |
 | Timestamp stability | `pytest tests/test_timestamp_stability.py` → 2 passed | no |
 | Store isolation | `test_isolation_redirect_works` PASSED | no |
-| Full suite | `pytest tests/ --co -q` → 394 collected | n/a |
+| Full suite | 404 collected (measured via --collect-only); 403 passed + 1 xfailed (two shards: 323+1xf in 134.86s, 80 in 177.30s = 312.16s shard sum) | see FINAL_REPORT.md ITEM D |
 
 **UNCONFIRMED** (each with what would confirm it):
 - Duplicate mechanism: would need old server logs or a repro with the pre-lock code
@@ -217,3 +217,41 @@ No security-relevant changes remain uncommitted.
 
 **Purge result (2026-08-31):** purged 4 marker lines from `scan_logs.jsonl` (80,108 → 80,104 lines); the pre-W2 rows and the 1,713 duplicate-scan_id lines are still on disk; the duplicate-append mechanism is still unidentified.
 
+
+
+## (6) Fixes Applied 2026-09-01
+
+### Security: Space Version Auth Hardening
+- /recent-scans: added require_session_key + server-side session validation
+- /api/history: added require_session_key + _session_matches_record filter
+- /explain POST: added require_session_key + _ensure_explanation_owner
+- /feedback: added require_session_key
+
+### Data Honesty
+- Health label: SecureBERT/MuRIL-GPU-97.4% -> TF-IDF Logistic Regression
+- model_type: TF-IDF Active Learning -> TF-IDF Logistic Regression
+- Deleted empty FINAL_ELITE_DATASET.json
+- Added MIT LICENSE file
+
+### Cleanup
+- 12 scratch scripts moved backend/scripts/ -> tools/
+- Debug reports moved backend/reports/ -> tools/
+- Store manifest deduplicated (conftest imports from store_manifest.py)
+- Cross-case contamination test added
+- Queue cap test: total_queued == MAX_TOTAL_EVENTS + mutation proof
+- pytest_configure HMAC preflight check added
+
+### Test Evidence
+- Critical tests: 16/16 passed (10.26s)
+- Security tests: 26/26 passed (12.06s)
+- Full suite: 404 collected (measured via --collect-only); 403 passed + 1 xfailed (two shards: 323+1xf in 134.86s, 80 in 177.30s = 312.16s shard sum)
+
+### Still Open
+- Space WebSocket auth (async refactor needed)
+- dev-sandbox-key hardcoded in frontend JS
+- email_preview[:100] still stored
+- training_meta.json hand-edited
+- README false numbers (18684, 97.4%)
+- PII in dataset files
+- collect_ignore 9 files excluded
+- ML model integration (model.pkl needed)
