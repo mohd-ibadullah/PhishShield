@@ -287,7 +287,7 @@ async def test_pending_memory_bound():
         async def send_json(self, msg): self.sent.append(msg)
         async def close(self, code=1000, reason=""): pass
 
-    # Fill rooms to exceed MAX_ROOMS
+    # Fill to exceed MAX_ROOMS (each room gets 1 event)
     for i in range(cm._MAX_ROOMS + 50):
         ws = FakeWS()
         await cm.connect(ws, session_id=f"mem-room-{i}")
@@ -305,12 +305,17 @@ async def test_pending_memory_bound():
         f"Event cap: {total} > {cm._MAX_TOTAL_EVENTS}"
     )
 
-    # Assert approximate serialized size < 1 MB
+    # Assert serialized size is bounded: each event ~30-60 B JSON,
+    # at MAX_TOTAL_EVENTS the bound is MAX_TOTAL_EVENTS * 100 B (generous).
     import json
     serialized = json.dumps([e for q in cm._pending.values() for e, _ in q])
-    size_mb = len(serialized.encode()) / (1024 * 1024)
-    assert size_mb < 1.0, f"Serialized queue size: {size_mb:.2f} MB > 1 MB"
+    size_bytes = len(serialized.encode())
+    # Practical bound: 10000 events * 100 B = ~1 MB; real payload is ~30 B each.
+    # If this fails, the cap or payload grew beyond spec.
+    max_expected = cm._MAX_TOTAL_EVENTS * 100  # 100 B per event (generous)
+    assert size_bytes < max_expected, (
+        f"Serialized queue size {size_bytes} bytes exceeds {max_expected} bound"
+    )
 
     # Assert eviction removes oldest room, not newest
-    # The first rooms should have been evicted
     assert "mem-room-0" not in cm._pending, "Oldest room not evicted"
