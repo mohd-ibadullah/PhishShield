@@ -21,19 +21,37 @@ from httpx import ASGITransport, AsyncClient
 _STORE_TMP_DIR = Path(tempfile.mkdtemp(prefix="phishshield-stores-"))
 os.environ["PHISHSHIELD_STORE_DIR"] = str(_STORE_TMP_DIR)
 
-STORE_PATH_ATTRS = (
-    "SCAN_LOG_PATH",
-    "SCANS_DB_PATH",
-    "FEEDBACK_CSV_PATH",
-    "FEEDBACK_STATE_PATH",
-    "FEEDBACK_MEMORY_PATH",
-    "SENDER_PROFILE_PATH",
-)
+# ── §1.1: The 7 guarded stores — SINGLE SOURCE OF TRUTH.
+# This list matches the STORE_FILES in tests/test_no_repo_store_writes.py
+# and is used by both the guard fixture and the manifest test.
+# Keeping here avoids fragile import-across-package mechanics.
+_STORE_FILES = [
+    # Backend-dir stores (watched by AST guard)
+    Path(__file__).resolve().parents[1] / "backend" / "scan_logs.jsonl",
+    Path(__file__).resolve().parents[1] / "backend" / "scans.db",
+    Path(__file__).resolve().parents[1] / "backend" / "feedback.csv",
+    Path(__file__).resolve().parents[1] / "backend" / "sender_profiles.json",
+    # Data-dir stores (watched by guard session-finalizer)
+    Path(__file__).resolve().parents[1] / "data" / "feedback.csv",
+    Path(__file__).resolve().parents[1] / "data" / "feedback_memory.json",
+    Path(__file__).resolve().parents[1] / "data" / "feedback_state.json",
+]
 
+# Map of label -> Path for the fixture's per-test binding check
+_STORE_LABELS = [
+    ("scan_logs.jsonl", _STORE_FILES[0]),
+    ("scans.db", _STORE_FILES[1]),
+    ("feedback.csv", _STORE_FILES[2]),
+    ("sender_profiles.json", _STORE_FILES[3]),
+    ("data/feedback.csv", _STORE_FILES[4]),
+    ("feedback_memory.json", _STORE_FILES[5]),
+    ("feedback_state.json", _STORE_FILES[6]),
+]
 
-# §3: Set a dedicated HMAC key for tests — never falls back to INTERNAL_API_KEY
-os.environ.setdefault("PHISHSHIELD_PREVIEW_HMAC_KEY", "test-hmac-key-for-ci-only")
-
+# ── §3: Set a dedicated HMAC key for tests — never falls back to INTERNAL_API_KEY
+# NOTE: Do NOT set a default here. The ambient tests explicitly set/unset the key
+# to verify the "key required" behavior. If a test needs a key, it sets it.
+# This allows test_hmac_key_required to verify the app refuses to start without it.
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 BACKEND_DIR = ROOT_DIR / "backend"
@@ -46,8 +64,16 @@ if str(BACKEND_DIR) not in sys.path:
 backend_main = importlib.import_module("main")
 app = backend_main.app
 
-# Runtime self-check: the env knob really redirected every store path, and
-# none of them points into the repo working tree.
+# ── §1.1: Verify every redirected store path is under tmp dir
+STORE_PATH_ATTRS = (
+    "SCAN_LOG_PATH",
+    "SCANS_DB_PATH",
+    "FEEDBACK_CSV_PATH",
+    "FEEDBACK_STATE_PATH",
+    "FEEDBACK_MEMORY_PATH",
+    "SENDER_PROFILE_PATH",
+)
+
 for _attr in STORE_PATH_ATTRS:
     _p = getattr(backend_main, _attr)
     assert str(_p).startswith(str(_STORE_TMP_DIR)), (
@@ -64,7 +90,7 @@ _SYS_MODULES_RESTORES: list[tuple[str, object | None]] = []
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _restore_sys_modules_at_session_end():
+def _restore_sys_modules_at_session_end() -> None:
     """Session-level restore of sys.modules entries registered via
     register_sys_modules_restore() by tests that mutate them."""
     yield
@@ -88,7 +114,7 @@ def register_sys_modules_restore(name: str) -> None:
 
 
 @pytest.fixture
-def sys_modules_guard():
+def sys_modules_guard() -> None:
     """Function-scoped guard for tests that mutate sys.modules.
 
     Usage: guard("main") immediately before the mutation.  The original
@@ -127,6 +153,66 @@ def _isolate_stores_to_tmp() -> None:
     yield
 
 
+@pytest.fixture(autouse=True, scope="function")
+def _per_test_store_bindings(request) -> None:
+    """§A.1: Per-test binding check — self-naming offender report.
+
+    After each test function, sha256 the 7 guarded stores. On first difference from
+    the session-baseline, record the test name.  This makes the offender self-naming
+    instead of leaving the session-end finalizer to report only "something changed".
+
+    Rule: on first difference → print STORE-BINDING OFFENDER: <nodeid> <store> <field>
+    and set baseline := current (so later tests report clean).
+    """
+    import hashlib
+    from pathlib import Path
+
+    ROOT = Path(__file__).resolve().parents[1]
+    BACKEND_DIR = ROOT / "backend"
+    DATA_DIR = ROOT / "data"
+
+    # Only run when PHISHSHIELD_STORE_DIR is set (i.e. in test context)
+    store_dir = os.environ.get("PHISHSHIELD_STORE_DIR")
+    if not store_dir:
+        yield
+        return
+
+    # Session baseline: compute hashes once per session (first call only)
+    if not hasattr(_per_test_store_bindings, "_session_hashes"):
+        _per_test_store_bindings._session_hashes = {}
+        for label, p in _STORE_LABELS:
+            if p.exists():
+                with open(p, "rb") as f:
+                    _per_test_store_bindings._session_hashes[label] = hashlib.sha256(f.read()).hexdigest()[:16]
+            else:
+                _per_test_store_bindings._session_hashes[label] = "-"
+
+    # Per-test: compute hashes and diff
+    cur_hashes = {}
+    for label, p in _STORE_LABELS:
+        if p.exists():
+            with open(p, "rb") as f:
+                cur_hashes[label] = hashlib.sha256(f.read()).hexdigest()[:16]
+        else:
+            cur_hashes[label] = "-"
+
+    # Report any diff — only on first diff, then re-baseline
+    diffs = {k: (v, _per_test_store_bindings._session_hashes.get(k, "-"))
+        for k, v in cur_hashes.items()
+        if v != _per_test_store_bindings._session_hashes.get(k, "-")}
+    if diffs:
+        # Collect test name for the report
+        node = getattr(request, "node", None)
+        test_id = getattr(node, "nodeid", "unknown") if node else "unknown"
+        # Print the offender
+        for store, (new_hash, old_hash) in diffs.items():
+            print(f"STORE-BINDING OFFENDER: {test_id} {store} mtime_ns")
+        # Re-baseline: update session hashes to current so later tests report clean
+        _per_test_store_bindings._session_hashes = cur_hashes
+
+    yield
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _load_model_artifacts_once() -> None:
     """Load TF-IDF artifacts before API tests (CI runs backend/train_model.py first)."""
@@ -156,7 +242,7 @@ def _reset_scan_cache_for_tests(tmp_path, monkeypatch) -> None:
 
 
 @pytest.fixture
-def sample_emails():
+def sample_emails() -> dict[str, str]:
     return {
         "safe_project": "Subject: Project Update\nTeam meeting scheduled tomorrow.",
         "safe_report": "Monthly report attached. No action required.",

@@ -24,8 +24,10 @@ class ConnectionManager:
         self._session_by_ws: dict[WebSocket, str] = {}
         self._lock = asyncio.Lock()
         self._pending: dict[str, list[tuple[dict[str, Any], datetime]]] = {}
-        self._PENDING_MAX = 20
+        self._PENDING_MAX_PER_ROOM = 20
         self._PENDING_TTL_SECONDS = 60
+        self._MAX_ROOMS = 500
+        self._MAX_TOTAL_EVENTS = 10000
 
     def _prune_pending_locked(self, room: str) -> list[dict[str, Any]]:
         now = datetime.now(timezone.utc)
@@ -38,7 +40,26 @@ class ConnectionManager:
                 fresh.append(event)
                 kept.append((event, created_at))
         self._pending[room] = kept
+        # Evict oldest rooms if over global cap
+        self._evict_global_pending_locked()
         return fresh
+
+    def _evict_global_pending_locked(self) -> None:
+        """Enforce MAX_TOTAL_EVENTS and MAX_ROOMS across all rooms."""
+        # Evict oldest rooms first if room count exceeds cap
+        while len(self._pending) > self._MAX_ROOMS:
+            oldest_room = next(iter(self._pending))
+            self._pending.pop(oldest_room, None)
+        # Evict oldest events if total exceeds cap
+        total = sum(len(q) for q in self._pending.values())
+        while total > self._MAX_TOTAL_EVENTS and self._pending:
+            oldest_room = next(iter(self._pending))
+            room_q = self._pending[oldest_room]
+            if room_q:
+                room_q.pop(0)
+                total -= 1
+            if not room_q:
+                self._pending.pop(oldest_room, None)
 
     def _is_open(self, ws: WebSocket) -> bool:
         return ws.client_state == WebSocketState.CONNECTED and ws.application_state == WebSocketState.CONNECTED
@@ -103,8 +124,8 @@ class ConnectionManager:
                 # Queue for later replay, scoped to this room.
                 room_pending = self._pending.setdefault(session_key, [])
                 room_pending.append((message, datetime.now(timezone.utc)))
-                if len(room_pending) > self._PENDING_MAX:
-                    self._pending[session_key] = room_pending[-self._PENDING_MAX:]
+                if len(room_pending) > self._PENDING_MAX_PER_ROOM:
+                    self._pending[session_key] = room_pending[-self._PENDING_MAX_PER_ROOM:]
                 logger.debug("[WS] No active connection for session %s; event queued", session_key)
                 return
             snapshot = [(session_key, ws)]

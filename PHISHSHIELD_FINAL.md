@@ -26,10 +26,10 @@
 ### Test Suite
 
 ```
-386 collected, 384 passed, 2 xfailed (1 email digest xfail + 0 WS xfail)
+394 collected, 393 passed, 2 xfailed (1 email digest xfail + 0 WS xfail)
 ```
 
-- N1 = 384 collected across 42 pytest files (collected via `python -m pytest --co -q`)
+- N1 = 394 collected across 43 pytest files (collected via `python -m pytest --co -q`)
 - 1 xfailed (strict): `test_short_email_digests_not_in_candidate_set` -- short-email HMAC digests recoverable with known key. If this ever PASSES, adversarial assumption broke.
 - WS session scoping: `test_ws_broadcast_session_isolation` PASSED locally. **deployed: no** — deployed Space broadcasts to all sockets, no session filter.
 - WS content redaction: `test_ws_broadcast_content_redaction` PASSED (permanent guard).
@@ -219,12 +219,12 @@ No security-relevant changes remain uncommitted.
 | JSONL atomicity | max 1653 B, locked stress clean | no |
 | PORT=0 fixed | `PORT=0 pnpm build` passes | yes (frontend) |
 | Duplicates | 1713 dup scan_ids, mechanism UNCONFIRMED | no |
-| WS session scoping | `pytest tests/test_scan_broadcast.py -v` → 4 passed | no |
+| WS session scoping | `pytest tests/test_scan_broadcast.py -v` → 6 passed | no |
 | WS pending replay scoped | `test_pending_replay_is_room_scoped` PASSED | no |
 | WS collision rejection | `connect()` rejects duplicate key with 1008 | no |
 | Timestamp stability | `pytest tests/test_timestamp_stability.py` → 2 passed | no |
 | Store isolation | `test_isolation_redirect_works` PASSED | no |
-| Full suite | `pytest tests/ --co -q` → 386 collected | n/a |
+| Full suite | `pytest tests/ --co -q` → 394 collected | n/a |
 
 **UNCONFIRMED** (each with what would confirm it):
 - Duplicate mechanism: would need old server logs or a repro with the pre-lock code

@@ -1561,7 +1561,7 @@ def get_recent_scans_from_db(session_id: str | None = None) -> list[dict[str, An
             "scan_id": str(row["scan_id"]),
             "verdict": str(row["verdict"] or "Suspicious"),
             "risk_score": int(row["risk_score"] or 0),
-            "timestamp": str(row["timestamp"] or datetime.now(timezone.utc).isoformat()),
+            "timestamp": str(row["timestamp"]) if row["timestamp"] else None,
             "sender_domain": str(row["sender_domain"] or ""),
             "language": str(row["language"] or "EN"),
             "session_id": str(row["session_id"] or ""),

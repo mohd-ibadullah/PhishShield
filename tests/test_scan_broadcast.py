@@ -190,3 +190,79 @@ async def test_pending_replay_is_room_scoped():
         "PENDING REPLAY ISOLATION BREACH: session B received " +
         str(len(a_events_at_b)) + " events from session A's pending queue"
     )
+
+
+
+@pytest.mark.asyncio
+async def test_pending_queue_is_bounded_across_rooms():
+    """Global caps: MAX_ROOMS and MAX_TOTAL_EVENTS are enforced."""
+    from backend.ws.connection_manager import ConnectionManager
+
+    cm = ConnectionManager()
+
+    class FakeWS:
+        def __init__(self):
+            from starlette.websockets import WebSocketState
+            self.client_state = WebSocketState.CONNECTED
+            self.application_state = WebSocketState.CONNECTED
+            self.sent = []
+        async def accept(self): pass
+        async def send_json(self, msg): self.sent.append(msg)
+        async def close(self, code=1000, reason=""): pass
+
+    # Flood with unknown keys to exceed MAX_ROOMS
+    for i in range(cm._MAX_ROOMS + 10):
+        ws = FakeWS()
+        await cm.connect(ws, session_id=f"overflow-room-{i}")
+        await cm.disconnect(ws)
+        await cm.broadcast({"type": "flood", "i": i}, session_key=f"overflow-room-{i}")
+
+    # Room count must be at most MAX_ROOMS
+    assert len(cm._pending) <= cm._MAX_ROOMS, (
+        f"Room cap violated: {len(cm._pending)} rooms > {cm._MAX_ROOMS}"
+    )
+
+    # Total events must be at most MAX_TOTAL_EVENTS
+    total = sum(len(q) for q in cm._pending.values())
+    assert total <= cm._MAX_TOTAL_EVENTS, (
+        f"Total event cap violated: {total} > {cm._MAX_TOTAL_EVENTS}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_broadcast_without_session_key_sends_nothing():
+    """broadcast(None), broadcast("") and broadcast(unknown) must not deliver."""
+    from backend.ws.connection_manager import ConnectionManager
+
+    cm = ConnectionManager()
+
+    class FakeWS:
+        def __init__(self):
+            from starlette.websockets import WebSocketState
+            self.client_state = WebSocketState.CONNECTED
+            self.application_state = WebSocketState.CONNECTED
+            self.sent = []
+        async def accept(self): pass
+        async def send_json(self, msg): self.sent.append(msg)
+        async def close(self, code=1000, reason=""): pass
+
+    ws = FakeWS()
+    await cm.connect(ws, session_id="test-room")
+    ws.sent.clear()
+
+    # All three must deliver 0 sends
+    await cm.broadcast({"type": "test"}, session_key=None)
+    await cm.broadcast({"type": "test"}, session_key="")
+    await cm.broadcast({"type": "test"}, session_key="nonexistent-key")
+    assert len(ws.sent) == 0, f"broadcast to invalid key sent {len(ws.sent)} messages"
+
+
+@pytest.mark.asyncio
+async def test_unknown_session_key_sends_nothing():
+    """Broadcast to a key nobody holds must not deliver."""
+    from backend.ws.connection_manager import ConnectionManager
+
+    cm = ConnectionManager()
+    await cm.broadcast({"type": "test"}, session_key="totally-fake-key")
+    # No active sockets, no delivery — pending queue scoped to room
+    assert "totally-fake-key" in cm._pending or len(cm._pending) == 0

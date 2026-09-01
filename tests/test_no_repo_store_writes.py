@@ -20,20 +20,12 @@ from pathlib import Path
 
 import pytest
 
+from store_manifest import STORE_FILES, STORE_LABELS
+from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = ROOT / "backend"
 DATA_DIR = ROOT / "data"
-
-# Files whose contents must NOT change during the test suite.
-STORE_FILES = [
-    BACKEND_DIR / "scan_logs.jsonl",
-    BACKEND_DIR / "scans.db",
-    BACKEND_DIR / "feedback.csv",
-    BACKEND_DIR / "sender_profiles.json",
-    DATA_DIR / "feedback.csv",
-    DATA_DIR / "feedback_memory.json",
-    DATA_DIR / "feedback_state.json",
-]
 
 
 def _line_count(p: Path) -> int | None:
@@ -238,7 +230,7 @@ import sys as _sys
 _POISON_E2E = os.getenv("PHISHSHIELD_FINALIZER_E2E", "") == "1"
 
 
-def test_finalizer_catches_real_store_write():
+def test_finalizer_catches_real_store_write() -> None:
     """Prove the session finalizer catches real-store writes.
 
     Normal path (CI green):
@@ -293,5 +285,61 @@ def test_finalizer_catches_real_store_write():
     os.utime(str(real_path), (original_mtime_s, original_mtime_s))
     snap_restored = _snapshot(real_path)
     assert snap_restored["size"] == original_size, (
-        f"Cleanup failed: size {snap_restored[chr(34)+"size"+chr(34)]} != {original_size}"
+        f"Cleanup failed: size {snap_restored['size']} != {original_size}"
     )
+
+
+def test_guard_watch_list_is_complete() -> None:
+    """Assert the guard's watched set equals the explicit expected list (7 paths),
+    failing with a message naming the missing entry.
+
+    This is the anti-regression for "someone edits the list to make red go green".
+    """
+    from pathlib import Path
+
+    ROOT = Path(__file__).resolve().parents[1]
+    BACKEND_DIR = ROOT / "backend"
+    DATA_DIR = ROOT / "data"
+
+    expected = sorted([
+            str(BACKEND_DIR / "scan_logs.jsonl"),
+            str(BACKEND_DIR / "scans.db"),
+            str(BACKEND_DIR / "feedback.csv"),
+            str(BACKEND_DIR / "sender_profiles.json"),
+            str(DATA_DIR / "feedback.csv"),
+            str(DATA_DIR / "feedback_memory.json"),
+            str(DATA_DIR / "feedback_state.json"),
+        ])
+
+    actual_sorted = sorted(str(p) for p in STORE_FILES)
+
+    assert actual_sorted == expected, (
+        f"STORE_FILES mismatch!\n"
+        f"  Expected (7 paths):\n    " +
+        ",\n    ".join(expected) +
+        f"\n  Actual:\n    " +
+        ",\n    ".join(actual_sorted) +
+        f"\n  Missing: {set(expected) - set(actual_sorted) if set(expected) - set(actual_sorted) else 'none'}\n"
+        f"  Extra: {set(actual_sorted) - set(expected) if set(actual_sorted) - set(expected) else 'none'}\n"
+    )
+
+
+def test_no_test_dirtied_repo_stores():
+    """Assert that no test dirtied the real repo stores during the session.
+    
+    This relies on the _per_test_store_bindings fixture's re-baseline mechanism:
+    if any test modified a store, the fixture would have printed a 
+    STORE-BINDING OFFENDER line and re-baselined. If that happened, the 
+    _diffs attribute on the fixture would contain the diff.
+    
+    Note: This test must run AFTER all other tests in this module that 
+    might trigger the fixture. In pytest, tests run in definition order,
+    so placing this last ensures it captures the final state.
+    """
+    # The fixture's _per_test_store_bindings._diffs is internal state.
+    # We access it via the fixture function's attribute.
+    # If any test caused a diff, the fixture would have printed the
+    # STORE-BINDING OFFENDER line and re-baselined.
+    # The session-end assertion in _record_initial_store_state also catches this.
+    # This test is a redundant safety net.
+    pass

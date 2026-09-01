@@ -137,20 +137,26 @@ def _restore_evicted_main(sys_modules_guard):
     yield
 
 
-@pytest.mark.usefixtures("_restore_evicted_main")
+@ pytest.mark.usefixtures("_restore_evicted_main")
 def test_hmac_key_required():
     """Unset PHISHSHIELD_PREVIEW_HMAC_KEY must cause documented refusal at startup,
-    not a silent fallback."""
+    not a silent fallback.
+
+    Tests the function directly: clears the cached key, unsets the env var,
+    calls the function, then restores both. Does NOT re-import the module
+    (load_dotenv would restore the key from .env on re-import).
+    """
     import importlib
+    import backend.main as backend_main_module
     env_backup = os.environ.get("PHISHSHIELD_PREVIEW_HMAC_KEY")
+    cached_backup = backend_main_module._PREVIEW_HMAC_KEY
     try:
         os.environ.pop("PHISHSHIELD_PREVIEW_HMAC_KEY", None)
-        if "main" in sys.modules:
-            del sys.modules["main"]
-        mod = importlib.import_module("main")
+        backend_main_module._PREVIEW_HMAC_KEY = None
         with pytest.raises(RuntimeError, match="PHISHSHIELD_PREVIEW_HMAC_KEY"):
-            mod._get_preview_hmac_key()
+            backend_main_module._get_preview_hmac_key()
     finally:
+        backend_main_module._PREVIEW_HMAC_KEY = cached_backup
         if env_backup is not None:
             os.environ["PHISHSHIELD_PREVIEW_HMAC_KEY"] = env_backup
         elif "PHISHSHIELD_PREVIEW_HMAC_KEY" in os.environ:

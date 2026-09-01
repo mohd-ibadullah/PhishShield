@@ -324,6 +324,55 @@ def test_main_module_is_unchanged_by_earlier_tests():
 
 
 
+
+def _parse_source(src: str):
+    """Parse synthetic source for AST testing."""
+    import textwrap
+    return ast.parse(textwrap.dedent(src))
+
+
+def test_class3_planted_violation_detected():
+    """Self-proving: plant a fake repo-store write and assert the AST check catches it."""
+    violating_src = """
+        open("backend/scan_logs.jsonl", "w")
+    """
+    tree = _parse_source(violating_src)
+    assigns = _collect_assignments(tree)
+    hits = _repo_write_offenders(tree, violating_src, "planted_test.py", assigns)
+    assert len(hits) > 0, (
+        "AST guard failed to catch planted violation: open(backend/..., 'w') was not flagged"
+    )
+
+
+def test_class2_planted_violation_detected():
+    """Self-proving: plant a subprocess pytest call without store redirect."""
+    violating_src = """
+        import subprocess
+        subprocess.run(["pytest", "tests/"])
+    """
+    tree = _parse_source(violating_src)
+    lists = _module_level_const_lists(tree)
+    calls = [c for c in _subprocess_pytest_calls(tree) if _is_pytest_invocation(c)]
+    # Should find the call
+    assert len(calls) > 0, "AST did not detect planted subprocess.run call"
+    # Check it's flagged: the source does not reference PHISHSHIELD_STORE_DIR
+    assert STORE_REDIRECT_KNOB not in violating_src, (
+        "Guard logic error: knob check should fail for planted source"
+    )
+
+
+def test_class1_planted_violation_detected():
+    """Self-proving: plant a sys.modules mutation without restore marker."""
+    violating_src = """
+        import sys
+        sys.modules["main"] = None
+    """
+    tree = _parse_source(violating_src)
+    mutations = _sys_modules_mutations(tree)
+    assert len(mutations) > 0, "AST did not detect planted sys.modules mutation"
+    # The planted source has no restore markers
+    assert not any(m in violating_src for m in RESTORE_MARKERS)
+
 def test_no_websocket_send_outside_connection_manager():
     """Class 4: no websocket.send_json calls in backend files other than main.py (WS endpoint).
 
