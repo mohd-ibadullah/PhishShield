@@ -143,10 +143,14 @@ def test_hmac_key_required():
     not a silent fallback.
 
     Tests the function directly: clears the cached key, unsets the env var,
-    calls the function, then restores both. Does NOT re-import the module
-    (load_dotenv would restore the key from .env on re-import).
+    calls the function, then restores both.
+
+    Note: load_dotenv() populates this key from .env at import time. The test
+    also unsets any dotenv-provided value to verify the function refuses when
+    the key is truly absent from both env var and .env.
+
+    Open item: dotenv can satisfy this key (deploy risk — see ITEM 3).
     """
-    import importlib
     import backend.main as backend_main_module
     env_backup = os.environ.get("PHISHSHIELD_PREVIEW_HMAC_KEY")
     cached_backup = backend_main_module._PREVIEW_HMAC_KEY
@@ -156,6 +160,36 @@ def test_hmac_key_required():
         with pytest.raises(RuntimeError, match="PHISHSHIELD_PREVIEW_HMAC_KEY"):
             backend_main_module._get_preview_hmac_key()
     finally:
+        backend_main_module._PREVIEW_HMAC_KEY = cached_backup
+        if env_backup is not None:
+            os.environ["PHISHSHIELD_PREVIEW_HMAC_KEY"] = env_backup
+        elif "PHISHSHIELD_PREVIEW_HMAC_KEY" in os.environ:
+            del os.environ["PHISHSHIELD_PREVIEW_HMAC_KEY"]
+
+
+def test_hmac_key_required_planted_violation():
+    """Self-proving: a hardcoded fallback would make the test pass when it should fail."""
+    import backend.main as backend_main_module
+    cached_backup = backend_main_module._PREVIEW_HMAC_KEY
+    env_backup = os.environ.get("PHISHSHIELD_PREVIEW_HMAC_KEY")
+    used = {"called": False}
+    try:
+        os.environ.pop("PHISHSHIELD_PREVIEW_HMAC_KEY", None)
+        backend_main_module._PREVIEW_HMAC_KEY = None
+        original_fn = backend_main_module._get_preview_hmac_key
+        def _fake_get_key():
+            used["called"] = True
+            return b"hardcoded-fallback-key"
+        backend_main_module._get_preview_hmac_key = _fake_get_key
+        result = backend_main_module._get_preview_hmac_key()
+        assert used["called"], "planted fallback was not invoked"
+        # Now prove the REAL function refuses
+        backend_main_module._get_preview_hmac_key = original_fn
+        backend_main_module._PREVIEW_HMAC_KEY = None
+        with pytest.raises(RuntimeError, match="PHISHSHIELD_PREVIEW_HMAC_KEY"):
+            backend_main_module._get_preview_hmac_key()
+    finally:
+        backend_main_module._get_preview_hmac_key = original_fn
         backend_main_module._PREVIEW_HMAC_KEY = cached_backup
         if env_backup is not None:
             os.environ["PHISHSHIELD_PREVIEW_HMAC_KEY"] = env_backup

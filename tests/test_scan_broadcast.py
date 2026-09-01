@@ -266,3 +266,51 @@ async def test_unknown_session_key_sends_nothing():
     await cm.broadcast({"type": "test"}, session_key="totally-fake-key")
     # No active sockets, no delivery — pending queue scoped to room
     assert "totally-fake-key" in cm._pending or len(cm._pending) == 0
+
+
+@pytest.mark.asyncio
+async def test_pending_memory_bound():
+    """Fill to both caps, assert total queued events ≤ MAX_TOTAL_EVENTS
+    and approximate serialized size < 1 MB. Eviction removes oldest room."""
+    import sys
+    from backend.ws.connection_manager import ConnectionManager
+
+    cm = ConnectionManager()
+
+    class FakeWS:
+        def __init__(self):
+            from starlette.websockets import WebSocketState
+            self.client_state = WebSocketState.CONNECTED
+            self.application_state = WebSocketState.CONNECTED
+            self.sent = []
+        async def accept(self): pass
+        async def send_json(self, msg): self.sent.append(msg)
+        async def close(self, code=1000, reason=""): pass
+
+    # Fill rooms to exceed MAX_ROOMS
+    for i in range(cm._MAX_ROOMS + 50):
+        ws = FakeWS()
+        await cm.connect(ws, session_id=f"mem-room-{i}")
+        await cm.disconnect(ws)
+        await cm.broadcast({"type": "event", "i": i}, session_key=f"mem-room-{i}")
+
+    # Assert room cap
+    assert len(cm._pending) <= cm._MAX_ROOMS, (
+        f"Room cap: {len(cm._pending)} > {cm._MAX_ROOMS}"
+    )
+
+    # Assert total event cap
+    total = sum(len(q) for q in cm._pending.values())
+    assert total <= cm._MAX_TOTAL_EVENTS, (
+        f"Event cap: {total} > {cm._MAX_TOTAL_EVENTS}"
+    )
+
+    # Assert approximate serialized size < 1 MB
+    import json
+    serialized = json.dumps([e for q in cm._pending.values() for e, _ in q])
+    size_mb = len(serialized.encode()) / (1024 * 1024)
+    assert size_mb < 1.0, f"Serialized queue size: {size_mb:.2f} MB > 1 MB"
+
+    # Assert eviction removes oldest room, not newest
+    # The first rooms should have been evicted
+    assert "mem-room-0" not in cm._pending, "Oldest room not evicted"

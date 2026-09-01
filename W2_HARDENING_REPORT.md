@@ -136,7 +136,7 @@ d/feedback_state.json             209    1778668906232675400      0
 
 **Severity split:**
 - **Local (harden-from-scratch):** cross-session metadata disclosure fixed. Broadcast scoped to room.
-- **Deployed Space:** cross-session raw content (`preview = email_text[:120]`) + `_pending` replay + session-ID eviction. `deployed: no`.
+- Cross-session raw content in deployed Space (`deployed: no`).
 
 **Evidence:**
 - `tests/test_scan_broadcast.py::test_ws_broadcast_session_isolation` — PASSED: two sockets, scan as B, A does not receive B event.

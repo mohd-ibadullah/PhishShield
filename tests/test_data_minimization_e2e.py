@@ -240,3 +240,51 @@ def test_mutation_proof_guard_passes_on_clean(tmp_path: Path) -> None:
     assert not violations, (
         f"Clean record flagged as violation: {violations}"
     )
+
+
+
+def test_scan_stores_never_contain_email_text():
+    """Walk the JSONL writer output keys and assert no forbidden raw-content key is present."""
+    import json
+    from data_constants import FORBIDDEN_RAW_CONTENT_KEYS
+    from pathlib import Path
+
+    jsonl_path = Path(__file__).resolve().parents[1] / "backend" / "scan_logs.jsonl"
+    if not jsonl_path.exists():
+        pytest.skip("scan_logs.jsonl does not exist")
+
+    # Read last 50 lines (recent entries)
+    lines = jsonl_path.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+    recent = lines[-50:] if len(lines) > 50 else lines
+
+    violations = []
+    for i, line in enumerate(recent):
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        for key in FORBIDDEN_RAW_CONTENT_KEYS:
+            if key in record and record[key]:
+                violations.append(f"line {len(lines)-len(recent)+i}: key={key}")
+    assert not violations, (
+        f"Scan log contains forbidden raw-content keys: {violations}"
+    )
+
+
+def test_feedback_row_shape_allows_only_email_text():
+    """feedback.csv columns must be exactly FEEDBACK_COLUMNS — no extra fields."""
+    import csv
+    from pathlib import Path
+
+    csv_path = Path(__file__).resolve().parents[1] / "backend" / "feedback.csv"
+    if not csv_path.exists() or csv_path.stat().st_size == 0:
+        pytest.skip("backend/feedback.csv does not exist or is empty")
+
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+
+    from backend.main import FEEDBACK_COLUMNS
+    assert sorted(fieldnames) == sorted(FEEDBACK_COLUMNS), (
+        f"feedback.csv has unexpected columns: {fieldnames}; expected: {FEEDBACK_COLUMNS}"
+    )

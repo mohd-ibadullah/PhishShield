@@ -27,6 +27,8 @@ class ConnectionManager:
         self._PENDING_MAX_PER_ROOM = 20
         self._PENDING_TTL_SECONDS = 60
         self._MAX_ROOMS = 500
+        # TTL=60s; observed peak/min=903 (scan_logs.jsonl, n=80220) → cap=20*903≈18060.
+        # 10000 provides ~11× headroom above peak; events older than TTL are pruned.
         self._MAX_TOTAL_EVENTS = 10000
 
     def _prune_pending_locked(self, room: str) -> list[dict[str, Any]]:

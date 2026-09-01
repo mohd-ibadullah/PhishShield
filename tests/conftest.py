@@ -49,9 +49,9 @@ _STORE_LABELS = [
 ]
 
 # ── §3: Set a dedicated HMAC key for tests — never falls back to INTERNAL_API_KEY
-# NOTE: Do NOT set a default here. The ambient tests explicitly set/unset the key
-# to verify the "key required" behavior. If a test needs a key, it sets it.
-# This allows test_hmac_key_required to verify the app refuses to start without it.
+# The scan endpoint requires this key for HMAC pseudonymization of email content.
+# test_hmac_key_required temporarily clears both env var and cache to verify refusal.
+os.environ.setdefault("PHISHSHIELD_PREVIEW_HMAC_KEY", "test-hmac-key-for-tests")
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 BACKEND_DIR = ROOT_DIR / "backend"

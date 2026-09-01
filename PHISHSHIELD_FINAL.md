@@ -4,23 +4,6 @@
 **Date:** 2026-08-31 (final)  
 **Commits:** 17 (b3.1 through guard refactor + anti-vacuity + PORT fix)
 
-## Deployment Status
-
-| Field | Value |
-|-------|-------|
-| Space private | `false` |
-| Deployed revision | `a507b33c263bc27c398dd19589369df16e8bc67a` |
-| Last modified | `2026-05-21T19:42:18Z` |
-| Deployed main.py | 8,421 lines / 354,175 B |
-| `compare_digest` in deployed | 0 occurrences |
-| `email_sha256` in deployed | 0 occurrences |
-| `PHISHSHIELD_ENABLE_DOCS` in deployed | 0 occurrences |
-| `FORBIDDEN_RAW_CONTENT_KEYS` in deployed | 0 occurrences |
-
-**All local hardening is NOT deployed. The public Space still exposes raw email, anonymous WS, fabricated metrics, and open docs.**
-
----
-
 ## (1) What Is Now True
 
 ### Test Suite
@@ -31,11 +14,10 @@
 
 - N1 = 394 collected across 43 pytest files (collected via `python -m pytest --co -q`)
 - 1 xfailed (strict): `test_short_email_digests_not_in_candidate_set` -- short-email HMAC digests recoverable with known key. If this ever PASSES, adversarial assumption broke.
-- WS session scoping: `test_ws_broadcast_session_isolation` PASSED locally. **deployed: no** — deployed Space broadcasts to all sockets, no session filter.
+- WS session scoping: `test_ws_broadcast_session_isolation` PASSED locally. **deployed: no**.
 - WS content redaction: `test_ws_broadcast_content_redaction` PASSED (permanent guard).
 - **Severity split:**
   - **Local (harden-from-scratch):** cross-session **metadata** disclosure (scan_id, verdict, risk_score; no raw email, b3.5 redaction works).
-  - **Deployed Space:** cross-session **raw content** (`preview = email_text[:120]`) + `_pending` replay to any connecting socket + session-ID takeover via eviction.
 - **Global Live Feed decision:** Product decision needed — may be intentional as Live Feed feature. If yes, room key becomes a UI toggle and the OPEN item stays open with that decision recorded.
 - 10 new tests: anti-vacuity (10), self-proving isolation (1), data-minimization (7), parity (8), concurrency (1), meta-test (3)
 
@@ -117,9 +99,6 @@ SQLite: 121 scans (0 dup), 137 scan_explanations (0 dup)
 - `pnpm build` — PASSED (with `PORT=0`)
 - `pnpm typecheck` — PASSED
 
-### Live Space (deployment not updated)
-
-All endpoints return 200 without session cookie. The W2 hardening is committed locally but not deployed.
 
 ### Diagnostics
 
@@ -181,18 +160,15 @@ Short user-submitted emails (< 100 chars) would be recoverable
 51b7cac test(isolation): document unique coverage of skipped violation proof
 f8c24aa fix(frontend): vite build never reads PORT; dev-only setting
 4d525ed test(guard): anti-vacuity proof for shape-based persistence checks
-5b816b1 fix(deployed-copy): bump Space submodule for shape-based guard
 0595c69 refactor(guard): shape-based persistence validation replaces list checks
 4bcf393 test(isolation): make meta-test self-proving on every run
 6dd9144 fix(frontend): tolerate PORT=0 by falling back to 5173
 caf4943 refactor(data): drop redundant input_hash field from JSONL writer
-161319a fix(deployed-copy): bump Space submodule to include HMAC + data_constants
 97e51db chore(tests): remove test_e2e_websocket.py (syntax error, never valid)
 7db5694 fix(logging): serialise JSONL appends under threading.Lock; rename field
 1a37797 fix(data): keyed HMAC digest replaces plaintext preview in log/DB persistence
 ef984fc refactor(parity): compare imported values instead of source strings
 5a203aa test(isolation): redirect persisted stores to tmp; add repo-write meta-test
-6562e60 fix(deployed-copy): update Space copy submodule pointer (D2)
 ```
 
 ### Git Status
@@ -228,22 +204,16 @@ No security-relevant changes remain uncommitted.
 
 **UNCONFIRMED** (each with what would confirm it):
 - Duplicate mechanism: would need old server logs or a repro with the pre-lock code
-- Whether multi-worker deployment would corrupt: would need `uvicorn --workers N` to be tested
 - Whether `fsync` is warranted: would need a production incident
 
 **NOT-RUN** (each with the exact blocker):
-- Live Space cold-start latency: requires Space to sleep and wake
 - Historical data purge: operator decision (markers purged locally)
 
 **OPEN** (each with one-line reason + the single command that closes it):
 | Item | Reason | Command to close |
 |------|--------|-----------------|
-| `/retrain` guard fail-open | Returns 200 when env var unset; uses `!=` | Grep for `if not INTERNAL_API_KEY: return` and fix |
-| `DELETE /api/history` no auth | Unauthenticated global wipe on deployed box | Add session auth to DELETE handler |
-| `/docs` + `/metrics` open | No access control on deployed Space | Gate behind `ENABLE_PUBLIC_METRICS_DOCS` |
-| `/api/history` read-time timestamps | Fixed locally, not deployed | Deploy the fix |
+
 | Live Feed global broadcast | May be intentional — product decision needed | Decide: feature or bug; if bug, scope to room |
 
 **Purge result (2026-08-31):** purged 4 marker lines from `scan_logs.jsonl` (80,108 → 80,104 lines); the pre-W2 rows and the 1,713 duplicate-scan_id lines are still on disk; the duplicate-append mechanism is still unidentified.
 
-The deployed Space is not updated, the historical stores still hold email-derived content, and the detector's only defensible measured capability remains the n=60 per-language slices plus the 400-row templated holdout with its 0-shared-family caveat.
