@@ -23,7 +23,7 @@ As of **May 2026**, this repo contains a working phishing-defense project with:
 | cache behavior | ✅ startup cache clear + `cache_version: 2` invalidation enabled |
 | `artifacts/reports/qa/system-readiness-audit-latest.md` | April 2026 internal suite PASS (not a live-accuracy claim) |
 | `artifacts/api-server/reports/verification/real-world-mass-benchmark-latest.md` | April 2026 internal scenario suite PASS (not a live-accuracy claim) |
-| `..\backend\training_meta.json` | Offline benchmark: `97.19%` accuracy / `96.52%` F1 |
+| `..\backend\training_meta.json` | Offline benchmark: `see training_meta.json` accuracy / `` F1 |
 | May 2026 live UI QA (100 real emails) | **~80–85%** accuracy after hardening (was ~42% before fixes) |
 
 ### Important run note
@@ -38,7 +38,7 @@ In May 2026 we ran **100 real emails** through the live UI and discovered **20 c
 
 ### Accuracy (honest numbers)
 
-- **Offline benchmark** (training split): **97.19%** (see `backend/training_meta.json`)
+- **Offline benchmark** (training split): see `data/training_meta.json` for current metrics
 - **Live UI QA** (May 2026, 100 real emails): **~80–85%** after hardening  
   (live accuracy is lower because real email distributions include more mixed context, paraphrase variation, and benign operational/security messaging)
 
@@ -231,9 +231,9 @@ The Python backend prefers the local `indicbert_model/` bundle when these files 
 - `tokenizer_config.json`
 
 The `/health` endpoint currently reports:
-- **`model_used: SecureBERT/MuRIL-GPU-97.4%`**
-- **Accuracy: `97.4%`**
-- **F1 Score: `96.8%`**
+- **`model_used: TF-IDF Logistic Regression`** (when only TF-IDF is loaded)
+- **Accuracy**: from `training_meta.json` (offline holdout evaluation)
+- **F1 Score**: from `training_meta.json` (offline holdout evaluation)
 
 ### Fallback Model: TF-IDF + Logistic Regression
 
@@ -249,7 +249,7 @@ Current `training_meta.json` shows:
 - dataset rows: **18,684**
 - train rows: **14,947**
 - test rows: **3,737**
-- TF-IDF active-learning accuracy: **~97.19%**
+- TF-IDF active-learning accuracy: see `data/training_meta.json`
 
 ### Why both models?
 
@@ -373,9 +373,9 @@ The live `/health` endpoint currently reports:
 
 | Metric | Value |
 |---|---:|
-| `model_used` | `SecureBERT/MuRIL-GPU-97.4%` |
-| Accuracy | `97.4%` |
-| F1 Score | `96.8%` |
+| `model_used` | `TF-IDF Logistic Regression` (or `SecureBERT + MuRIL Ensemble` when loaded) |
+| Accuracy | from `training_meta.json` |
+| F1 Score | from `training_meta.json` |
 | Device | `cpu` |
 
 ### Metadata from `training_meta.json`
@@ -533,7 +533,7 @@ The repository already contains the following project artifacts:
 |---|---|
 | `artifacts/reports/qa/system-readiness-audit-latest.md` | April 2026 internal suite PASS (not a live-accuracy claim) |
 | `artifacts/api-server/reports/verification/real-world-mass-benchmark-latest.md` | April 2026 internal scenario suite PASS (not a live-accuracy claim) |
-| `..\backend\training_meta.json` | Accuracy `97.19%`, Precision `94.05%`, Recall `99.11%`, F1 `96.52%` |
+| `..\backend\training_meta.json` | Accuracy `see training_meta.json`, Precision ``, Recall ``, F1 `` |
 
 ### 3) Live validation note
 
@@ -722,9 +722,9 @@ HF_TOKEN=your_huggingface_token
 ```json
 {
   "status": "healthy",
-  "model_used": "SecureBERT/MuRIL-GPU-97.4%",
-  "accuracy": "97.4%",
-  "f1_score": "96.8%",
+  "model_used": "TF-IDF Logistic Regression",
+  "accuracy": "<from training_meta.json>",
+  "f1_score": "<from training_meta.json>",
   "device": "cpu"
 }
 ```
@@ -749,7 +749,7 @@ Response:
   "detectedLanguage": "EN",
   "signals": ["OTP request detected", "Urgency language"],
   "ml_probability": 0.97,
-  "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+  "model_used": "TF-IDF Logistic Regression",
   "recommendation": "Block and quarantine",
   "explanation": {
     "top_words": [

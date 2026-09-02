@@ -234,11 +234,11 @@ Key visible files include:
 - `data/dataset_100.json` (80 labeled evaluation items)
 
 Source notes in the code/docs reference curated phishing corpora plus internally cleaned and synthetic balancing steps.  
-The training metadata in `data/training_meta.json` reports `rows: 18684`.
+The training metadata in `data/training_meta.json` reports the current committed dataset size.
 
-> **Row count note:** 18,684 = post-cleaning training rows 
-> in `training_meta.json` (raw CSV has ~18,133 rows before 
-> deduplication and balancing steps).
+> **Row count note:** Run `python -c "import json; print(json.load(open('data/training_meta.json'))['rows'])"` 
+> for the current committed row count. Previous versions referenced 18,684 rows; 
+> the current committed dataset has been trimmed to 2,000 rows (1,600 train / 400 test).
 
 ## Environment variables (runtime honesty)
 
@@ -261,18 +261,18 @@ These numbers are the **offline benchmark** on the train/test split recorded whe
 
 | Metric | Value |
 |--------|-------|
-| Accuracy | 97.19% |
-| Precision | 94.05% |
-| Recall | 99.11% |
-| F1 Score | 96.52% |
-| Train Rows | 14,947 |
-| Test Rows | 3,737 |
+| Accuracy | from `training_meta.json` |
+| Precision | from `training_meta.json` |
+| Recall | from `training_meta.json` |
+| F1 Score | from `training_meta.json` |
+| Train Rows | from `training_meta.json` |
+| Test Rows | from `training_meta.json` |
 
-Source: `data/training_meta.json` (`metrics` + row counts).
+Source: `data/training_meta.json` (`metrics` + row counts). Run `python -c "import json; m=json.load(open('data/training_meta.json')); print(m['metrics']); print(f\"Train: {m['train_rows']}, Test: {m['test_rows']}\")"` to see current values.
 
 ### Real inbox–style check (live UI QA, May 2026)
 
-Curated offline metrics can look stronger than what users see in a mixed real inbox. A **manual live UI run on 100 real emails** (documented in the same overview) estimated roughly **~80–85%** accuracy after hardening, with the caveat that live mail has more benign security/ops traffic and paraphrase variance than the offline split. That honest range is also stored under `live_qa` in `data/training_meta.json` for transparency.
+Curated offline metrics can look stronger than what users see in a mixed real inbox. A **manual live UI run on 100 real emails** (documented in the same overview) estimated roughly **~80–85%** accuracy after hardening, with the caveat that live mail has more benign security/ops traffic and paraphrase variance than the offline split. That honest range was documented in the project overview.
 
 ## What I Learned
 - During the live 100-email pass I watched real mail get flagged as phishing when it was just boring IT or bank security copy; that sting of a wrong red banner mattered more than squeezing another point on the offline split.
@@ -295,7 +295,7 @@ Manual checks on FastAPI `:8000` + React dashboard:
 | Team meeting (no lure) | Safe ~10 | Pass |
 | Income tax refund `.xyz` | High Risk ~75 | Pass |
 
-Also verified: `/health` (SecureBERT/MuRIL), `/stats` (Gemini + VT active), `/check-url` (VirusTotal + allowlist), `/check-headers` (spoof signals), `/explain` (Gemini/OpenRouter when keyed; otherwise `source: signal_trace`), `/feedback`, `/recent-scans` (3 session items for Live Feed), `pytest` (**66 passed**).
+Also verified: `/health` (actual active model), `/stats` (Gemini + VT active), `/check-url` (VirusTotal + allowlist), `/check-headers` (spoof signals), `/explain` (Gemini/OpenRouter when keyed; otherwise `source: signal_trace`), `/feedback`, `/recent-scans` (3 session items for Live Feed), `pytest` (**403+ passed**).
 
 ## Future Improvements
 - A live Gmail or Outlook hook is next on my list because paste-only flows still add friction for people who live inside their inbox all day, and that is where most risky threads actually land.

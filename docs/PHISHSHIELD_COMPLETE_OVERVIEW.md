@@ -218,10 +218,10 @@ Training scripts in the backend:
 - `train_indicbert.py` → transformer fine-tuning and checkpoint export
 
 Current `training_meta.json` shows:
-- dataset rows: **18,684**
+- dataset rows: see `data/training_meta.json` for current count
 - train rows: **14,947**
 - test rows: **3,737**
-- TF-IDF active-learning accuracy: **~97.19%**
+- TF-IDF active-learning accuracy: see `data/training_meta.json`
 
 ### Why both models?
 
@@ -426,7 +426,7 @@ The live `/health` endpoint currently reports:
 
 | Metric | Value |
 |---|---:|
-| Dataset rows | `18,684` |
+| Dataset rows | see `data/training_meta.json` |
 | Train rows | `14,947` |
 | Test rows | `3,737` |
 | TF-IDF active-learning accuracy | `0.9719` |
