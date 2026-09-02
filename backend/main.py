@@ -468,14 +468,15 @@ def enforce_feedback_session_limits(session_key: str) -> None:
         if int(record.get("feedback_count", 0) or 0) >= FEEDBACK_SESSION_CAP:
             raise HTTPException(status_code=429, detail="Feedback cap reached for this session")
 
-# b3.5: /docs and /openapi.json gated behind explicit local flag.
+# b3.5: /docs and /openapi.json gated behind explicit local flag + admin session.
+# Routes are always mounted; middleware gates access when flag is true.
 _enable_docs = os.getenv("PHISHSHIELD_ENABLE_DOCS", "").lower() == "true"
 app = FastAPI(
     title="PhishShield AI Backend",
     version="1.0",
-    docs_url="/docs" if _enable_docs else None,
-    redoc_url="/redoc" if _enable_docs else None,
-    openapi_url="/openapi.json" if _enable_docs else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 app.include_router(metrics_router)
 
@@ -491,6 +492,30 @@ async def enforce_max_request_size(request: Request, call_next):
                 return JSONResponse(status_code=413, content={"detail": "Request body too large"})
         except ValueError:
             pass
+    return await call_next(request)
+
+
+# b3.5-fix: /docs, /openapi.json, /redoc require admin session when ENABLE_DOCS=true.
+# When ENABLE_DOCS is false, these paths return 404.
+# This middleware runs BEFORE FastAPI's built-in docs routes.
+_DOCS_PATHS = frozenset({"/docs", "/openapi.json", "/redoc"})
+
+@app.middleware("http")
+async def gate_docs_behind_session(request: Request, call_next):
+    if request.url.path in _DOCS_PATHS:
+        if not _enable_docs:
+            return JSONResponse(status_code=404, content={"detail": "API docs disabled"})
+        token = request.cookies.get(SESSION_COOKIE_NAME) or ""
+        if not token:
+            return JSONResponse(status_code=401, content={"detail": "Admin session required for API docs"})
+        session_key = hash_session_token(token)
+        now = time.time()
+        with _session_store_lock:
+            record = _session_records.get(session_key)
+            if record is None or now - float(record.get("last_seen", now)) > SESSION_TTL_SECONDS:
+                _session_records.pop(session_key, None)
+                return JSONResponse(status_code=401, content={"detail": "Admin session required for API docs"})
+            record["last_seen"] = now
     return await call_next(request)
 
 

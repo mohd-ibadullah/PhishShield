@@ -133,3 +133,36 @@ async def _scan(client: AsyncClient, email_text: str = SAFE_EMAIL) -> dict:
     response = await client.post("/scan-email", json={"email_text": email_text})
     assert response.status_code == 200, response.text
     return response.json()
+
+
+# ---------------------------------------------------------------------------
+# T3: /docs and /openapi.json require admin session when ENABLE_DOCS=true
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_docs_deny_without_admin(client, monkeypatch) -> None:
+    """With ENABLE_DOCS=true but no cookie → /docs 401, /openapi.json 401.
+    With valid session cookie → 200."""
+    monkeypatch.setattr(backend_main, "_enable_docs", True)
+
+    # Without session
+    r1 = await client.get("/docs")
+    assert r1.status_code == 401, f"/docs without session: {r1.status_code}"
+
+    r2 = await client.get("/openapi.json")
+    assert r2.status_code == 401, f"/openapi.json without session: {r2.status_code}"
+
+    # Issue session
+    rs = await client.post("/api/session")
+    assert rs.status_code == 200
+
+    # With session — /docs
+    r3 = await client.get("/docs")
+    assert r3.status_code == 200, f"/docs with session: {r3.status_code}"
+
+    # With session — /openapi.json
+    r4 = await client.get("/openapi.json")
+    assert r4.status_code == 200, f"/openapi.json with session: {r4.status_code}"
+
+    # Restore
+    monkeypatch.setattr(backend_main, "_enable_docs", False)
