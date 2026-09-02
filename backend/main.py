@@ -8372,8 +8372,8 @@ def trigger_retrain(request: Request) -> dict[str, Any]:
     """Retrain the TF-IDF model using base dataset plus collected feedback rows."""
     _validate_internal_access(request)
     pending = count_pending_retrain_samples()
-    if pending < 1:
-        raise HTTPException(status_code=400, detail="No new feedback samples are available for retraining.")
+    if pending < RETRAIN_THRESHOLD:
+        raise HTTPException(status_code=400, detail=f"Need at least {RETRAIN_THRESHOLD} feedback samples for retraining, have {pending}.")
 
     try:
         result = retrain_tfidf_with_feedback()
