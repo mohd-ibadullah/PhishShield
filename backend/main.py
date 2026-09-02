@@ -113,6 +113,8 @@ FEEDBACK_CSV_PATH = _store_path("feedback.csv", BASE_DIR / "feedback.csv")
 FEEDBACK_STATE_PATH = _store_path("feedback_state.json", BASE_DIR.parent / "data" / "feedback_state.json")
 FEEDBACK_MEMORY_PATH = _store_path("feedback_memory.json", BASE_DIR.parent / "data" / "feedback_memory.json")
 SCAN_LOG_PATH = _store_path("scan_logs.jsonl", BASE_DIR / "scan_logs.jsonl")
+LOG_MAX_BYTES = max(1024 * 1024, int(os.getenv("PHISHSHIELD_LOG_MAX_BYTES", "5000000")))
+LOG_KEEP = max(1, int(os.getenv("PHISHSHIELD_LOG_KEEP", "3")))
 SENDER_PROFILE_PATH = _store_path("sender_profiles.json", BASE_DIR / "sender_profiles.json")
 THREAT_INTEL_PATH = BASE_DIR.parent / "data" / "threat_intel_feed.json"
 SCANS_DB_PATH = _store_path("scans.db", BASE_DIR / "scans.db")
@@ -2914,6 +2916,26 @@ def calibrate_confidence(
 
 _scan_log_lock = __import__("threading").Lock()
 
+def _rotate_scan_log() -> None:
+    """Rotate scan_logs.jsonl: .jsonl -> .jsonl.1 -> ... -> .jsonl.N, drop beyond N."""
+    import os as _os
+    base = str(SCAN_LOG_PATH)
+    for i in range(LOG_KEEP - 1, 0, -1):
+        src = f"{base}.{i}"
+        dst = f"{base}.{i + 1}"
+        if _os.path.exists(src):
+            if i + 1 > LOG_KEEP:
+                _os.remove(src)
+            else:
+                _os.replace(src, dst)
+    if _os.path.exists(base):
+        _os.replace(base, f"{base}.1")
+    for i in range(LOG_KEEP + 1, LOG_KEEP + 10):
+        p = f"{base}.{i}"
+        if _os.path.exists(p):
+            _os.remove(p)
+
+
 def append_structured_scan_log(entry: dict[str, Any], *, _email_text: str = "") -> None:
     """Append a JSONL line. Shape-based guard runs before write."""
     logger = logging.getLogger("uvicorn.error")
@@ -2940,6 +2962,9 @@ def append_structured_scan_log(entry: dict[str, Any], *, _email_text: str = "") 
         with _scan_log_lock:
             with SCAN_LOG_PATH.open("a", encoding="utf-8") as handle:
                 handle.write(line)
+        import os as _os
+        if _os.path.getsize(str(SCAN_LOG_PATH)) > LOG_MAX_BYTES:
+            _rotate_scan_log()
     except Exception as exc:
         logger.warning("Unable to write PhishShield structured scan log: %s", exc)
 
