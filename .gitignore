@@ -21,6 +21,9 @@ backend/scans.db
 backend/vectorizer.pkl
 *.safetensors
 *.pkl
+# Keep baseline TF-IDF artifacts so a clean clone scans immediately (D9).
+!backend/model.pkl
+!backend/vectorizer.pkl
 *.db
 *.jsonl
 # Canonical diagnostics evaluation set is intentionally versioned (see diagnostics/README.md).
