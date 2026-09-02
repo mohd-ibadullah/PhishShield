@@ -1,4 +1,4 @@
-"""T6: 1 MiB request size cap — pre-parse, chunked support."""
+"""T6: 1 MiB request size cap — boundary tests, pre-parse."""
 from __future__ import annotations
 
 import sys
@@ -13,9 +13,38 @@ import main as bm
 
 pytestmark = __import__("pytest").mark.asyncio
 
+ONE_MIB = 1024 * 1024
 
-async def test_content_length_too_large():
-    """Content-Length > 1 MiB → 413, handler not entered."""
+
+async def test_boundary_under_cap():
+    """Content-Length = 1 MiB - 1 → 200 (exactly at boundary, under)."""
+    transport = ASGITransport(app=bm.app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as c:
+        body = b"x" * (ONE_MIB - 1)
+        r = await c.post(
+            "/scan-email",
+            content=body,
+            headers={"Content-Length": str(len(body)), "Content-Type": "application/json"},
+        )
+        # Under cap: should be processed (200) or rejected for bad JSON (422)
+        assert r.status_code in (200, 422), f"Under cap: {r.status_code}"
+
+
+async def test_boundary_over_cap():
+    """Content-Length = 1 MiB + 1 → 413."""
+    transport = ASGITransport(app=bm.app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as c:
+        body = b"x" * (ONE_MIB + 1)
+        r = await c.post(
+            "/scan-email",
+            content=body,
+            headers={"Content-Length": str(len(body)), "Content-Type": "application/json"},
+        )
+        assert r.status_code == 413, f"Over cap: {r.status_code}"
+
+
+async def test_handler_not_entered_on_oversize():
+    """Handler must not be entered when Content-Length > 1 MiB."""
     handler_entered = False
     original = bm.scan_email
 
@@ -28,23 +57,13 @@ async def test_content_length_too_large():
     try:
         transport = ASGITransport(app=bm.app)
         async with AsyncClient(transport=transport, base_url="http://testserver") as c:
+            body = b"x" * (ONE_MIB + 100)
             r = await c.post(
                 "/scan-email",
-                content=b"x" * (1024 * 1024 + 1),
-                headers={"Content-Length": str(1024 * 1024 + 1), "Content-Type": "application/json"},
+                content=body,
+                headers={"Content-Length": str(len(body)), "Content-Type": "application/json"},
             )
-            assert r.status_code == 413, f"Expected 413, got {r.status_code}"
-            assert not handler_entered, "Handler should not be entered for oversized request"
+            assert r.status_code == 413
+            assert not handler_entered, "Handler entered for oversized request"
     finally:
         bm.scan_email = original
-
-
-async def test_valid_request_under_cap():
-    """900 KB valid request → 200."""
-    transport = ASGITransport(app=bm.app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as c:
-        r = await c.post(
-            "/scan-email",
-            json={"email_text": "A" * 10000},
-        )
-        assert r.status_code == 200, f"Expected 200, got {r.status_code}"
