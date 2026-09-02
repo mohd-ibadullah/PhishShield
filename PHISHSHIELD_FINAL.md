@@ -255,3 +255,16 @@ No security-relevant changes remain uncommitted.
 - PII in dataset files
 - collect_ignore 9 files excluded
 - ML model integration (model.pkl needed)
+
+## Local vs deployed (measured 2026-09-03)
+
+| Marker | Local count | Deployed count |
+|--------|------------|----------------|
+| `compare_digest` | 2 | 0 |
+| `email_sha256` | 5 | 0 |
+| `PHISHSHIELD_ENABLE_DOCS` | 1 | 0 |
+| `FORBIDDEN_RAW_CONTENT_KEYS` | 1 | 0 |
+| `dev-sandbox-key` | 0 | 0 |
+| `97.4` | 0 | 2 |
+
+**Deployed revision `a507b33c` (2026-05-21) contains none of the hardening markers. All fixes in this repo are local until a deploy happens. No claim of production safety is made anywhere in these docs.**

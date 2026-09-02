@@ -175,3 +175,16 @@ d/feedback_state.json             209    1778668906232675400      0
 Suite verified: 404 collected (measured via --collect-only); 403 passed + 1 xfailed (sum of the two shard runs below); elapsed 134.86s + 177.30s = 312.16s (shard sum, not a single-run wall time).
 
 No file skipped or counted twice across shards.
+
+## Local vs deployed (measured 2026-09-03)
+
+| Marker | Local count | Deployed count |
+|--------|------------|----------------|
+| `compare_digest` | 2 | 0 |
+| `email_sha256` | 5 | 0 |
+| `PHISHSHIELD_ENABLE_DOCS` | 1 | 0 |
+| `FORBIDDEN_RAW_CONTENT_KEYS` | 1 | 0 |
+| `dev-sandbox-key` | 0 | 0 |
+| `97.4` | 0 | 2 |
+
+**Deployed revision `a507b33c` (2026-05-21) contains none of the hardening markers. All fixes in this repo are local until a deploy happens. No claim of production safety is made anywhere in these docs.**
