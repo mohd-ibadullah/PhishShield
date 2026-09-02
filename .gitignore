@@ -28,3 +28,6 @@ backend/vectorizer.pkl
 *.jsonl
 # Canonical diagnostics evaluation set is intentionally versioned (see diagnostics/README.md).
 !diagnostics/eval_set_v1.jsonl
+
+# JSONL rotation artifacts (T4)
+backend/scan_logs.jsonl.*
