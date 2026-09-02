@@ -1,0 +1,35 @@
+"""T10: PII guard — only allowlisted files may contain email/phone patterns."""
+from __future__ import annotations
+
+import pathlib
+import re
+import subprocess
+
+
+def _load_allowlist() -> set[str]:
+    p = pathlib.Path("data/PII_ALLOWLIST.txt")
+    if not p.exists():
+        return set()
+    lines = p.read_text(encoding="utf-8").splitlines()
+    return {line.split(":")[0].strip() for line in lines if line.strip() and not line.startswith("#")}
+
+
+def test_no_pii_in_non_allowlisted_files():
+    """Only files in PII_ALLOWLIST.txt may contain email/phone patterns."""
+    allowlist = _load_allowlist()
+    files = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.split()
+    pat = re.compile(
+        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|\+91[\d\s-]{8,12}"
+    )
+    violations = []
+    for f in files:
+        if f in allowlist:
+            continue
+        try:
+            t = open(f, encoding="utf-8", errors="replace").read()
+        except Exception:
+            continue
+        m = pat.findall(t)
+        if m:
+            violations.append(f"{f}: {len(m)} matches")
+    assert not violations, f"PII found in non-allowlisted files: {violations}"
