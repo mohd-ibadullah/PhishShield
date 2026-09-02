@@ -116,7 +116,7 @@ SCAN_LOG_PATH = _store_path("scan_logs.jsonl", BASE_DIR / "scan_logs.jsonl")
 SENDER_PROFILE_PATH = _store_path("sender_profiles.json", BASE_DIR / "sender_profiles.json")
 THREAT_INTEL_PATH = BASE_DIR.parent / "data" / "threat_intel_feed.json"
 SCANS_DB_PATH = _store_path("scans.db", BASE_DIR / "scans.db")
-FEEDBACK_COLUMNS = ["email_text", "user_label", "model_prediction", "timestamp", "scan_id"]
+FEEDBACK_COLUMNS = ["email_hash", "user_label", "model_prediction", "timestamp", "scan_id"]
 
 from data_constants import (
     FORBIDDEN_RAW_CONTENT_KEYS,
@@ -168,7 +168,7 @@ MURIL_REQUIRED_FILES = (
     "vocab.txt",
 )
 PROVIDER_WARMUP_SECONDS = max(30.0, float(os.getenv("PHISHSHIELD_PROVIDER_WARMUP_SECONDS", "180")))
-INDICBERT_HEALTH_LABEL = "SecureBERT/MuRIL-GPU-97.4%"
+INDICBERT_HEALTH_LABEL = "TF-IDF Logistic Regression"
 SECUREBERT_HEALTH_LABEL = "SecureBERT"
 MURIL_HEALTH_LABEL = "MuRIL"
 MAX_TOKEN_LENGTH = 256
@@ -1263,6 +1263,9 @@ def ensure_feedback_store() -> None:
     if not FEEDBACK_CSV_PATH.exists():
         _ensure_parent_dir(FEEDBACK_CSV_PATH)
         pd.DataFrame(columns=FEEDBACK_COLUMNS).to_csv(FEEDBACK_CSV_PATH, index=False)
+    else:
+        # D5: Migrate existing feedback.csv from email_text to email_hash
+        _migrate_feedback_csv_if_needed()
 
     if not FEEDBACK_STATE_PATH.exists():
         _ensure_parent_dir(FEEDBACK_STATE_PATH)
@@ -1373,6 +1376,61 @@ def save_sender_profiles(profiles: dict[str, Any]) -> None:
     SENDER_PROFILE_PATH.write_text(json.dumps(profiles, indent=2), encoding="utf-8")
 
 
+def _enforce_scans_rotation_cap(conn: sqlite3.Connection) -> None:
+    """D5: Enforce 10,000-row retention cap on scans table.
+
+    Deletes oldest rows (by timestamp) beyond the cap.
+    """
+    MAX_SCANS_ROWS = 10_000
+    count = conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0]
+    if count > MAX_SCANS_ROWS:
+        excess = count - MAX_SCANS_ROWS
+        conn.execute(
+            """
+            DELETE FROM scans WHERE scan_id IN (
+                SELECT scan_id FROM scans ORDER BY timestamp ASC LIMIT ?
+            )
+            """,
+            (excess,),
+        )
+        conn.commit()
+        logger.info("[SCANS-DB] Rotated %d oldest scan rows (cap=%d)", excess, MAX_SCANS_ROWS)
+
+
+def _migrate_feedback_csv_if_needed() -> None:
+    """D5: Migrate feedback.csv from email_text to email_hash.
+
+    If the CSV has an email_text column, replace it with email_hash.
+    Existing plaintext rows are purged — this is a one-way migration.
+    """
+    if not FEEDBACK_CSV_PATH.exists():
+        return
+    try:
+        df = pd.read_csv(FEEDBACK_CSV_PATH, encoding="utf-8")
+    except Exception:
+        return
+    if df.empty:
+        return
+    # Already migrated
+    if "email_hash" in df.columns and "email_text" not in df.columns:
+        return
+    # Migrate: replace email_text with email_hash
+    if "email_text" in df.columns:
+        logger.info("[FEEDBACK] Migrating feedback.csv: email_text -> email_hash (%d rows)", len(df))
+        df["email_hash"] = df["email_text"].astype(str).apply(
+            lambda t: hashlib.sha256(t.encode("utf-8")).hexdigest()[:32] if t.strip() else ""
+        )
+        df = df.drop(columns=["email_text"])
+        # Ensure correct column order
+        df = df[[c for c in FEEDBACK_COLUMNS if c in df.columns]]
+        df.to_csv(FEEDBACK_CSV_PATH, index=False)
+        logger.info("[FEEDBACK] Migration complete: plaintext purged, email_hash stored")
+    elif "email_text" not in df.columns and "email_hash" not in df.columns:
+        # Neither column present — recreate with correct schema
+        df = df.reindex(columns=FEEDBACK_COLUMNS, fill_value="")
+        df.to_csv(FEEDBACK_CSV_PATH, index=False)
+
+
 def ensure_scans_db() -> None:
     _ensure_parent_dir(SCANS_DB_PATH)
     with sqlite3.connect(SCANS_DB_PATH) as conn:
@@ -1399,6 +1457,8 @@ def ensure_scans_db() -> None:
             """
         )
         conn.commit()
+        # D5: enforce 10,000-row rotation cap on scans table
+        _enforce_scans_rotation_cap(conn)
 
 
 def persist_scan_explanation_db(scan_id: str, payload: dict[str, Any]) -> None:
@@ -4258,6 +4318,14 @@ def feedback_label_for_training(corrected_verdict: str) -> str:
     return "phishing"
 
 
+def _compute_feedback_email_hash(email_text: str) -> str:
+    """Compute SHA-256 hash of email text for feedback storage.
+
+    D5: feedback.csv stores only the hash, never plaintext email.
+    """
+    return hashlib.sha256(email_text.encode("utf-8")).hexdigest()[:32]
+
+
 def append_feedback_csv_row(
     *,
     email_text: str,
@@ -4266,8 +4334,9 @@ def append_feedback_csv_row(
     scan_id: str | None = None,
 ) -> None:
     ensure_feedback_store()
+    email_hash = _compute_feedback_email_hash(email_text)
     row = {
-        "email_text": email_text,
+        "email_hash": email_hash,
         "user_label": user_label,
         "model_prediction": model_prediction,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -4275,6 +4344,10 @@ def append_feedback_csv_row(
     }
     existing = pd.read_csv(FEEDBACK_CSV_PATH)
     updated = pd.concat([existing, pd.DataFrame([row])], ignore_index=True)
+    # D5: enforce 10,000-row retention cap — drop oldest rows beyond limit
+    MAX_FEEDBACK_ROWS = 10_000
+    if len(updated) > MAX_FEEDBACK_ROWS:
+        updated = updated.tail(MAX_FEEDBACK_ROWS).reset_index(drop=True)
     updated.to_csv(FEEDBACK_CSV_PATH, index=False)
 
 
@@ -4381,7 +4454,9 @@ def _validate_feedback_csv(feedback_df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"Feedback CSV missing required columns: {missing_columns}")
 
     normalized = feedback_df.copy()
-    normalized["email_text"] = normalized["email_text"].astype(str).str.strip()
+    # D5: email_hash column replaced email_text — validate hash format
+    if "email_hash" in normalized.columns:
+        normalized["email_hash"] = normalized["email_hash"].astype(str).str.strip()
     normalized["user_label"] = normalized["user_label"].astype(str).str.strip().str.lower()
     valid_labels = {"safe", "phishing"}
     invalid_mask = ~normalized["user_label"].isin(valid_labels)
@@ -4389,7 +4464,9 @@ def _validate_feedback_csv(feedback_df: pd.DataFrame) -> pd.DataFrame:
         invalid_labels = sorted(normalized.loc[invalid_mask, "user_label"].astype(str).unique().tolist())
         raise ValueError(f"Unsupported feedback labels: {invalid_labels}")
 
-    return normalized[normalized["email_text"].astype(bool)].copy()
+    # Filter rows with non-empty hash
+    hash_col = "email_hash" if "email_hash" in normalized.columns else "email_text"
+    return normalized[normalized[hash_col].astype(bool)].copy()
 
 
 def _atomic_joblib_dump(obj: Any, target_path: Path) -> None:
@@ -4435,14 +4512,10 @@ def _retrain_tfidf_with_feedback_locked() -> dict[str, Any]:
     if pending_feedback.empty:
         raise ValueError("No unconsumed feedback rows are available for retraining.")
 
-    feedback_training = pending_feedback.copy()
-    feedback_training["Email Text"] = feedback_training["email_text"].astype(str)
-    feedback_training["Email Type"] = feedback_training["user_label"].map({
-        "phishing": "Phishing Email",
-        "safe": "Safe Email",
-    })
-    feedback_training = feedback_training[["Email Text", "Email Type"]].dropna()
-    combined_df = pd.concat([base_df, feedback_training], ignore_index=True)
+    # D5: feedback.csv now stores email_hash instead of email_text.
+    # Without plaintext text, we cannot augment training data from feedback.
+    # Retrain with the base dataset only; mark feedback as consumed.
+    combined_df = base_df.copy()
 
     combined_df["label"] = combined_df["Email Type"].map(LABEL_MAP)
     if combined_df["label"].isna().any():
@@ -4503,7 +4576,7 @@ def _retrain_tfidf_with_feedback_locked() -> dict[str, Any]:
         "rows": int(len(combined_df)),
         "train_rows": int(len(X_train)),
         "test_rows": int(len(X_test)),
-        "model_type": "TF-IDF Active Learning",
+        "model_type": "TF-IDF Logistic Regression",
         "feedback_rows": int(len(pending_feedback)),
         "metrics": metrics,
     }
@@ -8234,9 +8307,11 @@ def submit_feedback(payload: FeedbackRequest, request: Request) -> dict[str, Any
 
 @app.get("/feedback/stats")
 @app.get("/api/feedback/stats")
-def feedback_stats() -> dict[str, Any]:
+def feedback_stats(request: Request) -> dict[str, Any]:
+    require_session_key(request)
     try:
-        return get_feedback_stats_payload()
+        full = get_feedback_stats_payload()
+        return {k: v for k, v in full.items() if k in ("total_feedback", "last_retrain")}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Feedback stats failed: {exc}") from exc
 
@@ -8288,8 +8363,9 @@ def metrics() -> Response:
 
 
 @app.get("/stats")
-def stats() -> dict[str, Any]:
+def stats(request: Request) -> dict[str, Any]:
     """Human-readable system statistics."""
+    require_session_key(request)
     feedback_df = pd.read_csv(FEEDBACK_CSV_PATH) if FEEDBACK_CSV_PATH.exists() else pd.DataFrame()
     has_model = artifacts.model is not None or artifacts.indicbert_model is not None
     return {
