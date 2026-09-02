@@ -230,6 +230,9 @@ async def test_health_reports_active_model(client) -> None:
 
 async def test_stats_reports_honest_model(client) -> None:
     """/stats must report the actual active model."""
+    # Issue session first (now required)
+    rs = await client.post("/api/session")
+    assert rs.status_code == 200
     r = await client.get("/stats")
     assert r.status_code == 200
     body = r.json()
