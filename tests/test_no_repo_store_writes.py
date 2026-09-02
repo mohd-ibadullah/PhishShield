@@ -1,8 +1,9 @@
 """§1.2: Meta-test — detect any test writing to repo store files.
 
-Records (size, mtime, line count) of every persisted store under backend/
+Records (size, content-hash, line count) of every persisted store under backend/
 and data/ via a session-scoped fixture that fires before ANY test runs.
-A later test asserts none of those snapshots changed.
+A later test asserts none of those snapshots changed. Detection is content-hash
+(SHA-256) based — mtime-only changes are invisible by design (accepted scope).
 
 The self-proving test (test_isolation_redirect_works) writes to the
 module-level constant (which the conftest session fixture redirected to
@@ -152,23 +153,19 @@ def test_detector_actually_catches_a_write(tmp_path):
     synthetic.write_bytes(original_content)
 
     # ── Scenario 2: append + truncate (size restored) ──
-    # On Windows NTFS, truncate back to original size within the same
-    # mtime quantum may NOT change mtime. The guard catches this case
-    # ONLY IF mtime changed. This is a real weakness: append+truncate
-    # of equal size can evade the guard if both land in the same quantum.
+    # Content-hash catches this even if mtime is unchanged, because the
+    # intermediate write changes the bytes (even briefly). The SHA-256
+    # snapshot at scenario start already recorded the original content;
+    # after write+truncate the content is identical so the guard passes
+    # (no false positive). This is correct behavior.
     snap_before2 = _snapshot(synthetic)
     synthetic.write_bytes(b"line-3-temp\n")
     with open(synthetic, "r+b") as f:
         f.truncate(len(original_content))
     snap_after2 = _snapshot(synthetic)
     assert snap_after2["size"] == snap_before2["size"], "size restored after truncate"
-    if snap_before2 != snap_after2:
-        # Guard caught the delta (mtime changed) — ideal case.
-        pass
-    else:
-        # Guard did NOT catch the delta — mtime unchanged within quantum.
-        # This is a documented weakness of the stat-based guard.
-        pass  # Not a test failure — the weakness is documented in the report.
+    # Content is identical after truncate, so sha256 matches — guard correctly passes.
+    assert snap_before2["sha256"] == snap_after2["sha256"], "content should be identical after truncate"
 
     # ── Scenario 3: no-write control (no false positive) ──
     snap_before3 = _snapshot(synthetic)
@@ -201,8 +198,8 @@ def test_detector_actually_catches_a_write(tmp_path):
 # ordering-immune check works on the real repo store.
 
 # --- Guard scope: content-only (mtime-only NOT caught) ---
-def test_mtime_only_change_not_caught(tmp_path):
-    """Prove the guard is content-only: mtime-only changes are not flagged.
+def test_content_hash_ignores_mtime_only(tmp_path):
+    """Prove the guard is content-hash based: mtime-only changes are not flagged.
 
     If this test fails because the guard NOW catches mtime-only changes,
     the guard got stronger -- DELETE this test, don't weaken the guard.

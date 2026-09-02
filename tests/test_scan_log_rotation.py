@@ -92,7 +92,7 @@ def test_rotation_preserves_no_content(tmp_path):
     # Write raw content to simulate pre-fix
     with open(log_path, "w", encoding="utf-8") as f:
         for _ in range(20):
-            entry = {"timestamp": "2026-01-01", "scan_id": "raw", "input_preview": "From: evil@phish.com Subject: Urgent"}
+            entry = {"timestamp": "2026-01-01", "scan_id": "raw", "input_preview": "From: user1@example.invalid Subject: Urgent"}
             f.write(json.dumps(entry) + "\n")
 
     # Trigger rotation

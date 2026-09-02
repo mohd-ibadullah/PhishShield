@@ -278,7 +278,7 @@
       "risk_score": 30,
       "source": "last_txt_spam",
       "correct": false,
-      "text_preview": "from: Maddy <maddy@hey.emergenthq.io>\nsubject: Prove your idea works\nmailed-by: eoe.hey.emergenthq.io\nSigned by: hey.emergenthq.io\n\nProve your idea wo",
+      "text_preview": "from: Maddy <user1@example.invalid>\nsubject: Prove your idea works\nmailed-by: eoe.hey.emergenthq.io\nSigned by: hey.emergenthq.io\n\nProve your idea wo",
       "signals": [
         "Known brand mentioned"
       ]
@@ -292,7 +292,7 @@
       "risk_score": 30,
       "source": "last_txt_spam",
       "correct": false,
-      "text_preview": "from: Alefiya Magar <grad@gradright.co.in>\nsubject: USD Career Development Session | Build a Network That Actually Gets You Hired\nmailed-by: em8398.gr",
+      "text_preview": "from: Alefiya Magar <user2@example.invalid>\nsubject: USD Career Development Session | Build a Network That Actually Gets You Hired\nmailed-by: em8398.gr",
       "signals": [
         "Known brand mentioned"
       ]
@@ -306,7 +306,7 @@
       "risk_score": 78,
       "source": "last_txt_spam",
       "correct": false,
-      "text_preview": "from: Finlatics Application <learn@finlaticstraining.institute>\nsubject: Live Project in Investment Banking\nmailed-by: finlaticstraining.institute\n\nLi",
+      "text_preview": "from: Finlatics Application <user3@example.invalid>\nsubject: Live Project in Investment Banking\nmailed-by: finlaticstraining.institute\n\nLi",
       "signals": [
         "Brand impersonation pattern (brand cue plus domain mismatch/lookalike)",
         "Known brand mentioned",
@@ -322,7 +322,7 @@
       "risk_score": 30,
       "source": "last_txt_spam",
       "correct": false,
-      "text_preview": "from: Maddy <maddy@hey.emergenthq.io>\nsubject: Your app could start earning today\nmailed-by: eoe.hey.emergenthq.io\nSigned by: hey.emergenthq.io\n\nYour ",
+      "text_preview": "from: Maddy <user4@example.invalid>\nsubject: Your app could start earning today\nmailed-by: eoe.hey.emergenthq.io\nSigned by: hey.emergenthq.io\n\nYour ",
       "signals": [
         "Known brand mentioned"
       ]
@@ -336,7 +336,7 @@
       "risk_score": 30,
       "source": "last_txt_spam",
       "correct": false,
-      "text_preview": "from: Maddy <maddy@hey.emergenthq.io>\nsubject: You've got 10 free credits to get started\nmailed-by: eoe.hey.emergenthq.io\nSigned by: hey.emergenthq.io",
+      "text_preview": "from: Maddy <user5@example.invalid>\nsubject: You've got 10 free credits to get started\nmailed-by: eoe.hey.emergenthq.io\nSigned by: hey.emergenthq.io",
       "signals": [
         "Known brand mentioned"
       ]
@@ -350,7 +350,7 @@
       "risk_score": 30,
       "source": "last_txt_spam",
       "correct": false,
-      "text_preview": "from: Maddy <maddy@hey.emergenthq.io>\nsubject: The secret to a perfect first build\nmailed-by: eoe.hey.emergenthq.io\nSigned by: hey.emergenthq.io\n\nThe ",
+      "text_preview": "from: Maddy <user6@example.invalid>\nsubject: The secret to a perfect first build\nmailed-by: eoe.hey.emergenthq.io\nSigned by: hey.emergenthq.io\n\nThe ",
       "signals": [
         "Known brand mentioned"
       ]
@@ -364,7 +364,7 @@
       "risk_score": 72,
       "source": "last_txt_spam",
       "correct": false,
-      "text_preview": "from: Maddy <team@hello.emergenthq.io>\nsubject: You're officially now a Vibecoder\nmailed-by: poe.hello.emergenthq.io\nSigned by: hello.emergenthq.io\n\nY",
+      "text_preview": "from: Maddy <user7@example.invalid>\nsubject: You're officially now a Vibecoder\nmailed-by: poe.hello.emergenthq.io\nSigned by: hello.emergenthq.io\n\nY",
       "signals": [
         "Known brand mentioned"
       ]

@@ -44,21 +44,21 @@ const scenarios: Scenario[] = [
     expected: 'safe',
     checkFallback: true,
     emailText:
-      'From: Google <no-reply@accounts.google.com>\nSubject: Security alert for your account\nAuthentication-Results: spf=pass dkim=pass dmarc=pass\n\nYour Google Account was just signed in to from a new Windows device. If this was you, you can safely ignore this email. If this was not you, please secure your account.',
+      'From: Google <user1@example.invalid>\nSubject: Security alert for your account\nAuthentication-Results: spf=pass dkim=pass dmarc=pass\n\nYour Google Account was just signed in to from a new Windows device. If this was you, you can safely ignore this email. If this was not you, please secure your account.',
   },
   {
     id: 'S2',
     title: 'Amazon order update',
     expected: 'safe',
     emailText:
-      'From: Amazon <order-update@amazon.in>\nSubject: Your Amazon order has shipped\n\nYour Amazon order #402-8837291 has been shipped. Expected delivery: March 18. Track your package at https://amazon.in/orders. Thank you for shopping with Amazon.',
+      'From: Amazon <user2@example.invalid>\nSubject: Your Amazon order has shipped\n\nYour Amazon order #402-8837291 has been shipped. Expected delivery: March 18. Track your package at https://amazon.in/orders. Thank you for shopping with Amazon.',
   },
   {
     id: 'S3',
     title: 'LinkedIn newsletter',
     expected: 'safe',
     emailText:
-      'From: LinkedIn News <news@linkedin.com>\nList-Unsubscribe: <https://linkedin.com/unsubscribe>\n\nTop stories from your network this week. Manage notification settings or unsubscribe here.',
+      'From: LinkedIn News <user3@example.invalid>\nList-Unsubscribe: <https://linkedin.com/unsubscribe>\n\nTop stories from your network this week. Manage notification settings or unsubscribe here.',
   },
   {
     id: 'P1',
@@ -67,7 +67,7 @@ const scenarios: Scenario[] = [
     requireSignals: true,
     checkFallback: true,
     emailText:
-      'From: Amazon Support <support@amazon-update-help.xyz>\nSubject: Urgent account verification required\n\nYour Amazon account will be suspended within 24 hours. Verify immediately at http://amazon-update-help.xyz/login to avoid permanent closure.',
+      'From: Amazon Support <user4@example.invalid>\nSubject: Urgent account verification required\n\nYour Amazon account will be suspended within 24 hours. Verify immediately at http://amazon-update-help.xyz/login to avoid permanent closure.',
   },
   {
     id: 'P2',
@@ -76,7 +76,7 @@ const scenarios: Scenario[] = [
     requireSignals: true,
     checkFallback: true,
     emailText:
-      'From: HDFC Bank <support@hdfc-secure.tk>\nReply-To: unlock@fast-help-alert.xyz\nSubject: Critical Alert: Your account is locked\n\nDear customer, we detected unusual login attempts on your HDFC account. Please click here to verify and unlock immediately: http://hdfc-verify.xyz/login.',
+      'From: HDFC Bank <user5@example.invalid>\nReply-To: user6@example.invalid\nSubject: Critical Alert: Your account is locked\n\nDear customer, we detected unusual login attempts on your HDFC account. Please click here to verify and unlock immediately: http://hdfc-verify.xyz/login.',
   },
   {
     id: 'P3',
@@ -85,7 +85,7 @@ const scenarios: Scenario[] = [
     requireSignals: true,
     checkFallback: true,
     emailText:
-      'From: SBI Alert <support@sbi-security-alert.xyz>\nSubject: OTP verification required\n\nShare OTP immediately to avoid account suspension. Complete KYC now at http://sbi-secure-login.xyz/otp.',
+      'From: SBI Alert <user7@example.invalid>\nSubject: OTP verification required\n\nShare OTP immediately to avoid account suspension. Complete KYC now at http://sbi-secure-login.xyz/otp.',
   },
   {
     id: 'P4',
@@ -93,21 +93,21 @@ const scenarios: Scenario[] = [
     expected: 'phishing',
     requireSignals: true,
     emailText:
-      'From: Income Tax Refund <refund@incometax-gov.co>\nSubject: Refund pending for your PAN\n\nYour refund has been approved. Update bank details and verify your PAN within 24 hours at http://incometax-gov.co/refund to receive the payment.',
+      'From: Income Tax Refund <user8@example.invalid>\nSubject: Refund pending for your PAN\n\nYour refund has been approved. Update bank details and verify your PAN within 24 hours at http://incometax-gov.co/refund to receive the payment.',
   },
   {
     id: 'B1',
     title: 'Legit Paytm KYC reminder',
     expected: ['safe', 'uncertain'],
     emailText:
-      'From: Paytm Care <care@paytm.com>\nSubject: Reminder to complete KYC in the app\n\nThis is a reminder to complete your KYC in the official Paytm app to continue wallet services. No action is needed if already completed.',
+      'From: Paytm Care <user9@example.invalid>\nSubject: Reminder to complete KYC in the app\n\nThis is a reminder to complete your KYC in the official Paytm app to continue wallet services. No action is needed if already completed.',
   },
   {
     id: 'B2',
     title: 'Payment issue low urgency',
     expected: ['uncertain', 'phishing'],
     emailText:
-      'From: Billing Desk <alerts@billing-check.info>\nSubject: Payment issue notice\n\nWe noticed a problem processing your recent payment. Please review your billing details at http://billing-check.info/review when convenient to avoid future interruptions.',
+      'From: Billing Desk <user10@example.invalid>\nSubject: Payment issue notice\n\nWe noticed a problem processing your recent payment. Please review your billing details at http://billing-check.info/review when convenient to avoid future interruptions.',
   },
   {
     id: 'A1',
@@ -115,7 +115,7 @@ const scenarios: Scenario[] = [
     expected: 'phishing',
     requireSignals: true,
     emailText:
-      'From: Microsoft Support <security@micr0soft-support.com>\nSubject: Password reset required\n\nYour Office 365 account will be disabled today unless you confirm your password reset immediately at http://micr0soft-support.com/secure-login.',
+      'From: Microsoft Support <user11@example.invalid>\nSubject: Password reset required\n\nYour Office 365 account will be disabled today unless you confirm your password reset immediately at http://micr0soft-support.com/secure-login.',
   },
   {
     id: 'A2',
@@ -123,7 +123,7 @@ const scenarios: Scenario[] = [
     expected: 'phishing',
     requireSignals: true,
     emailText:
-      'From: FedEx Billing <notify@fedex-delivery-fee.xyz>\nSubject: Parcel delivery fee pending\n\nYour parcel could not be delivered. Pay the customs fee of Rs. 99 now at http://fedex-delivery-fee.xyz/pay to release the shipment.',
+      'From: FedEx Billing <user12@example.invalid>\nSubject: Parcel delivery fee pending\n\nYour parcel could not be delivered. Pay the customs fee of Rs. 99 now at http://fedex-delivery-fee.xyz/pay to release the shipment.',
   },
   {
     id: 'A3',
@@ -132,7 +132,7 @@ const scenarios: Scenario[] = [
     requireSignals: true,
     checkFallback: true,
     emailText:
-      'From: CEO Office <ceo-finance@vendor-payments.co>\nSubject: Confidential transfer request\n\nI am in a meeting. Process the vendor payment today, keep this confidential, and do not call back until the transfer is done. Update the beneficiary and confirm once released.',
+      'From: CEO Office <user13@example.invalid>\nSubject: Confidential transfer request\n\nI am in a meeting. Process the vendor payment today, keep this confidential, and do not call back until the transfer is done. Update the beneficiary and confirm once released.',
   },
   {
     id: 'M1',
@@ -163,7 +163,7 @@ const scenarios: Scenario[] = [
     title: 'Official SBI domain',
     expected: ['safe', 'uncertain'],
     emailText:
-      'From: SBI Support <noreply@sbi.co.in>\nSubject: Account notice\n\nPlease review the latest notice in your official SBI portal. This is an informational update only.',
+      'From: SBI Support <user14@example.invalid>\nSubject: Account notice\n\nPlease review the latest notice in your official SBI portal. This is an informational update only.',
   },
   {
     id: 'D2',
@@ -171,7 +171,7 @@ const scenarios: Scenario[] = [
     expected: 'phishing',
     requireSignals: true,
     emailText:
-      'From: SBI Login <noreply@sbi-secure-login.xyz>\nSubject: Verify now\n\nYour SBI access will be suspended unless you login and confirm immediately at http://sbi-secure-login.xyz/verify.',
+      'From: SBI Login <user15@example.invalid>\nSubject: Verify now\n\nYour SBI access will be suspended unless you login and confirm immediately at http://sbi-secure-login.xyz/verify.',
   },
 ];
 

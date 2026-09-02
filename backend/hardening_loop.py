@@ -105,13 +105,13 @@ def generate_dataset(seed: int) -> list[EmailCase]:
     high_id = 1
 
     safe_senders = [
-        ("Google Security <no-reply@accounts.google.com>", "no-reply@accounts.google.com", "Google"),
-        ("GitHub Notifications <noreply@github.com>", "noreply@github.com", "GitHub"),
-        ("Medium Digest <newsletter@medium.com>", "newsletter@medium.com", "Medium"),
-        ("LinkedIn Updates <updates@linkedin.com>", "updates@linkedin.com", "LinkedIn"),
-        ("Amazon Alerts <account-update@amazon.com>", "account-update@amazon.com", "Amazon"),
-        ("Paytm Info <alerts@paytm.com>", "alerts@paytm.com", "Paytm"),
-        ("OpenAI Updates <no-reply@openai.com>", "no-reply@openai.com", "OpenAI"),
+        ("Google Security <user1@example.invalid>", "user2@example.invalid", "Google"),
+        ("GitHub Notifications <user3@example.invalid>", "user4@example.invalid", "GitHub"),
+        ("Medium Digest <user5@example.invalid>", "user6@example.invalid", "Medium"),
+        ("LinkedIn Updates <user7@example.invalid>", "user8@example.invalid", "LinkedIn"),
+        ("Amazon Alerts <user9@example.invalid>", "user10@example.invalid", "Amazon"),
+        ("Paytm Info <user11@example.invalid>", "user12@example.invalid", "Paytm"),
+        ("OpenAI Updates <user13@example.invalid>", "user14@example.invalid", "OpenAI"),
     ]
 
     safe_templates = [
@@ -141,22 +141,22 @@ def generate_dataset(seed: int) -> list[EmailCase]:
 
     legit_urgency_cases = [
         (
-            "HR Team <hr@company.com>",
+            "HR Team <user15@example.invalid>",
             "Payroll close reminder",
             "Payroll closes at 5 PM today. Submit timesheets in the internal HR portal.",
         ),
         (
-            "IT Service Desk <it-helpdesk@company.com>",
+            "IT Service Desk <user16@example.invalid>",
             "Urgent maintenance notice",
             "Urgent maintenance starts tonight. Save your work before 8 PM. No verification is requested.",
         ),
         (
-            "Security Team <security@hdfcbank.com>",
+            "Security Team <user17@example.invalid>",
             "Official safety reminder",
             "Do not share OTP with anyone. If anyone asks, call official support from the bank app.",
         ),
         (
-            "Repo Bot <notifications@github.com>",
+            "Repo Bot <user18@example.invalid>",
             "Action required: branch protection",
             "Action required for branch protection policy. Review in your repository settings.",
         ),
@@ -164,7 +164,7 @@ def generate_dataset(seed: int) -> list[EmailCase]:
 
     for sender_label, subject, body in legit_urgency_cases:
         sender_email = re.search(r"<([^>]+)>", sender_label)
-        sender_addr = sender_email.group(1) if sender_email else "noreply@example.com"
+        sender_addr = sender_email.group(1) if sender_email else "user19@example.invalid"
         _add_case(
             cases,
             EmailCase(
@@ -254,8 +254,8 @@ def generate_dataset(seed: int) -> list[EmailCase]:
             EmailCase(
                 case_id=f"SUS-{suspicious_id:03d}",
                 expected_verdict="Suspicious",
-                email_text=_build_email("Notification Center <notice@updates-mail.net>", "Notice update", body),
-                headers_text=_headers_softfail("notice@updates-mail.net", "helpdesk@outlook.com"),
+                email_text=_build_email("Notification Center <user20@example.invalid>", "Notice update", body),
+                headers_text=_headers_softfail("user21@example.invalid", "user22@example.invalid"),
                 tags=["suspicious", "short_link", "edge_case"],
             ),
         )
@@ -284,7 +284,7 @@ def generate_dataset(seed: int) -> list[EmailCase]:
                     case_id=f"HR-{high_id:03d}",
                     expected_verdict="High Risk",
                     email_text=_build_email(f"{brand} Security <{sender_email}>", f"{brand} urgent verification", body),
-                    headers_text=_headers_fail(sender_email, "helpdesk@outlook.com", f"bounce@{domain}"),
+                    headers_text=_headers_fail(sender_email, "user23@example.invalid", f"bounce@{domain}"),
                     tags=["high_risk", "bank_scam", "otp_harvest", "upi_kyc", "header_fail_impact"],
                     required_signal_keywords=["otp-harvesting", "credential", "high-risk tld", "brand impersonation"],
                     consistency_group=f"hr-bank-{brand.lower()}",
@@ -313,7 +313,7 @@ def generate_dataset(seed: int) -> list[EmailCase]:
                 case_id=f"HR-{high_id:03d}",
                 expected_verdict="High Risk",
                 email_text=_build_email(f"{brand} Security <{sender_email}>", "Verify account", body),
-                headers_text=_headers_fail(sender_email, "verify-team@protonmail.com", "bounce@mailer-top.work"),
+                headers_text=_headers_fail(sender_email, "user24@example.invalid", "user25@example.invalid"),
                 tags=["high_risk", "brand_spoof", "no_link_phishing"],
                 required_signal_keywords=["lookalike", "sender lookalike", "brand impersonation"],
                 consistency_group=f"hr-spoof-{brand.lower()}",
@@ -338,8 +338,8 @@ def generate_dataset(seed: int) -> list[EmailCase]:
             EmailCase(
                 case_id=f"HR-{high_id:03d}",
                 expected_verdict="High Risk",
-                email_text=_build_email("Transaction Alert <alerts@bank-notice.center>", "Transaction blocked", body),
-                headers_text=_headers_softfail("alerts@bank-notice.center", "urgent-help@outlook.com"),
+                email_text=_build_email("Transaction Alert <user26@example.invalid>", "Transaction blocked", body),
+                headers_text=_headers_softfail("user27@example.invalid", "user28@example.invalid"),
                 tags=["high_risk", "short_link", "otp_harvest"],
                 required_signal_keywords=["otp-harvesting", "suspicious verification link"],
                 consistency_group=f"hr-short-{idx}",
@@ -367,14 +367,14 @@ def generate_dataset(seed: int) -> list[EmailCase]:
     ]
 
     for name, body in multilingual_high_risk:
-        sender_email = "alerts@regional-security-alert.xyz"
+        sender_email = "user29@example.invalid"
         _add_case(
             cases,
             EmailCase(
                 case_id=f"HR-{high_id:03d}",
                 expected_verdict="High Risk",
                 email_text=_build_email(f"Regional Alerts <{sender_email}>", name, body),
-                headers_text=_headers_fail(sender_email, "desk@outlook.com", "bounce@regional-security-alert.xyz"),
+                headers_text=_headers_fail(sender_email, "user30@example.invalid", "user31@example.invalid"),
                 tags=["high_risk", "multilingual", "mixed_language", "reward_or_otp"],
                 required_signal_keywords=["reward", "otp", "high-risk tld"],
                 consistency_group="hr-multilingual",
@@ -400,7 +400,7 @@ def generate_dataset(seed: int) -> list[EmailCase]:
                 case_id=f"HR-{high_id:03d}",
                 expected_verdict="High Risk",
                 email_text=_build_email(f"Security Team <{sender_email}>", "Unicode domain check", body),
-                headers_text=_headers_softfail(sender_email, "verify@outlook.com"),
+                headers_text=_headers_softfail(sender_email, "user32@example.invalid"),
                 tags=["high_risk", "unicode_domain", "brand_spoof", "no_link_phishing"],
                 required_signal_keywords=["lookalike", "sender", "brand"],
             ),
@@ -425,7 +425,7 @@ def generate_dataset(seed: int) -> list[EmailCase]:
     ]
 
     for attachment in attachment_cases:
-        sender_email = "notify@docs-security-check.xyz"
+        sender_email = "user33@example.invalid"
         body = (
             f"Open attachment {attachment['filename']} now. "
             "Complete verification immediately to avoid account suspension today."
@@ -436,7 +436,7 @@ def generate_dataset(seed: int) -> list[EmailCase]:
                 case_id=f"HR-{high_id:03d}",
                 expected_verdict="High Risk",
                 email_text=_build_email(f"Document Center <{sender_email}>", "Attachment verification", body),
-                headers_text=_headers_fail(sender_email, "helpdesk@outlook.com", "bounce@docs-security-check.xyz"),
+                headers_text=_headers_fail(sender_email, "user34@example.invalid", "user35@example.invalid"),
                 attachments=[attachment],
                 tags=["high_risk", "attachment_lure", "qr_or_password_protected"],
                 required_signal_keywords=["attachment", "qr", "credential"],
@@ -451,14 +451,14 @@ def generate_dataset(seed: int) -> list[EmailCase]:
     ]
 
     for body in no_link_high_risk:
-        sender_email = "alerts@urgent-recovery-center.net"
+        sender_email = "user36@example.invalid"
         _add_case(
             cases,
             EmailCase(
                 case_id=f"HR-{high_id:03d}",
                 expected_verdict="High Risk",
                 email_text=_build_email(f"Recovery Desk <{sender_email}>", "Immediate verification", body),
-                headers_text=_headers_fail(sender_email, "helpdesk@outlook.com", "bounce@urgent-recovery-center.net"),
+                headers_text=_headers_fail(sender_email, "user37@example.invalid", "user38@example.invalid"),
                 tags=["high_risk", "no_link_phishing", "otp_harvest", "very_short"],
                 required_signal_keywords=["otp-harvesting"],
                 consistency_group="hr-no-link-otp",
@@ -476,8 +476,8 @@ def generate_dataset(seed: int) -> list[EmailCase]:
         EmailCase(
             case_id=f"SAFE-{safe_id:03d}",
             expected_verdict="Safe",
-            email_text=_build_email("Engineering Ops <updates@company.com>", "Very long internal digest", long_safe_text),
-            headers_text=_headers_pass("updates@company.com"),
+            email_text=_build_email("Engineering Ops <user39@example.invalid>", "Very long internal digest", long_safe_text),
+            headers_text=_headers_pass("user40@example.invalid"),
             tags=["safe", "very_long", "internal"],
         ),
     )
@@ -493,8 +493,8 @@ def generate_dataset(seed: int) -> list[EmailCase]:
         EmailCase(
             case_id=f"HR-{high_id:03d}",
             expected_verdict="High Risk",
-            email_text=_build_email("Compliance Desk <alerts@urgent-kyc-review.xyz>", "Very long phishing lure", long_phishing_text),
-            headers_text=_headers_fail("alerts@urgent-kyc-review.xyz", "helpdesk@outlook.com", "bounce@urgent-kyc-review.xyz"),
+            email_text=_build_email("Compliance Desk <user41@example.invalid>", "Very long phishing lure", long_phishing_text),
+            headers_text=_headers_fail("user42@example.invalid", "user43@example.invalid", "user44@example.invalid"),
             tags=["high_risk", "very_long", "otp_harvest", "upi_kyc"],
             required_signal_keywords=["otp", "credential", "high-risk tld"],
         ),

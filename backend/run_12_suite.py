@@ -6,84 +6,84 @@ import json
 tests = [
     {
         "id": "Test 1: Perfect Auth Safe Email",
-        "email": "From: billing@aws.amazon.com\nTo: user@company.com\nSubject: Invoice\n\nYour AWS invoice for this month is ready to view. Total: $12.00",
-        "headers": "Authentication-Results: mx.google.com;\n dkim=pass header.i=@aws.amazon.com;\n spf=pass (google.com: domain of billing@aws.amazon.com designates 54.240.14.1 as permitted sender);\n dmarc=pass header.from=aws.amazon.com",
+        "email": "From: user1@example.invalid\nTo: user2@example.invalid\nSubject: Invoice\n\nYour AWS invoice for this month is ready to view. Total: $12.00",
+        "headers": "Authentication-Results: mx.google.com;\n dkim=pass header.i=@aws.amazon.com;\n spf=pass (google.com: domain of user3@example.invalid designates 54.240.14.1 as permitted sender);\n dmarc=pass header.from=aws.amazon.com",
         "expect_trusted": True,
         "expect_verdict": "Safe"
     },
     {
         "id": "Test 2: Perfect Auth from GitHub",
-        "email": "From: noreply@github.com\nTo: dev@company.com\nSubject: [GitHub] Please review PR\n\nA new PR has been opened by a teammate in your repository. Please review.",
+        "email": "From: user4@example.invalid\nTo: user5@example.invalid\nSubject: [GitHub] Please review PR\n\nA new PR has been opened by a teammate in your repository. Please review.",
         "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@github.com; spf=pass smtp.mailfrom=github.com; dmarc=pass header.from=github.com",
         "expect_trusted": True,
         "expect_verdict": "Safe"
     },
     {
         "id": "Test 3: AWS Safe Context",
-        "email": "From: no-reply-aws@amazon.com\nTo: user@example.com\nSubject: AWS Notification\n\nAWS Security Hub has discovered a new finding. Please go to your AWS console to view it. https://console.aws.amazon.com/securityhub",
+        "email": "From: user6@example.invalid\nTo: user7@example.invalid\nSubject: AWS Notification\n\nAWS Security Hub has discovered a new finding. Please go to your AWS console to view it. https://console.aws.amazon.com/securityhub",
         "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@amazon.com; spf=pass; dmarc=pass",
         "expect_trusted": True,
         "expect_verdict": "Safe"
     },
     {
         "id": "Test 4: Brand Impersonation Failure (Lookalike)",
-        "email": "From: support@amaz0n-security.com\nTo: user@example.com\nSubject: Urgent: Verify Account\n\nVerify your account immediately or it will be suspended today. Click here: https://amaz0n-security.com/verify",
+        "email": "From: user8@example.invalid\nTo: user9@example.invalid\nSubject: Urgent: Verify Account\n\nVerify your account immediately or it will be suspended today. Click here: https://amaz0n-security.com/verify",
         "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@amaz0n-security.com; spf=pass; dmarc=pass",
         "expect_trusted": True, 
         "expect_verdict": "High Risk" 
     },
     {
         "id": "Test 5: Header Spoofing (Mismatch Return Path)",
-        "email": "From: billing@netflix.com\nTo: user@example.com\nSubject: Update Payment\n\nYour payment failed. Update now.",
+        "email": "From: user10@example.invalid\nTo: user11@example.invalid\nSubject: Update Payment\n\nYour payment failed. Update now.",
         "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@evil.com; spf=pass smtp.mailfrom=evil.com; dmarc=fail header.from=netflix.com",
         "expect_trusted": False,
         "expect_verdict": "Suspicious" # or High risk
     },
     {
         "id": "Test 6: Safe Clean Email (Business)",
-        "email": "From: john.doe@partner-company.com\nTo: me@mycompany.com\nSubject: Q3 Project sync\n\nHey,\nLet's schedule our Q3 project sync. Are you available next Tuesday?\nBest,\nJohn",
+        "email": "From: user12@example.invalid\nTo: user13@example.invalid\nSubject: Q3 Project sync\n\nHey,\nLet's schedule our Q3 project sync. Are you available next Tuesday?\nBest,\nJohn",
         "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@partner-company.com; spf=pass; dmarc=pass",
         "expect_trusted": True,
         "expect_verdict": "Safe"
     },
     {
         "id": "Test 7: No Auth headers (Partial)",
-        "email": "From: local-server@internal.local\nTo: admin@company.com\nSubject: Server uptime\n\nServer has been up for 400 days.",
+        "email": "From: user14@example.invalid\nTo: user15@example.invalid\nSubject: Server uptime\n\nServer has been up for 400 days.",
         "headers": "",
         "expect_trusted": False,
         "expect_verdict": "Safe"
     },
     {
         "id": "Test 8: HDFC Phishing (Brand + Suspicious Link + Urgency)",
-        "email": "From: security@hdfc-alerts-update.com\nTo: victim@example.com\nSubject: URGENT: Account Blocked\n\nYour HDFC account has been temporarily disabled due to suspicious activity. Verify your identity immediately or your account will be permanently blocked today! Click here to verify: https://hdfc-alerts-update.com/verify",
+        "email": "From: user16@example.invalid\nTo: user17@example.invalid\nSubject: URGENT: Account Blocked\n\nYour HDFC account has been temporarily disabled due to suspicious activity. Verify your identity immediately or your account will be permanently blocked today! Click here to verify: https://hdfc-alerts-update.com/verify",
         "headers": "Authentication-Results: mx.google.com; dkim=none; spf=fail smtp.mailfrom=hdfc-alerts-update.com; dmarc=none",
         "expect_trusted": False,
         "expect_verdict": "High Risk"
     },
     {
         "id": "Test 9: OTP Credential Harvest (High Risk)",
-        "email": "From: unknown@random.xyz\nTo: victim@example.com\nSubject: Urgent KYC Update\n\nReply with your OTP to unlock your frozen salary account immediately.",
+        "email": "From: user18@example.invalid\nTo: user19@example.invalid\nSubject: Urgent KYC Update\n\nReply with your OTP to unlock your frozen salary account immediately.",
         "headers": "Authentication-Results: mx.google.com; dkim=none; spf=none; dmarc=none",
         "expect_trusted": False,
         "expect_verdict": "High Risk"
     },
     {
         "id": "Test 10: Link Safety Checks",
-        "email": "From: notify@urlscan.io\nTo: user@example.com\nSubject: Scan finished\n\nYour requested scan at https://urlscan.io/result/1234 has finished successfully.",
+        "email": "From: user20@example.invalid\nTo: user21@example.invalid\nSubject: Scan finished\n\nYour requested scan at https://urlscan.io/result/1234 has finished successfully.",
         "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@urlscan.io; spf=pass; dmarc=pass",
         "expect_trusted": True,
         "expect_verdict": "Safe"
     },
     {
         "id": "Test 11: Real Brand, Correct Domain, Alert",
-        "email": "From: security@microsoft.com\nTo: user@company.com\nSubject: New sign-in\n\nWe noticed a new sign-in to your Microsoft account from a new Windows device. If this was you, you can safely ignore this email.",
+        "email": "From: user22@example.invalid\nTo: user23@example.invalid\nSubject: New sign-in\n\nWe noticed a new sign-in to your Microsoft account from a new Windows device. If this was you, you can safely ignore this email.",
         "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@microsoft.com; spf=pass; dmarc=pass",
         "expect_trusted": True,
         "expect_verdict": "Safe"
     },
     {
         "id": "Test 12: Short urgent text with suspicious link",
-        "email": "From: boss@corp.com\nTo: finance@corp.com\nSubject: Urgent Wire\n\nWire $50k to vendor immediately. Do not call, I am in a meeting.",
+        "email": "From: user24@example.invalid\nTo: user25@example.invalid\nSubject: Urgent Wire\n\nWire $50k to vendor immediately. Do not call, I am in a meeting.",
         "headers": "Authentication-Results: mx.google.com; spf=fail; dkim=none; dmarc=none",
         "expect_trusted": False,
         "expect_verdict": "High Risk"

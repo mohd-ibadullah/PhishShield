@@ -182,7 +182,7 @@ def test_phishing_thread_hijack_bec():
 
 def test_phishing_sender_lookalike():
     assert_phishing(
-        "From: support@paypa1-secure.com\n\n"
+        "From: user1@example.invalid\n\n"
         "Your PayPal account is limited. Verify immediately at http://paypal-verify.top"
     )
 

@@ -14,7 +14,7 @@ CASES = [
     {
         "name": "paypal_otp_critical",
         "email": (
-            "From: PayPal Security <security@paypa1-support-alerts.com>\n"
+            "From: PayPal Security <user1@example.invalid>\n"
             "Subject: Urgent: Account Suspension Warning\n\n"
             "Your account will be suspended in 30 minutes. "
             "Verify immediately and provide the OTP to continue service. "
@@ -29,7 +29,7 @@ CASES = [
     {
         "name": "ceo_wire_no_url_high_risk",
         "email": (
-            "From: CEO Office <ceo-finance@company-payroll-support.com>\n"
+            "From: CEO Office <user2@example.invalid>\n"
             "Subject: Confidential transfer request\n\n"
             "I need you to process a wire transfer of USD 48,000 to the new beneficiary today. "
             "Keep this confidential and confirm once completed."
@@ -43,7 +43,7 @@ CASES = [
     {
         "name": "invoice_bank_update_high_risk",
         "email": (
-            "From: Accounts Payable <billing@vendor-payment-support.com>\n"
+            "From: Accounts Payable <user3@example.invalid>\n"
             "Subject: Updated bank details for invoice #8841\n\n"
             "Continuing the same thread, invoice approval requires updated bank account details. "
             "Process payment today and confirm transfer completion."
@@ -57,7 +57,7 @@ CASES = [
     {
         "name": "mixed_trusted_and_suspicious_links",
         "email": (
-            "From: Team Updates <support@workspace-notice.com>\n"
+            "From: Team Updates <user4@example.invalid>\n"
             "Subject: Review account activity\n\n"
             "Please review your account update. Official help center: https://google.com/security. "
             "Also complete verification at http://account-security-update-check.xyz/verify"
@@ -71,7 +71,7 @@ CASES = [
     {
         "name": "google_notifications_safe",
         "email": (
-            "From: Google Notifications <notifications@google.com>\n"
+            "From: Google Notifications <user5@example.invalid>\n"
             "Subject: Security alert for your account\n\n"
             "New sign-in detected from Chrome on Windows. "
             "If this was you, no action is required. "

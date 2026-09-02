@@ -32,7 +32,7 @@ TEST_CASES = [
     ("Newsletter: This week in Python — top articles, tutorials, and job posts.", "safe"),
     ("Meeting rescheduled to 3pm IST tomorrow. Please update your calendar.", "safe"),
     ("Your Swiggy order is on the way! Track here: [tracking link]", "safe"),
-    ("SELECT * FROM users WHERE email = 'test@example.com'; — DB admin query log", "safe"),
+    ("SELECT * FROM users WHERE email = 'user1@example.invalid'; — DB admin query log", "safe"),
     ("OTP for your Zepto login is 847291. Valid for 10 minutes. Do not share.", "safe"),
     ("Dear subscriber, your IRCTC e-ticket for Train 12345 is confirmed. PNR: XXXXXXXX", "safe"),
     ("Hi Rahul, attached is the invoice for last month's consulting work. Please process.", "safe"),

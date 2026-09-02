@@ -5,37 +5,37 @@ test_cases = [
     {
         "name": "Google safe email",
         "text": "Your Google account password was changed recently. If this was you, ignore this email.",
-        "headers": "From: no-reply@accounts.google.com"
+        "headers": "From: user1@example.invalid"
     },
     {
         "name": "ICICI awareness",
         "text": "ICICI Bank safety tip: Never share your OTP or password with anyone, even bank officials. Stay safe.",
-        "headers": "From: alerts@icicibank.com"
+        "headers": "From: user2@example.invalid"
     },
     {
         "name": "OTP short",
         "text": "Verify account now: send OTP to 9988776655 immediately for refund.",
-        "headers": "From: support@hdfc-verify.com"
+        "headers": "From: user3@example.invalid"
     },
     {
         "name": "BEC",
         "text": "Urgent wire transfer needed for vendor payment. Discuss details on call later. Release today.",
-        "headers": "From: ceo@company.com"
+        "headers": "From: user4@example.invalid"
     },
     {
         "name": "Phishing link",
         "text": "Your Netflix account is suspended. Update payment now: http://netflix-update.xyz/login",
-        "headers": "From: billing@netflix.com"
+        "headers": "From: user5@example.invalid"
     },
     {
         "name": "Mixed",
         "text": "Check your official Amazon orders at http://amazon.in. Also verify your prime bonus here: http://amazon-bonus.tk/claim",
-        "headers": "From: info@amazon.in"
+        "headers": "From: user6@example.invalid"
     },
     {
         "name": "Normal email",
         "text": "Hi Team, let's meet at 5 PM today for the project sync. Thanks.",
-        "headers": "From: colleague@work.com"
+        "headers": "From: user7@example.invalid"
     }
 ]
 

@@ -179,9 +179,9 @@ Best regards,
 John
 
 -----Original Message-----
-From: Sarah Johnson <sarah@company.com>
+From: Sarah Johnson <user1@example.invalid>
 Sent: Monday, April 14, 2026 10:30 AM
-To: John Smith <john@partner.com>
+To: John Smith <user2@example.invalid>
 Subject: Re: Invoice Payment #4521
 
 Hi John,
@@ -206,7 +206,7 @@ Do not share this with anyone else. This is strictly confidential.
 - CEO
 
 -----Original Message-----
-From: Jane Doe <jane@company.com>
+From: Jane Doe <user3@example.invalid>
 Sent: Monday, April 14, 2026 2:15 PM
 Subject: Project Budget Update
 
@@ -229,7 +229,7 @@ Sounds great! I'll bring the dessert.
 Thanks,
 Mike
 
-On Mon, Apr 14, 2026 at 3:00 PM, Lisa Brown <lisa@company.com> wrote:
+On Mon, Apr 14, 2026 at 3:00 PM, Lisa Brown <user4@example.invalid> wrote:
 > Hi everyone,
 > Let's do a team lunch tomorrow at noon. 
 > I'll order pizza from that new place.
@@ -251,7 +251,7 @@ Our bank details have changed - process the transfer to the new account today.
 This is urgent and confidential.
 
 -----Original Message-----
-From: Finance Team <finance@company.com>
+From: Finance Team <user5@example.invalid>
 Subject: Account Review
 
 Hi, here is the quarterly account review. All looks good.

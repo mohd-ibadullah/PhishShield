@@ -81,7 +81,7 @@ const CORPORATE_CLAIMANTS = [
 function extractEmail(
   raw: string,
 ): { email: string; displayName: string; domain: string } | null {
-  // Match "Display Name <email@domain.com>" or bare "email@domain.com"
+  // Match "Display Name <user1@example.invalid>" or bare "user2@example.invalid"
   const angleMatch = raw.match(/<([^>]+@[^>]+)>/);
   const email = angleMatch
     ? angleMatch[1].trim()

@@ -88,7 +88,7 @@ test.describe('PhishShield AI standalone UI QA', () => {
     await resetSession(page);
     const result = await scanEmail(
       page,
-      'From: Amazon <order-update@amazon.in>\nSubject: Your Amazon order has shipped\n\nYour Amazon order #402-8837291 has been shipped. Expected delivery: March 18. Track your package at https://amazon.in/orders. Thank you for shopping with Amazon.',
+      'From: Amazon <user1@example.invalid>\nSubject: Your Amazon order has shipped\n\nYour Amazon order #402-8837291 has been shipped. Expected delivery: March 18. Track your package at https://amazon.in/orders. Thank you for shopping with Amazon.',
     );
 
     expect(result.verdict).toBe('SAFE');
@@ -101,7 +101,7 @@ test.describe('PhishShield AI standalone UI QA', () => {
     await resetSession(page);
     const result = await scanEmail(
       page,
-      'From: Google Pay <googlepay-noreply@google.com>\nReply-To: Google Pay <googlepay-noreply@google.com>\nReturn-Path: <bounce@scoutcamp.bounces.google.com>\nAuthentication-Results: mx.google.com; spf=pass; dkim=pass; dmarc=pass\nList-Unsubscribe: <https://myaccount.google.com/communication-preferences/unsubscribe>\nSubject: Say hello to Flex. A credit card by Google Pay\n\nApply now: https://c.gle/AEJ26quC6hIqRK3fx\nVisit the Help Center: https://myaccount.google.com/help',
+      'From: Google Pay <user2@example.invalid>\nReply-To: Google Pay <user3@example.invalid>\nReturn-Path: <user4@example.invalid>\nAuthentication-Results: mx.google.com; spf=pass; dkim=pass; dmarc=pass\nList-Unsubscribe: <https://myaccount.google.com/communication-preferences/unsubscribe>\nSubject: Say hello to Flex. A credit card by Google Pay\n\nApply now: https://c.gle/AEJ26quC6hIqRK3fx\nVisit the Help Center: https://myaccount.google.com/help',
     );
 
     expect(result.verdict).toBe('SAFE');
@@ -114,7 +114,7 @@ test.describe('PhishShield AI standalone UI QA', () => {
     await resetSession(page);
     const result = await scanEmail(
       page,
-      'From: HDFC Bank <alerts@hdfcbank.com>\nReturn-Path: attacker@spoofed-alert.xyz\nReply-To: attacker@spoofed-alert.xyz\nSubject: Account locked\n\nPlease verify immediately to restore access.',
+      'From: HDFC Bank <user5@example.invalid>\nReturn-Path: user6@example.invalid\nReply-To: user7@example.invalid\nSubject: Account locked\n\nPlease verify immediately to restore access.',
     );
 
     expect(result.verdict).toBe('HIGH RISK');
@@ -129,15 +129,15 @@ test.describe('PhishShield AI standalone UI QA', () => {
 
     await scanEmail(
       page,
-      'From: Google <no-reply@accounts.google.com>\nSubject: Security alert for your account\n\nYour Google Account was just signed in to from a new Windows device. If this was you, you can safely ignore this email.',
+      'From: Google <user8@example.invalid>\nSubject: Security alert for your account\n\nYour Google Account was just signed in to from a new Windows device. If this was you, you can safely ignore this email.',
     );
     await scanEmail(
       page,
-      'From: Billing Desk <alerts@billing-check.info>\nSubject: Payment issue notice\n\nWe noticed a problem processing your recent payment. Please review your billing details at http://billing-check.info/review when convenient.',
+      'From: Billing Desk <user9@example.invalid>\nSubject: Payment issue notice\n\nWe noticed a problem processing your recent payment. Please review your billing details at http://billing-check.info/review when convenient.',
     );
     await scanEmail(
       page,
-      'From: SBI Alert <support@sbi-security-alert.xyz>\nSubject: OTP verification required\n\nShare OTP immediately and verify your account now at http://sbi-secure-login.xyz/otp.',
+      'From: SBI Alert <user10@example.invalid>\nSubject: OTP verification required\n\nShare OTP immediately and verify your account now at http://sbi-secure-login.xyz/otp.',
     );
 
     await openDashboard(page);

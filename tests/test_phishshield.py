@@ -172,7 +172,7 @@ async def test_sender_domain_bank_alert_is_suspicious(client) -> None:
         json={
             "session_id": "bank-alert-domain-risk",
             "email_text": (
-                "From: support@bank-alert.com\n"
+                "From: user1@example.invalid\n"
                 "Subject: Account notice\n"
                 "Your account needs attention. Please review your details soon."
             ),
@@ -196,7 +196,7 @@ async def test_soft_pressure_details_request_is_suspicious(client) -> None:
         json={
             "session_id": "soft-pressure-details-request",
             "email_text": (
-                "From: hr@company-careers.net\n"
+                "From: user2@example.invalid\n"
                 "Subject: Offer letter update\n"
                 "We need you to confirm your details within 48 hours to proceed."
             ),
@@ -217,7 +217,7 @@ async def test_sender_domain_hdfc_alert_detected_as_brand_lookalike(client) -> N
         json={
             "session_id": "hdfc-alert-lookalike",
             "email_text": (
-                "From: security@hdfc-alert.co\n"
+                "From: user3@example.invalid\n"
                 "Subject: Immediate Action Required\n"
                 "Your HDFC account is locked.\n"
                 "Login here: http://hdfc-secure-login.xyz"
@@ -596,9 +596,9 @@ async def test_vt_cache_hit(client) -> None:
 
 async def test_pipeline_check_headers_safe(client) -> None:
     safe_headers = (
-        "From: Security Team <security@google.com>\n"
-        "Reply-To: security@google.com\n"
-        "Return-Path: <security@google.com>\n"
+        "From: Security Team <user4@example.invalid>\n"
+        "Reply-To: user5@example.invalid\n"
+        "Return-Path: <user6@example.invalid>\n"
         "Authentication-Results: mx.google.com; "
         "spf=pass smtp.mailfrom=google.com; "
         "dkim=pass header.d=google.com; "
@@ -622,9 +622,9 @@ async def test_pipeline_check_headers_safe(client) -> None:
 
 async def test_display_name_brand_spoof_escalates_header_scores(client) -> None:
     spoof_headers = (
-        'From: "Google Security" <alerts@account-alert-security.com>\n'
-        "Reply-To: alerts@account-alert-security.com\n"
-        "Return-Path: <alerts@account-alert-security.com>\n"
+        'From: "Google Security" <user7@example.invalid>\n'
+        "Reply-To: user8@example.invalid\n"
+        "Return-Path: <user9@example.invalid>\n"
         "Authentication-Results: mx.example.com; "
         "spf=pass smtp.mailfrom=account-alert-security.com; "
         "dkim=pass header.d=account-alert-security.com; "
@@ -646,9 +646,9 @@ async def test_display_name_brand_spoof_classified_suspicious_or_high_risk(clien
         json={
             "session_id": "display-name-brand-spoof-regression",
             "email_text": (
-                'From: "HDFC Alerts" <notify@bank-secure-action.com>\n'
-                "Reply-To: notify@bank-secure-action.com\n"
-                "Return-Path: <notify@bank-secure-action.com>\n"
+                'From: "HDFC Alerts" <user10@example.invalid>\n'
+                "Reply-To: user11@example.invalid\n"
+                "Return-Path: <user12@example.invalid>\n"
                 "Authentication-Results: mx.example.com; "
                 "spf=pass smtp.mailfrom=bank-secure-action.com; "
                 "dkim=pass header.d=bank-secure-action.com; "
@@ -948,7 +948,7 @@ MARKETING_NEWSLETTER_CASES = [
     {
         "name": "economist-promo",
         "email_text": (
-            "From: The Economist <noreply@e.economist.com>\n"
+            "From: The Economist <user13@example.invalid>\n"
             "Subject: Act now: Save 50% on The Economist\n\n"
             "Join The Economist and gain a global perspective.\n"
             "Save 50%. Unsubscribe. Privacy Policy. Terms & Conditions."
@@ -957,7 +957,7 @@ MARKETING_NEWSLETTER_CASES = [
     {
         "name": "google-skills-lab",
         "email_text": (
-            "From: noreply@skills.google\n"
+            "From: user14@example.invalid\n"
             "Subject: You finished a lab\n\n"
             "Hi Mohd,\n"
             "You completed the lab How to Use a Network Policy on Google Kubernetes Engine.\n"
@@ -968,7 +968,7 @@ MARKETING_NEWSLETTER_CASES = [
     {
         "name": "docker-welcome",
         "email_text": (
-            "From: Docker <no-reply@notify.docker.com>\n"
+            "From: Docker <user15@example.invalid>\n"
             "Subject: You + Docker = Ready for Action\n\n"
             "Hi and welcome to Docker!\n"
             "Congratulations, your account has been verified!\n"

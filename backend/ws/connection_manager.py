@@ -26,11 +26,13 @@ class ConnectionManager:
         self._pending: dict[str, list[tuple[dict[str, Any], datetime]]] = {}
         self._PENDING_MAX_PER_ROOM = 20
         self._PENDING_TTL_SECONDS = 60
-        self._MAX_ROOMS = 500
-        # TTL=60s; observed peak/min=903 (scan_logs.jsonl, n=80220, includes test bursts).
-        # 20×903=18060; cap set to 10000 as practical bound. Peak includes test-written
-        # records — production rate is lower. Events older than TTL are pruned.
-        self._MAX_TOTAL_EVENTS = 10000
+        # Observed burst peak: 903 rooms (scan_logs.jsonl, n=80220, includes test
+        # bursts). Production rate is lower. MAX_ROOMS must exceed observed peak
+        # so room eviction doesn't silently drop events before the total cap binds.
+        self._MAX_ROOMS = 1000
+        # 1000 rooms × 20 events/room = 20K. ~2 MB at 100 B/event — trivial.
+        # If exceeded, oldest events are evicted (lossy by design); intentional.
+        self._MAX_TOTAL_EVENTS = 20000
 
     def _prune_pending_locked(self, room: str) -> list[dict[str, Any]]:
         now = datetime.now(timezone.utc)

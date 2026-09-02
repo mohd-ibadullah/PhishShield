@@ -75,7 +75,7 @@ const CASES: UiCase[] = [
   {
     id: 'Test 1',
     email:
-      'From: Support Team <support@company-helpdesk.com>\n\nPlease review your account profile details.',
+      'From: Support Team <user1@example.invalid>\n\nPlease review your account profile details.',
     assertions: async (page) => {
       await expectNoHeadersBadge(page);
       await ensureDetailsOpen(page);
@@ -108,7 +108,7 @@ const CASES: UiCase[] = [
   {
     id: 'Test 4',
     email:
-      'From: Amazon Billing <billing@amaz0n-security-support.com>\n\nPlease verify your recent account activity by reviewing your account details.',
+      'From: Amazon Billing <user2@example.invalid>\n\nPlease verify your recent account activity by reviewing your account details.',
     assertions: async (page) => {
       await expect(page.getByText(/Final verdict/i)).toBeVisible();
     },
@@ -116,7 +116,7 @@ const CASES: UiCase[] = [
   {
     id: 'Test 5',
     email:
-      'From: LinkedIn News <news@linkedin.com>\nSubject: Weekly digest\n\nHere is your weekly professional digest. Manage notification settings or unsubscribe anytime.',
+      'From: LinkedIn News <user3@example.invalid>\nSubject: Weekly digest\n\nHere is your weekly professional digest. Manage notification settings or unsubscribe anytime.',
     assertions: async (page) => {
       await expectZeroScoreBreakdown(page);
     },
@@ -127,9 +127,9 @@ const CASES: UiCase[] = [
       'Please review your account profile details. Sender metadata is provided separately.',
     headers:
       [
-        'From: HDFC Bank <alerts@hdfcbank.com>',
-        'Reply-To: assist@random-mailer.net',
-        'Return-Path: <bounce@mailer-random.net>',
+        'From: HDFC Bank <user4@example.invalid>',
+        'Reply-To: user5@example.invalid',
+        'Return-Path: <user6@example.invalid>',
         'Authentication-Results: mx.example.com; spf=fail dkim=fail dmarc=fail',
         'Received: from [10.0.0.12] by mx.example.com with ESMTP id 7781',
       ].join('\n'),

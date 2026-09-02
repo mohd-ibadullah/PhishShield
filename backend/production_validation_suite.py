@@ -200,7 +200,7 @@ REAL_WORLD_PHISHING_SCENARIOS = [
         "subject": "Urgent account verification",
         "header_sender": "SBI Security",
         "from_domain": "secure-login-check.top",
-        "reply_to": "recovery@secure-mail.top",
+        "reply_to": "user1@example.invalid",
         "body": "Dear customer, your account will be blocked tonight unless you verify now. Enter your OTP and passcode immediately at {link}.",
         "links": ["https://sbi-secure-auth.top/verify"],
     },
@@ -209,7 +209,7 @@ REAL_WORLD_PHISHING_SCENARIOS = [
         "subject": "Delivery failed - pay customs",
         "header_sender": "Courier Hub",
         "from_domain": "parcel-release.click",
-        "reply_to": "support@parcel-release.click",
+        "reply_to": "user2@example.invalid",
         "body": "Your package is held at customs. Pay the fee in 2 hours to avoid return. Confirm card details at {link}.",
         "links": ["https://parcel-release.click/fee"],
     },
@@ -218,7 +218,7 @@ REAL_WORLD_PHISHING_SCENARIOS = [
         "subject": "Remote job confirmation",
         "header_sender": "Global HR Desk",
         "from_domain": "jobs-screening.work",
-        "reply_to": "recruitment@jobs-screening.work",
+        "reply_to": "user3@example.invalid",
         "body": "Congratulations, your offer is confirmed. Submit KYC and joining fee by end of day using {link}.",
         "links": ["https://jobs-screening.work/onboarding"],
     },
@@ -227,7 +227,7 @@ REAL_WORLD_PHISHING_SCENARIOS = [
         "subject": "Confidential vendor transfer",
         "header_sender": "CFO Office",
         "from_domain": "vendor-payments.co",
-        "reply_to": "finance@vendor-payments.co",
+        "reply_to": "user4@example.invalid",
         "body": "Need you to update beneficiary details and release the payment before 4 PM. Keep this confidential and send confirmation once done.",
         "links": [],
     },
@@ -236,7 +236,7 @@ REAL_WORLD_PHISHING_SCENARIOS = [
         "subject": "Mailbox suspension warning",
         "header_sender": "Microsoft Alert",
         "from_domain": "tenant-security.xyz",
-        "reply_to": "support@tenant-security.xyz",
+        "reply_to": "user5@example.invalid",
         "body": "We detected suspicious sign-in. Restore mailbox access by confirming credentials now at {link}.",
         "links": ["https://microsoft-session-defender.xyz/login"],
     },
@@ -245,7 +245,7 @@ REAL_WORLD_PHISHING_SCENARIOS = [
         "subject": "UPI cashback expires today",
         "header_sender": "Reward Team",
         "from_domain": "reward-claim.tk",
-        "reply_to": "claim@reward-claim.tk",
+        "reply_to": "user6@example.invalid",
         "body": "Your cashback is reserved. Verify UPI ID and OTP right now at {link} before expiry.",
         "links": ["https://reward-claim.tk/upi"],
     },
@@ -254,7 +254,7 @@ REAL_WORLD_PHISHING_SCENARIOS = [
         "subject": "Re: Invoice approval",
         "header_sender": "Vendor Finance",
         "from_domain": "invoice-review.info",
-        "reply_to": "accounts@invoice-review.info",
+        "reply_to": "user7@example.invalid",
         "body": "Continuing the same thread, please use the updated bank account in attachment and process today.",
         "links": [],
     },
@@ -263,7 +263,7 @@ REAL_WORLD_PHISHING_SCENARIOS = [
         "subject": "तुरंत सत्यापन",
         "header_sender": "Wallet Team",
         "from_domain": "wallet-restore-check.xyz",
-        "reply_to": "help@wallet-restore-check.xyz",
+        "reply_to": "user8@example.invalid",
         "body": "आपका wallet बंद हो जाएगा. వెంటనే OTP share karo और verify करें at {link}.",
         "links": ["https://wallet-restore-check.xyz/verify"],
     },
@@ -275,7 +275,7 @@ REAL_WORLD_BENIGN_SCENARIOS = [
         "subject": "New sign-in detected",
         "header_sender": "Google Security",
         "from_domain": "accounts.google.com",
-        "reply_to": "security@accounts.google.com",
+        "reply_to": "user9@example.invalid",
         "auth": "pass",
         "body": "Your Google account was signed in from a new device. If this was you, no action is required.",
         "links": ["https://support.google.com/accounts/answer/6294825"],
@@ -285,7 +285,7 @@ REAL_WORLD_BENIGN_SCENARIOS = [
         "subject": "Payment successful",
         "header_sender": "Netflix Billing",
         "from_domain": "netflix.com",
-        "reply_to": "billing@netflix.com",
+        "reply_to": "user10@example.invalid",
         "auth": "pass",
         "body": "Your subscription payment was processed successfully. This is an informational receipt only.",
         "links": [],
@@ -295,7 +295,7 @@ REAL_WORLD_BENIGN_SCENARIOS = [
         "subject": "Weekly update digest",
         "header_sender": "LinkedIn",
         "from_domain": "linkedin.com",
-        "reply_to": "messages@linkedin.com",
+        "reply_to": "user11@example.invalid",
         "auth": "pass",
         "body": "Here is your weekly digest and network updates. Manage notification settings any time.",
         "links": ["https://www.linkedin.com/help/linkedin"],
@@ -305,7 +305,7 @@ REAL_WORLD_BENIGN_SCENARIOS = [
         "subject": "OTP awareness advisory",
         "header_sender": "HDFC Support",
         "from_domain": "hdfcbank.com",
-        "reply_to": "support@hdfcbank.com",
+        "reply_to": "user12@example.invalid",
         "auth": "pass",
         "body": "Do not share OTP or PIN with anyone. Our team never asks for your passcode over email.",
         "links": [],
@@ -315,7 +315,7 @@ REAL_WORLD_BENIGN_SCENARIOS = [
         "subject": "Document shared with you",
         "header_sender": "Microsoft 365",
         "from_domain": "microsoft.com",
-        "reply_to": "noreply@microsoft.com",
+        "reply_to": "user13@example.invalid",
         "auth": "pass",
         "body": "A file was shared with your team account. Access via your normal portal when convenient.",
         "links": ["https://support.microsoft.com"],
@@ -325,7 +325,7 @@ REAL_WORLD_BENIGN_SCENARIOS = [
         "subject": "Order shipped",
         "header_sender": "Amazon",
         "from_domain": "amazon.com",
-        "reply_to": "account-update@amazon.com",
+        "reply_to": "user14@example.invalid",
         "auth": "pass",
         "body": "Your order has been shipped and is expected tomorrow. Track status in your account.",
         "links": ["https://www.amazon.com/gp/help/customer/display.html"],
@@ -336,9 +336,9 @@ HEADER_CASES = [
     {
         "name": "reply_to_and_return_path_mismatch",
         "headers": """
-From: Amazon Support <alerts@amaz0n-security-login.xyz>
-Reply-To: claims-team@outlook.com
-Return-Path: <bounce@secure-mail.top>
+From: Amazon Support <user15@example.invalid>
+Reply-To: user16@example.invalid
+Return-Path: <user17@example.invalid>
 Authentication-Results: mx.example.net; spf=fail dkim=fail dmarc=fail
 Received: from [10.0.0.12] by mx.example.net with ESMTP id 7781
 """,
@@ -346,18 +346,18 @@ Received: from [10.0.0.12] by mx.example.net with ESMTP id 7781
     {
         "name": "display_name_brand_spoof",
         "headers": """
-From: Google Security <notice@google-auth-review.top>
-Reply-To: notice@google-auth-review.top
-Return-Path: <bounce@google-auth-review.top>
+From: Google Security <user18@example.invalid>
+Reply-To: user19@example.invalid
+Return-Path: <user20@example.invalid>
 Received: from [192.0.2.11] by mx.example.net with ESMTP id 9911
 """,
     },
     {
         "name": "legitimate_authenticated_sender",
         "headers": """
-From: GitHub <noreply@github.com>
-Reply-To: noreply@github.com
-Return-Path: <noreply@github.com>
+From: GitHub <user21@example.invalid>
+Reply-To: user22@example.invalid
+Return-Path: <user23@example.invalid>
 Authentication-Results: mx.github.net; spf=pass dkim=pass dmarc=pass
 Received: from [140.82.121.33] by mx.github.net with ESMTP id 1122
 """,
@@ -443,7 +443,7 @@ def build_short_text_cases() -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
     for role in SHORT_TEXT_ROLES:
         headers = f"""
-From: {role} <urgent-task@mobile-mail.work>
+From: {role} <user24@example.invalid>
 Subject: Quick task
 """
         for idx, template in enumerate(SHORT_TEXT_TEMPLATES, start=1):
@@ -488,8 +488,8 @@ def build_header_spoof_cases() -> list[dict[str, Any]]:
         for idx, template in enumerate(DIRECT_TEMPLATES, start=1):
             headers = f"""
 From: {brand['brand']} Security <alerts@{brand['from_domain']}>
-Reply-To: recovery-team@outlook.com
-Return-Path: <bounce@security-mail.top>
+Reply-To: user25@example.invalid
+Return-Path: <user26@example.invalid>
 Authentication-Results: mx.enterprise.net; spf=fail dkim=fail dmarc=fail
 Received: from [10.0.0.{idx + 20}] by mx.enterprise.net with ESMTP id {3300 + idx}
 Subject: {brand['subject']}
@@ -878,9 +878,9 @@ def run_edge_cases() -> list[dict[str, Any]]:
 
     long_safe_email = build_email(
         """
-From: updates@github.com
-Reply-To: updates@github.com
-Return-Path: <updates@github.com>
+From: user27@example.invalid
+Reply-To: user28@example.invalid
+Return-Path: <user29@example.invalid>
 Authentication-Results: mx.github.net; spf=pass dkim=pass dmarc=pass
 Subject: Long release digest
 """,
@@ -896,7 +896,7 @@ Subject: Long release digest
 
     multilingual_attack = build_email(
         """
-From: Alert Desk <notice@wallet-restore-check.xyz>
+From: Alert Desk <user30@example.invalid>
 Subject: Wallet review
 """,
         "आपका wallet बंद हो जाएगा. వెంటనే OTP share karo aur payment confirm karo abhi.",
@@ -911,7 +911,7 @@ Subject: Wallet review
 
     no_url_attack = build_email(
         """
-From: Finance Head <finance-mobile@urgent-ops.work>
+From: Finance Head <user31@example.invalid>
 Subject: Immediate action
 """,
         "Transfer the funds now and send the OTP immediately. Keep this confidential and do not call.",
@@ -926,9 +926,9 @@ Subject: Immediate action
 
     multi_link_attack = build_email(
         """
-From: Security <security@amazon.com>
-Reply-To: security@amazon.com
-Return-Path: <security@amazon.com>
+From: Security <user32@example.invalid>
+Reply-To: user33@example.invalid
+Return-Path: <user34@example.invalid>
 Authentication-Results: mx.amazon.com; spf=pass dkim=pass dmarc=pass
 Subject: Mixed link review
 """,
@@ -944,7 +944,7 @@ Subject: Mixed link review
 
     attachment_attack = build_email(
         """
-From: Payroll Secure <notify@payroll-secure.work>
+From: Payroll Secure <user35@example.invalid>
 Subject: Salary action required
 """,
         "Please open the attached payroll file and complete the verification task immediately.",
@@ -962,7 +962,7 @@ Subject: Salary action required
 
     thread_attack = build_email(
         """
-From: Vendor Finance <accounts@vendor-update.top>
+From: Vendor Finance <user36@example.invalid>
 Subject: Re: Invoice thread
 """,
         "Re: payment discussion\n\nAs discussed, use the updated beneficiary and new account details on the same thread today. Keep this confidential.",
@@ -978,9 +978,9 @@ Subject: Re: Invoice thread
 
     consistency_sample = build_email(
         """
-From: Google Security <security@accounts.google.com>
-Reply-To: security@accounts.google.com
-Return-Path: <security@accounts.google.com>
+From: Google Security <user37@example.invalid>
+Reply-To: user38@example.invalid
+Return-Path: <user39@example.invalid>
 Authentication-Results: mx.google.com; spf=pass dkim=pass dmarc=pass
 Subject: Security review
 """,
@@ -1009,9 +1009,9 @@ def run_stress_consistency_checks(iterations_per_sample: int = 20) -> dict[str, 
     stress_samples = {
         "safe_baseline": build_email(
             """
-From: GitHub <noreply@github.com>
-Reply-To: noreply@github.com
-Return-Path: <noreply@github.com>
+From: GitHub <user40@example.invalid>
+Reply-To: user41@example.invalid
+Return-Path: <user42@example.invalid>
 Authentication-Results: mx.github.net; spf=pass dkim=pass dmarc=pass
 Subject: Account activity summary
 """,
@@ -1019,16 +1019,16 @@ Subject: Account activity summary
         ),
         "suspicious_no_url": build_email(
             """
-From: Vendor Finance <accounts@vendor-update.top>
+From: Vendor Finance <user43@example.invalid>
 Subject: Re: Invoice thread
 """,
             "Re: payment discussion. Use updated beneficiary details on the same thread and keep this confidential today.",
         ),
         "high_risk_url": build_email(
             """
-From: Security Team <alerts@secure-login-check.top>
-Reply-To: recovery@secure-login-check.top
-Return-Path: <bounce@secure-login-check.top>
+From: Security Team <user44@example.invalid>
+Reply-To: user45@example.invalid
+Return-Path: <user46@example.invalid>
 Authentication-Results: mx.enterprise.net; spf=fail dkim=fail dmarc=fail
 Subject: Immediate verification required
 """,
@@ -1036,7 +1036,7 @@ Subject: Immediate verification required
         ),
         "multilingual_phishing": build_email(
             """
-From: Wallet Team <alerts@wallet-restore-check.xyz>
+From: Wallet Team <user47@example.invalid>
 Subject: तत्काल सत्यापन
 """,
             "आपका wallet बंद हो जाएगा. వెంటనే OTP share karo और अभी verify करें.",
@@ -1137,7 +1137,7 @@ def build_example_outputs(results: list[dict[str, Any]]) -> dict[str, Any]:
             probe = calculate_email_risk(
                 build_email(
                     """
-From: Account Review Team <review@account-update-notice.info>
+From: Account Review Team <user48@example.invalid>
 Subject: Account details reminder
 """,
                     "Please review your account details and confirm if your contact information is still current.",

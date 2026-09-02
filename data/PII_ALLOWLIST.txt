@@ -1,46 +1,6 @@
-# PII Allowlist — files containing test/corpus email addresses
-# Justification: licensed dataset corpora used for ML training/evaluation
-data/Phishing_Email.csv: Licensed phishing email corpus (CC0)
-data/Phishing_Email_cleaned.csv: Cleaned variant of the above
-data/Phishing_Email_cleaned_1.csv: Cleaned variant of the above
-data/combined_test_dataset.json: Test dataset with synthetic/sample emails
-data/last_txt_dataset.json: Test dataset with synthetic/sample emails
-data/gmail_dataset.json: Gmail-scraped phishing samples (public dataset)
-docs/sample_emails_reference.txt: Reference samples for documentation
-# Test scripts and tooling (contain fixture emails)
-backend/_validate_pipeline_integrity.py: Test fixtures
-backend/certification_run.py: Test fixtures
-backend/final_polish_test.py: Test fixtures
-backend/hardening_loop.py: Test fixtures
-backend/main.py: +91 phone fixtures in code
-backend/production_validation_suite.py: Test fixtures
-backend/run_12_suite.py: Test fixtures
-backend/strict_validation_suite.py: Test fixtures
-backend/tests/build_adversarial_cases.py: Test fixtures
-backend/tests/multilingual_test_cases.py: Test fixtures
-backend/verify_dataset.py: Test fixtures
-data/FINAL_ELITE_DATASET.raw.json: Dataset
-data/adversarial_cases.json: Adversarial test cases
-data/adversarial_cases_1.json: Adversarial test cases
-data/cleaned_elite_dataset.json: Cleaned dataset
-data/test_report.json: Test report
-docs/architecture.png: Binary, false positive
-frontend/artifacts/api-server/src/lib/emailHeaderParser.ts: Test fixtures
-frontend/artifacts/api-server/src/verification/testDataEngine.ts: Test fixtures
-frontend/artifacts/phishshield/src/pages/dashboard.tsx: Test fixtures
-frontend/artifacts/phishshield/src/pages/premium-dashboard.tsx: Test fixtures
-frontend/scripts/src/final-validation-suite.ts: Test fixtures
-frontend/scripts/src/system-readiness-audit.ts: Test fixtures
-frontend/scripts/tests/phishshield-ui.spec.ts: Test fixtures
-frontend/scripts/tests/strict-ui-acceptance-8cases.spec.ts: Test fixtures
-tests/multilingual_test_cases.py: Test fixtures
-tests/test_data_minimization_e2e.py: Test fixtures
-tests/test_phishshield.py: Test fixtures
-tests/test_regression.py: Test fixtures
-tests/test_scan_log_rotation.py: Test fixtures
-tests/test_space_copy_parity.py: Test fixtures
-tools/test_10_cases.py: Test fixtures
-tools/test_advanced_detection.py: Test fixtures
-tools/test_e2e.py: Test fixtures
-tools/test_phishshield_cases.py: Test fixtures
-tools/test_script.py: Test fixtures
+# PII Allowlist — ONLY licensed dataset corpora
+# Each entry must have a one-line justification reviewed by the operator.
+# These are the only files permitted to contain email addresses or phone numbers.
+data/Phishing_Email.csv: Licensed phishing email corpus (CC0), labels by dataset authors
+data/Phishing_Email_cleaned.csv: Cleaned variant of Phishing_Email.csv
+data/Phishing_Email_cleaned_1.csv: Cleaned variant of Phishing_Email.csv

@@ -26,17 +26,17 @@ const MOCK_GMAIL_EMAILS = [
   {
     id: 'g1',
     sender: 'HDFC Bank Security',
-    senderEmail: 'support@hdfc-secure.tk',
+    senderEmail: 'user1@example.invalid',
     subject: 'Critical Alert: Your account is locked',
     date: '10:45 AM',
     preview: 'Security alert: we have detected unusual login attempts on your HDFC account. To restore access...',
-    fullText: 'From: HDFC Bank <support@hdfc-secure.tk>\nSubject: Critical Alert: Your account is locked\nDate: Mon, 24 Mar 2026 10:45:00 +0530\n\nDear customer, we have detected unusual login attempts on your HDFC account. For your security, your account has been temporarily locked. Please click here to verify and unlock your account immediately: http://hdfc-verify.xyz/login. Failure to do so within 24 hours will lead to permanent suspension.',
+    fullText: 'From: HDFC Bank <user2@example.invalid>\nSubject: Critical Alert: Your account is locked\nDate: Mon, 24 Mar 2026 10:45:00 +0530\n\nDear customer, we have detected unusual login attempts on your HDFC account. For your security, your account has been temporarily locked. Please click here to verify and unlock your account immediately: http://hdfc-verify.xyz/login. Failure to do so within 24 hours will lead to permanent suspension.',
     classification: 'phishing',
   },
   {
     id: 'g4',
     sender: 'Netflix Billing',
-    senderEmail: 'info@mailer.netflix.com',
+    senderEmail: 'user3@example.invalid',
     subject: 'Your payment was successful',
     date: '09:12 AM',
     preview: 'Thank you for your payment. Your subscription has been renewed for another month...',
@@ -46,7 +46,7 @@ const MOCK_GMAIL_EMAILS = [
   {
     id: 'g5',
     sender: 'SBI Security Alert',
-    senderEmail: 'alert@sbi-online.com',
+    senderEmail: 'user4@example.invalid',
     subject: 'Suspicious activity detected',
     date: 'Yesterday',
     preview: 'We noticed a login attempt from a new IP address in Mumbai. If this was not you...',
@@ -56,7 +56,7 @@ const MOCK_GMAIL_EMAILS = [
   {
     id: 'g3',
     sender: 'Amazon Rewards',
-    senderEmail: 'info@amazon-gift.tk',
+    senderEmail: 'user5@example.invalid',
     subject: 'Exclusive: Claim your Rs. 5000 Gift Card',
     date: 'Yesterday',
     preview: 'You have been selected as a lucky winner! Claim your Amazon gift card now by verifying...',
@@ -66,7 +66,7 @@ const MOCK_GMAIL_EMAILS = [
   {
     id: 'g2',
     sender: 'Google Security',
-    senderEmail: 'no-reply@accounts.google.com',
+    senderEmail: 'user6@example.invalid',
     subject: 'Security alert for your account',
     date: '2 Mar',
     preview: 'Your Google Account was just signed in to from a new Windows device...',
@@ -76,11 +76,11 @@ const MOCK_GMAIL_EMAILS = [
   {
     id: 'g6',
     sender: 'CFO Office',
-    senderEmail: 'ceo-finance@vendor-payments.co',
+    senderEmail: 'user7@example.invalid',
     subject: 'Confidential: release urgent vendor transfer today',
     date: 'Today',
     preview: 'Please process the attached vendor payment before 4 PM and keep this off the main thread...',
-    fullText: 'From: CFO Office <ceo-finance@vendor-payments.co>\nSubject: Confidential: release urgent vendor transfer today\nDate: Tue, 02 Apr 2026 11:15:00 +0530\n\nHi, I need you to urgently process a vendor bank transfer today. Keep this confidential and do not call back until it is done. Review the attached invoice and send confirmation once the payment is released.',
+    fullText: 'From: CFO Office <user8@example.invalid>\nSubject: Confidential: release urgent vendor transfer today\nDate: Tue, 02 Apr 2026 11:15:00 +0530\n\nHi, I need you to urgently process a vendor bank transfer today. Keep this confidential and do not call back until it is done. Review the attached invoice and send confirmation once the payment is released.',
     classification: 'phishing',
   }
 ];
@@ -1765,6 +1765,7 @@ function RegionalThreatMap({
           <Globe className="w-4 h-4 text-primary" />
           Regional Threat Intelligence
         </h3>
+        <span className="text-[10px] text-warning font-bold">Session-derived — not a live feed</span>
         <span
           className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider"
           title="Risk levels derived from current session scan data, not a live external feed"
@@ -1841,7 +1842,7 @@ export default function Dashboard() {
   const [duplicateScanNotice, setDuplicateScanNotice] = useState('');
   const [historyVisibleCount, setHistoryVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const [retrainProgress, setRetrainProgress] = useState<number | null>(null);
-  const [retrainLabel, setRetrainLabel] = useState('Detection Engine v3.2 · Updated Apr 5, 2026');
+  const [retrainLabel, setRetrainLabel] = useState('Production baseline active');
   const [enhancedResult, setEnhancedResult] = useState<any | null>(null);
   const [backendStatus, setBackendStatus] = useState<BackendConnectionState>('checking');
   const [backendHealth, setBackendHealth] = useState<PythonBackendHealth | null>(null);
@@ -3783,6 +3784,23 @@ export default function Dashboard() {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  // Derive model version label from backend health when no localStorage retrainMeta exists
+  useEffect(() => {
+    if (!backendHealth) return;
+    try {
+      const stored = localStorage.getItem(RETRAIN_META_KEY);
+      if (stored) return; // already set from localStorage
+      const modelUsed = backendHealth.model_used || backendHealth.active_model || '';
+      const lastTrained = backendHealth.last_trained_date;
+      if (modelUsed) {
+        const label = lastTrained
+          ? `${modelUsed} · Trained ${formatDate(lastTrained)}`
+          : modelUsed;
+        setRetrainLabel(label);
+      }
+    } catch { /* ignore */ }
+  }, [backendHealth]);
+
   useEffect(() => {
     if (result) {
       setShowTechnicalDetails(false);
@@ -5170,7 +5188,7 @@ export default function Dashboard() {
                              <div className="w-6 h-6 rounded-full bg-yellow-500 border-2 border-card shadow-sm" />
                           </div>
                        </div>
-                       <p className="text-[10px] text-muted-foreground mt-3">Statistical mapping across 120+ Indian financial institutions.</p>
+                       <p className="text-[10px] text-muted-foreground mt-3">Derived from keyword frequency in session-scanned email previews — not a live external threat feed.</p>
                     </div>
                   </div>
                 </div>

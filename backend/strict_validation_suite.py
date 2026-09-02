@@ -9,16 +9,16 @@ CASES = [
         "name": "1_safe_google_security_notice",
         "expected": "Safe",
         "email": (
-            "From: Google Security <no-reply@accounts.google.com>\n"
+            "From: Google Security <user1@example.invalid>\n"
             "Subject: New sign-in to your Google Account\n\n"
             "Your Google Account was signed in from a new Windows device. "
             "If this was you, you can ignore this email. If this wasn't you, "
             "secure your account from the official Google app."
         ),
         "headers": (
-            "From: Google Security <no-reply@accounts.google.com>\n"
-            "Reply-To: no-reply@accounts.google.com\n"
-            "Return-Path: <no-reply@accounts.google.com>\n"
+            "From: Google Security <user2@example.invalid>\n"
+            "Reply-To: user3@example.invalid\n"
+            "Return-Path: <user4@example.invalid>\n"
             "Authentication-Results: mx.google.com; spf=pass dkim=pass dmarc=pass"
         ),
     },
@@ -46,13 +46,13 @@ CASES = [
         "name": "4_suspicious_header_mismatch_no_links",
         "expected": "Suspicious",
         "email": (
-            "From: Support Team <support@company-helpdesk.com>\n\n"
+            "From: Support Team <user5@example.invalid>\n\n"
             "Please review your account profile details."
         ),
         "headers": (
-            "From: Support Team <support@company-helpdesk.com>\n"
-            "Reply-To: assist@random-mailer.net\n"
-            "Return-Path: <bounce@mailer-random.net>\n"
+            "From: Support Team <user6@example.invalid>\n"
+            "Reply-To: user7@example.invalid\n"
+            "Return-Path: <user8@example.invalid>\n"
             "Authentication-Results: mx.example.com; spf=pass dkim=none dmarc=none"
         ),
     },
@@ -60,14 +60,14 @@ CASES = [
         "name": "5_safe_newsletter",
         "expected": "Safe",
         "email": (
-            "From: LinkedIn News <news@linkedin.com>\n"
+            "From: LinkedIn News <user9@example.invalid>\n"
             "Subject: Weekly digest\n\n"
             "Here is your weekly professional digest. Manage notification settings or unsubscribe anytime."
         ),
         "headers": (
-            "From: LinkedIn News <news@linkedin.com>\n"
-            "Reply-To: news@linkedin.com\n"
-            "Return-Path: <news@linkedin.com>\n"
+            "From: LinkedIn News <user10@example.invalid>\n"
+            "Reply-To: user11@example.invalid\n"
+            "Return-Path: <user12@example.invalid>\n"
             "Authentication-Results: mx.linkedin.com; spf=pass dkim=pass dmarc=pass"
         ),
     },
@@ -88,7 +88,7 @@ CASES = [
             "No action required."
         ),
         "headers": (
-            "From: Project PM <update@new-domain-example.org>\n"
+            "From: Project PM <user13@example.invalid>\n"
             "Authentication-Results: mx.example.org; spf=none dkim=none dmarc=none"
         ),
     },
@@ -96,13 +96,13 @@ CASES = [
         "name": "8_suspicious_lookalike_brand_sender",
         "expected": "Suspicious",
         "email": (
-            "From: Amazon Billing <billing@amaz0n-security-support.com>\n\n"
+            "From: Amazon Billing <user14@example.invalid>\n\n"
             "Please verify your recent account activity by reviewing your account details."
         ),
         "headers": (
-            "From: Amazon Billing <billing@amaz0n-security-support.com>\n"
-            "Reply-To: billing@amaz0n-security-support.com\n"
-            "Return-Path: <billing@amaz0n-security-support.com>\n"
+            "From: Amazon Billing <user15@example.invalid>\n"
+            "Reply-To: user16@example.invalid\n"
+            "Return-Path: <user17@example.invalid>\n"
             "Authentication-Results: mx.example.org; spf=pass dkim=none dmarc=none"
         ),
     },

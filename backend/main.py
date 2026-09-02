@@ -5262,7 +5262,7 @@ def extract_display_name(raw_value: str | None) -> str:
     if "<" in value:
         value = value.split("<", 1)[0]
     value = value.strip().strip('"').strip("'")
-    # Plain mailbox values like "user@domain.com" do not provide a true display name.
+    # Plain mailbox values like "user1@example.invalid" do not provide a true display name.
     if "@" in value and " " not in value:
         return ""
     return value

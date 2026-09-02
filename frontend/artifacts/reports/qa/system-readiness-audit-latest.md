@@ -1,9 +1,14 @@
 # PhishShield AI — System Readiness Audit
 
+> **Note (2026-09):** This audit is a historical snapshot from 2026-04-06.
+> The `model_used` label has been corrected; the health endpoint now reports
+> the actual active model (e.g. `TF-IDF Logistic Regression`) rather than a
+> marketing label.
+
 - Generated: 2026-04-06T19:20:43.652Z
 - Backend: http://127.0.0.1:8000
 - Frontend: http://127.0.0.1:5173
-- Health: healthy | Model: SecureBERT/MuRIL-GPU-97.4% | Device: cpu
+- Health: healthy | Model: TF-IDF Logistic Regression (at time of audit: SecureBERT/MuRIL-GPU-97.4%) | Device: cpu
 
 ## Feature checklist
 

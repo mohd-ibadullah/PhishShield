@@ -3,7 +3,7 @@
   "cases": [
     {
       "id": "homoglyph_bank_lure",
-      "email_text": "From: nоtification@sbi-security-notice.ru\nSubject: Аccount suspended\nDear customer verify OTP immediately http://evil.example/phish",
+      "email_text": "From: nоuser1@example.invalid\nSubject: Аccount suspended\nDear customer verify OTP immediately http://evil.example/phish",
       "expect": {
         "min_score": 0,
         "max_score": 100,

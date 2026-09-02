@@ -30,7 +30,7 @@ const SAMPLE_EMAILS = [
     subject: 'Release this confidential vendor transfer today',
     preview: 'Urgent payment diversion attempt with secrecy pressure and finance language.',
     text:
-      'From: CFO Office <ceo-finance@vendor-payments.co>\nSubject: Confidential: release urgent vendor transfer today\n\nHi, I need you to process the attached vendor bank transfer today. Keep this confidential and do not call back until it is done. Update the beneficiary to the new account in the invoice and confirm once the payment is released.',
+      'From: CFO Office <user1@example.invalid>\nSubject: Confidential: release urgent vendor transfer today\n\nHi, I need you to process the attached vendor bank transfer today. Keep this confidential and do not call back until it is done. Update the beneficiary to the new account in the invoice and confirm once the payment is released.',
   },
   {
     id: 'bank-otp',

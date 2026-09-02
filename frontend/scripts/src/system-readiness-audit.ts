@@ -57,7 +57,7 @@ const phishingCases: Scenario[] = [
     expected: 'phishing',
     checkFallback: true,
     emailText:
-      'From: Amazon Support <support@amazon.com>\nSubject: Verify account now\n\nYour Amazon account needs verification. Visit http://amazon-secure-update.xyz/login immediately to avoid suspension.',
+      'From: Amazon Support <user1@example.invalid>\nSubject: Verify account now\n\nYour Amazon account needs verification. Visit http://amazon-secure-update.xyz/login immediately to avoid suspension.',
   },
   {
     id: 'P02',
@@ -65,7 +65,7 @@ const phishingCases: Scenario[] = [
     title: 'Courier payment request on .top domain',
     expected: 'phishing',
     emailText:
-      'From: Courier Desk <notify@parcel-check.top>\nSubject: Delivery pending\n\nPay Rs. 99 now at http://parcel-check.top/pay to release your package today.',
+      'From: Courier Desk <user2@example.invalid>\nSubject: Delivery pending\n\nPay Rs. 99 now at http://parcel-check.top/pay to release your package today.',
   },
   {
     id: 'P03',
@@ -74,7 +74,7 @@ const phishingCases: Scenario[] = [
     expected: 'phishing',
     checkFallback: true,
     emailText:
-      'From: Microsoft Security <security@micr0soft-support.com>\nSubject: Password reset required\n\nYour Office 365 account will be disabled unless you confirm at http://micr0soft-support.com/secure-login.',
+      'From: Microsoft Security <user3@example.invalid>\nSubject: Password reset required\n\nYour Office 365 account will be disabled unless you confirm at http://micr0soft-support.com/secure-login.',
   },
   {
     id: 'P04',
@@ -83,7 +83,7 @@ const phishingCases: Scenario[] = [
     expected: 'phishing',
     checkFallback: true,
     emailText:
-      'From: SBI Alert <support@sbi-security-alert.xyz>\nSubject: OTP verification required\n\nShare OTP immediately and verify your account now at http://sbi-secure-login.xyz/otp.',
+      'From: SBI Alert <user4@example.invalid>\nSubject: OTP verification required\n\nShare OTP immediately and verify your account now at http://sbi-secure-login.xyz/otp.',
   },
   {
     id: 'P05',
@@ -92,7 +92,7 @@ const phishingCases: Scenario[] = [
     expected: 'phishing',
     checkFallback: true,
     emailText:
-      'From: HDFC Bank <alerts@hdfcbank.com>\nReturn-Path: attacker@spoofed-alert.xyz\nReply-To: attacker@spoofed-alert.xyz\nSubject: Account locked\n\nPlease verify immediately to restore access.',
+      'From: HDFC Bank <user5@example.invalid>\nReturn-Path: user6@example.invalid\nReply-To: user7@example.invalid\nSubject: Account locked\n\nPlease verify immediately to restore access.',
   },
   {
     id: 'P06',
@@ -100,7 +100,7 @@ const phishingCases: Scenario[] = [
     title: 'Low-trust billing portal lure',
     expected: ['uncertain', 'phishing'],
     emailText:
-      'From: Billing Desk <alerts@billing-check.info>\nSubject: Payment issue notice\n\nWe noticed a problem processing your recent payment. Please review your billing details at http://billing-check.info/review when convenient.',
+      'From: Billing Desk <user8@example.invalid>\nSubject: Payment issue notice\n\nWe noticed a problem processing your recent payment. Please review your billing details at http://billing-check.info/review when convenient.',
   },
   {
     id: 'P07',
@@ -109,7 +109,7 @@ const phishingCases: Scenario[] = [
     expected: 'phishing',
     checkFallback: true,
     emailText:
-      'From: CEO Office <ceo-finance@vendor-payments.co>\nSubject: Confidential transfer request\n\nI am in a meeting. Process the vendor payment today, keep this confidential, and confirm once released.',
+      'From: CEO Office <user9@example.invalid>\nSubject: Confidential transfer request\n\nI am in a meeting. Process the vendor payment today, keep this confidential, and confirm once released.',
   },
   {
     id: 'P08',
@@ -141,7 +141,7 @@ const phishingCases: Scenario[] = [
     title: 'Income Tax refund scam',
     expected: 'phishing',
     emailText:
-      'From: Income Tax Refund <refund@incometax-gov.co>\nSubject: Refund pending for your PAN\n\nYour refund has been approved. Update bank details and verify your PAN within 24 hours at http://incometax-gov.co/refund.',
+      'From: Income Tax Refund <user10@example.invalid>\nSubject: Refund pending for your PAN\n\nYour refund has been approved. Update bank details and verify your PAN within 24 hours at http://incometax-gov.co/refund.',
   },
   {
     id: 'P12',
@@ -165,7 +165,7 @@ const phishingCases: Scenario[] = [
     title: 'UPI cashback lure',
     expected: 'phishing',
     emailText:
-      'From: Wallet Rewards <reward@upi-bonus.xyz>\nSubject: Cashback pending\n\nYour cashback is waiting. Send a verification payment to bonus@paytm at http://upi-bonus.xyz/collect to claim now.',
+      'From: Wallet Rewards <user11@example.invalid>\nSubject: Cashback pending\n\nYour cashback is waiting. Send a verification payment to bonus@paytm at http://upi-bonus.xyz/collect to claim now.',
   },
   {
     id: 'P15',
@@ -173,7 +173,7 @@ const phishingCases: Scenario[] = [
     title: 'FedEx customs fee demand',
     expected: 'phishing',
     emailText:
-      'From: FedEx Billing <notify@fedex-delivery-fee.xyz>\nSubject: Parcel delivery fee pending\n\nYour parcel could not be delivered. Pay the customs fee of Rs. 99 now at http://fedex-delivery-fee.xyz/pay.',
+      'From: FedEx Billing <user12@example.invalid>\nSubject: Parcel delivery fee pending\n\nYour parcel could not be delivered. Pay the customs fee of Rs. 99 now at http://fedex-delivery-fee.xyz/pay.',
   },
   {
     id: 'P16',
@@ -181,7 +181,7 @@ const phishingCases: Scenario[] = [
     title: 'Office 365 shared document lure',
     expected: 'phishing',
     emailText:
-      'From: SharePoint <noreply@sharepoint-secure-login.click>\nSubject: Document shared with you\n\nA document is waiting for you. Sign in immediately at http://sharepoint-secure-login.click/open to keep access active.',
+      'From: SharePoint <user13@example.invalid>\nSubject: Document shared with you\n\nA document is waiting for you. Sign in immediately at http://sharepoint-secure-login.click/open to keep access active.',
   },
   {
     id: 'P17',
@@ -197,7 +197,7 @@ const phishingCases: Scenario[] = [
     title: 'Axis bank account suspension',
     expected: 'phishing',
     emailText:
-      'From: Axis Secure <notify@axis-account-review.top>\nSubject: Account suspension warning\n\nYour Axis Bank account will be blocked today unless you verify now at http://axis-account-review.top/login.',
+      'From: Axis Secure <user14@example.invalid>\nSubject: Account suspension warning\n\nYour Axis Bank account will be blocked today unless you verify now at http://axis-account-review.top/login.',
   },
   {
     id: 'P19',
@@ -205,7 +205,7 @@ const phishingCases: Scenario[] = [
     title: 'DHL redelivery phishing email',
     expected: 'phishing',
     emailText:
-      'From: DHL Notice <redelivery@dhl-redelivery.click>\nSubject: Arrange redelivery\n\nYour shipment is on hold. Pay the redelivery fee immediately at http://dhl-redelivery.click/pay to continue.',
+      'From: DHL Notice <user15@example.invalid>\nSubject: Arrange redelivery\n\nYour shipment is on hold. Pay the redelivery fee immediately at http://dhl-redelivery.click/pay to continue.',
   },
   {
     id: 'P20',
@@ -213,7 +213,7 @@ const phishingCases: Scenario[] = [
     title: 'Okta MFA fatigue lure',
     expected: 'phishing',
     emailText:
-      'From: Okta Security <security@okta-verify-access.xyz>\nSubject: MFA requests pending\n\nApprove the new MFA challenge or enter your password at http://okta-verify-access.xyz to stop account lockout.',
+      'From: Okta Security <user16@example.invalid>\nSubject: MFA requests pending\n\nApprove the new MFA challenge or enter your password at http://okta-verify-access.xyz to stop account lockout.',
   },
   {
     id: 'P21',
@@ -221,7 +221,7 @@ const phishingCases: Scenario[] = [
     title: 'Adobe sign invoice lure',
     expected: 'phishing',
     emailText:
-      'From: Adobe Sign <secure@adobe-docs-review.xyz>\nSubject: Invoice requires signature\n\nReview and sign the pending invoice immediately at http://adobe-docs-review.xyz/sign to avoid cancellation.',
+      'From: Adobe Sign <user17@example.invalid>\nSubject: Invoice requires signature\n\nReview and sign the pending invoice immediately at http://adobe-docs-review.xyz/sign to avoid cancellation.',
   },
   {
     id: 'P22',
@@ -237,7 +237,7 @@ const phishingCases: Scenario[] = [
     title: 'GitHub credential reset on fake domain',
     expected: 'phishing',
     emailText:
-      'From: GitHub Security <noreply@github-review-account.xyz>\nSubject: Password re-validation needed\n\nYour repository access will be disabled unless you confirm your credentials at http://github-review-account.xyz/login.',
+      'From: GitHub Security <user18@example.invalid>\nSubject: Password re-validation needed\n\nYour repository access will be disabled unless you confirm your credentials at http://github-review-account.xyz/login.',
   },
   {
     id: 'P24',
@@ -245,7 +245,7 @@ const phishingCases: Scenario[] = [
     title: 'SBI secure login on suspicious domain',
     expected: 'phishing',
     emailText:
-      'From: SBI Login <noreply@sbi-secure-login.xyz>\nSubject: Verify now\n\nYour SBI access will be suspended unless you login and confirm immediately at http://sbi-secure-login.xyz/verify.',
+      'From: SBI Login <user19@example.invalid>\nSubject: Verify now\n\nYour SBI access will be suspended unless you login and confirm immediately at http://sbi-secure-login.xyz/verify.',
   },
   {
     id: 'P25',
@@ -253,7 +253,7 @@ const phishingCases: Scenario[] = [
     title: 'Traffic challan phishing notice',
     expected: 'phishing',
     emailText:
-      'From: RTO Notice <fine@parivahan-challan-pay.xyz>\nSubject: Challan pending\n\nYour traffic fine is overdue. Pay immediately at http://parivahan-challan-pay.xyz to avoid license suspension.',
+      'From: RTO Notice <user20@example.invalid>\nSubject: Challan pending\n\nYour traffic fine is overdue. Pay immediately at http://parivahan-challan-pay.xyz to avoid license suspension.',
   },
 ];
 
@@ -265,7 +265,7 @@ const legitimateCases: Scenario[] = [
     expected: 'safe',
     checkFallback: true,
     emailText:
-      'From: Google <no-reply@accounts.google.com>\nSubject: Security alert for your account\nAuthentication-Results: spf=pass dkim=pass dmarc=pass\n\nYour Google Account was just signed in to from a new Windows device. If this was you, you can safely ignore this email.',
+      'From: Google <user21@example.invalid>\nSubject: Security alert for your account\nAuthentication-Results: spf=pass dkim=pass dmarc=pass\n\nYour Google Account was just signed in to from a new Windows device. If this was you, you can safely ignore this email.',
   },
   {
     id: 'S02',
@@ -274,7 +274,7 @@ const legitimateCases: Scenario[] = [
     expected: 'safe',
     checkFallback: true,
     emailText:
-      'From: Amazon <order-update@amazon.in>\nSubject: Your Amazon order has shipped\n\nYour Amazon order #402-8837291 has been shipped. Expected delivery: March 18. Track your package at https://amazon.in/orders. Thank you for shopping with Amazon.',
+      'From: Amazon <user22@example.invalid>\nSubject: Your Amazon order has shipped\n\nYour Amazon order #402-8837291 has been shipped. Expected delivery: March 18. Track your package at https://amazon.in/orders. Thank you for shopping with Amazon.',
   },
   {
     id: 'S03',
@@ -282,7 +282,7 @@ const legitimateCases: Scenario[] = [
     title: 'LinkedIn weekly digest',
     expected: 'safe',
     emailText:
-      'From: LinkedIn News <news@linkedin.com>\nList-Unsubscribe: <https://linkedin.com/unsubscribe>\n\nTop stories from your network this week. Manage notification settings or unsubscribe here.',
+      'From: LinkedIn News <user23@example.invalid>\nList-Unsubscribe: <https://linkedin.com/unsubscribe>\n\nTop stories from your network this week. Manage notification settings or unsubscribe here.',
   },
   {
     id: 'S04',
@@ -290,7 +290,7 @@ const legitimateCases: Scenario[] = [
     title: 'Legit Paytm KYC reminder',
     expected: ['safe', 'uncertain'],
     emailText:
-      'From: Paytm Care <care@paytm.com>\nSubject: Reminder to complete KYC in the app\n\nThis is a reminder to complete your KYC in the official Paytm app to continue wallet services. No action is needed if already completed.',
+      'From: Paytm Care <user24@example.invalid>\nSubject: Reminder to complete KYC in the app\n\nThis is a reminder to complete your KYC in the official Paytm app to continue wallet services. No action is needed if already completed.',
   },
   {
     id: 'S05',
@@ -298,7 +298,7 @@ const legitimateCases: Scenario[] = [
     title: 'Netflix payment success',
     expected: 'safe',
     emailText:
-      'From: Netflix Billing <info@mailer.netflix.com>\nSubject: Your payment was successful\n\nThank you for your payment. Your subscription has been renewed for another month. Transaction ID: 882910-X.',
+      'From: Netflix Billing <user25@example.invalid>\nSubject: Your payment was successful\n\nThank you for your payment. Your subscription has been renewed for another month. Transaction ID: 882910-X.',
   },
   {
     id: 'S06',
@@ -306,7 +306,7 @@ const legitimateCases: Scenario[] = [
     title: 'Quora digest',
     expected: 'safe',
     emailText:
-      'From: Quora Digest <digest@quora.com>\nList-Unsubscribe: <https://quora.com/unsubscribe>\n\nTop answers from spaces you follow this week. Update your email preferences or unsubscribe anytime.',
+      'From: Quora Digest <user26@example.invalid>\nList-Unsubscribe: <https://quora.com/unsubscribe>\n\nTop answers from spaces you follow this week. Update your email preferences or unsubscribe anytime.',
   },
   {
     id: 'S07',
@@ -314,7 +314,7 @@ const legitimateCases: Scenario[] = [
     title: 'GitHub sign-in alert',
     expected: 'safe',
     emailText:
-      'From: GitHub <noreply@github.com>\nSubject: New sign-in to GitHub from Chrome on Windows\n\nWe noticed a new sign-in to your GitHub account. If this was you, you can ignore this email.',
+      'From: GitHub <user27@example.invalid>\nSubject: New sign-in to GitHub from Chrome on Windows\n\nWe noticed a new sign-in to your GitHub account. If this was you, you can ignore this email.',
   },
   {
     id: 'S08',
@@ -322,7 +322,7 @@ const legitimateCases: Scenario[] = [
     title: 'Official SBI informational notice',
     expected: ['safe', 'uncertain'],
     emailText:
-      'From: SBI Support <noreply@sbi.co.in>\nSubject: Account notice\n\nPlease review the latest notice in your official SBI portal. This is an informational update only.',
+      'From: SBI Support <user28@example.invalid>\nSubject: Account notice\n\nPlease review the latest notice in your official SBI portal. This is an informational update only.',
   },
   {
     id: 'S09',
@@ -330,7 +330,7 @@ const legitimateCases: Scenario[] = [
     title: 'HDFC OTP awareness message',
     expected: 'safe',
     emailText:
-      'From: HDFC Bank <alerts@hdfcbank.com>\nSubject: Do not share OTP\n\nFor your safety, never share your OTP, CVV, or internet banking password with anyone. No action is required.',
+      'From: HDFC Bank <user29@example.invalid>\nSubject: Do not share OTP\n\nFor your safety, never share your OTP, CVV, or internet banking password with anyone. No action is required.',
   },
   {
     id: 'S10',
@@ -338,7 +338,7 @@ const legitimateCases: Scenario[] = [
     title: 'IRCTC ticket confirmation',
     expected: 'safe',
     emailText:
-      'From: IRCTC <bookings@irctc.co.in>\nSubject: Booking confirmation\n\nYour train ticket is confirmed. Download the e-ticket from the official IRCTC app or portal. Thank you for booking.',
+      'From: IRCTC <user30@example.invalid>\nSubject: Booking confirmation\n\nYour train ticket is confirmed. Download the e-ticket from the official IRCTC app or portal. Thank you for booking.',
   },
   {
     id: 'S11',
@@ -346,7 +346,7 @@ const legitimateCases: Scenario[] = [
     title: 'Zoom meeting invitation',
     expected: 'safe',
     emailText:
-      'From: Zoom <no-reply@zoom.us>\nSubject: Meeting invitation: Weekly Product Review\n\nJoin our scheduled Zoom meeting tomorrow at 10:00 AM IST. Meeting passcode: 431992.',
+      'From: Zoom <user31@example.invalid>\nSubject: Meeting invitation: Weekly Product Review\n\nJoin our scheduled Zoom meeting tomorrow at 10:00 AM IST. Meeting passcode: 431992.',
   },
   {
     id: 'S12',
@@ -354,7 +354,7 @@ const legitimateCases: Scenario[] = [
     title: 'Dropbox folder share',
     expected: 'safe',
     emailText:
-      'From: Dropbox <no-reply@dropbox.com>\nSubject: A folder was shared with you\n\nAlex shared the folder Product Launch Assets with you. Open it from your existing Dropbox account.',
+      'From: Dropbox <user32@example.invalid>\nSubject: A folder was shared with you\n\nAlex shared the folder Product Launch Assets with you. Open it from your existing Dropbox account.',
   },
   {
     id: 'S13',
@@ -362,7 +362,7 @@ const legitimateCases: Scenario[] = [
     title: 'DocuSign request',
     expected: 'safe',
     emailText:
-      'From: DocuSign <dse@docusign.net>\nSubject: Please review and sign: Mutual NDA\n\nYou have received a document for signature through your organization workflow. Review it from your existing DocuSign account.',
+      'From: DocuSign <user33@example.invalid>\nSubject: Please review and sign: Mutual NDA\n\nYou have received a document for signature through your organization workflow. Review it from your existing DocuSign account.',
   },
   {
     id: 'S14',
@@ -370,7 +370,7 @@ const legitimateCases: Scenario[] = [
     title: 'Microsoft collaboration notice',
     expected: 'safe',
     emailText:
-      'From: Microsoft 365 <noreply@microsoft.com>\nSubject: Weekly collaboration summary\n\nHere is your weekly summary of Teams activity, shared files, and meeting notes.',
+      'From: Microsoft 365 <user34@example.invalid>\nSubject: Weekly collaboration summary\n\nHere is your weekly summary of Teams activity, shared files, and meeting notes.',
   },
   {
     id: 'S15',
@@ -378,7 +378,7 @@ const legitimateCases: Scenario[] = [
     title: 'AWS billing alert',
     expected: 'safe',
     emailText:
-      'From: AWS Billing <no-reply-aws@amazonaws.com>\nSubject: Your AWS bill is available\n\nYour latest monthly bill is now available in the AWS Billing console. Review it in your official dashboard.',
+      'From: AWS Billing <user35@example.invalid>\nSubject: Your AWS bill is available\n\nYour latest monthly bill is now available in the AWS Billing console. Review it in your official dashboard.',
   },
   {
     id: 'S16',
@@ -386,7 +386,7 @@ const legitimateCases: Scenario[] = [
     title: 'Cursor billing receipt',
     expected: 'safe',
     emailText:
-      'From: Cursor <billing@cursor.com>\nSubject: Payment receipt for Cursor Pro\n\nYour monthly Cursor Pro subscription payment was successfully processed. View billing history in your dashboard.',
+      'From: Cursor <user36@example.invalid>\nSubject: Payment receipt for Cursor Pro\n\nYour monthly Cursor Pro subscription payment was successfully processed. View billing history in your dashboard.',
   },
   {
     id: 'S17',
@@ -394,7 +394,7 @@ const legitimateCases: Scenario[] = [
     title: 'Google Play developer newsletter',
     expected: 'safe',
     emailText:
-      'From: Google Play <googleplay-noreply@google.com>\nList-Unsubscribe: <https://google.com/unsubscribe>\n\nHere are the latest updates for developers, policy reminders, and product improvements from Google Play.',
+      'From: Google Play <user37@example.invalid>\nList-Unsubscribe: <https://google.com/unsubscribe>\n\nHere are the latest updates for developers, policy reminders, and product improvements from Google Play.',
   },
   {
     id: 'S18',
@@ -402,7 +402,7 @@ const legitimateCases: Scenario[] = [
     title: 'Slack workspace digest',
     expected: 'safe',
     emailText:
-      'From: Slack <feedback@slack.com>\nList-Unsubscribe: <https://slack.com/unsubscribe>\n\nYour weekly workspace digest is ready. Catch up on unread channels and mentions.',
+      'From: Slack <user38@example.invalid>\nList-Unsubscribe: <https://slack.com/unsubscribe>\n\nYour weekly workspace digest is ready. Catch up on unread channels and mentions.',
   },
   {
     id: 'S19',
@@ -410,7 +410,7 @@ const legitimateCases: Scenario[] = [
     title: 'Medium digest',
     expected: 'safe',
     emailText:
-      'From: Medium Daily Digest <noreply@medium.com>\nList-Unsubscribe: <https://medium.com/unsubscribe>\n\nRead today’s top stories and manage your notification settings anytime.',
+      'From: Medium Daily Digest <user39@example.invalid>\nList-Unsubscribe: <https://medium.com/unsubscribe>\n\nRead today’s top stories and manage your notification settings anytime.',
   },
   {
     id: 'S20',
@@ -418,7 +418,7 @@ const legitimateCases: Scenario[] = [
     title: 'GitHub Dependabot alert',
     expected: 'safe',
     emailText:
-      'From: GitHub <noreply@github.com>\nSubject: Dependabot security update available\n\nGitHub detected a vulnerable dependency in your repository and opened a pull request with the fix.',
+      'From: GitHub <user40@example.invalid>\nSubject: Dependabot security update available\n\nGitHub detected a vulnerable dependency in your repository and opened a pull request with the fix.',
   },
   {
     id: 'S21',
@@ -426,7 +426,7 @@ const legitimateCases: Scenario[] = [
     title: 'Bank statement ready notice',
     expected: 'safe',
     emailText:
-      'From: ICICI Bank <statements@icicibank.com>\nSubject: Your monthly statement is ready\n\nYour account statement is now available in internet banking and the official mobile app.',
+      'From: ICICI Bank <user41@example.invalid>\nSubject: Your monthly statement is ready\n\nYour account statement is now available in internet banking and the official mobile app.',
   },
   {
     id: 'S22',
@@ -434,7 +434,7 @@ const legitimateCases: Scenario[] = [
     title: 'Flipkart order shipped',
     expected: 'safe',
     emailText:
-      'From: Flipkart <no-reply@flipkart.com>\nSubject: Your order has been shipped\n\nYour package is on the way. Track delivery from the Flipkart app or website.',
+      'From: Flipkart <user42@example.invalid>\nSubject: Your order has been shipped\n\nYour package is on the way. Track delivery from the Flipkart app or website.',
   },
   {
     id: 'S23',
@@ -450,7 +450,7 @@ const legitimateCases: Scenario[] = [
     title: 'Adobe account security notice',
     expected: 'safe',
     emailText:
-      'From: Adobe <message@adobe.com>\nSubject: Security notice for your Adobe account\n\nWe noticed a new sign-in to your Adobe account. If this was you, no action is required.',
+      'From: Adobe <user43@example.invalid>\nSubject: Security notice for your Adobe account\n\nWe noticed a new sign-in to your Adobe account. If this was you, no action is required.',
   },
   {
     id: 'S25',
@@ -458,7 +458,7 @@ const legitimateCases: Scenario[] = [
     title: 'PhonePe official receipt',
     expected: 'safe',
     emailText:
-      'From: PhonePe <receipts@phonepe.com>\nSubject: Payment successful\n\nYour payment of Rs. 249 was successful. You can view the transaction in the official PhonePe app.',
+      'From: PhonePe <user44@example.invalid>\nSubject: Payment successful\n\nYour payment of Rs. 249 was successful. You can view the transaction in the official PhonePe app.',
   },
 ];
 

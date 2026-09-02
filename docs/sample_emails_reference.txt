@@ -6,13 +6,13 @@ Using Gmail with screen readers
 Thank you for joining Ollama
 Inbox
 
-Ollama <hello@ollama.com> Unsubscribe
+Ollama <user1@example.invalid> Unsubscribe
 16:23 (5 hours ago)
 to me
 
-from:	Ollama <hello@ollama.com>
-reply-to:	Ollama <hello@ollama.com>
-to:	mohdibadullah75@gmail.com
+from:	Ollama <user2@example.invalid>
+reply-to:	Ollama <user3@example.invalid>
+to:	user4@example.invalid
 date:	17 Apr 2026, 16:23
 subject:	Thank you for joining Ollama
 mailing list:	"Ollama" <general.ollama.com> Filter messages from this mailing list
@@ -45,13 +45,13 @@ Using Gmail with screen readers
 Secure your account today
 Inbox
 
-GitHub <no-reply@github.com> Unsubscribe
+GitHub <user5@example.invalid> Unsubscribe
 Thu 16 Apr, 10:15 (1 day ago)
 to me
 
-from:	GitHub <no-reply@github.com>
-reply-to:	no-reply@github.com
-to:	mohdibadullah75@gmail.com
+from:	GitHub <user6@example.invalid>
+reply-to:	user7@example.invalid
+to:	user8@example.invalid
 date:	16 Apr 2026, 10:15
 subject:	Secure your account today
 mailed-by:	sgmail.github.com
@@ -97,12 +97,12 @@ Using Gmail with screen readers
 Sign up for AWS - Email Verification
 Inbox
 
-no-reply@signup.aws
+user9@example.invalid
 Thu 16 Apr, 10:05 (1 day ago)
 to me
 
-from:	no-reply@signup.aws
-to:	mohdibadullah75@gmail.com
+from:	user10@example.invalid
+to:	user11@example.invalid
 date:	16 Apr 2026, 10:05
 subject:	Sign up for AWS - Email Verification
 mailed-by:	bounces.signup.aws
@@ -133,13 +133,13 @@ Using Gmail with screen readers
 Competition Launch: The IJCAI-ECAI 2026 NeuroGolf Challenge
 Inbox
 
-Kaggle <no-reply@kaggle.com> Unsubscribe
+Kaggle <user12@example.invalid> Unsubscribe
 Thu 16 Apr, 03:35 (1 day ago)
 to me
 
-from:	Kaggle <no-reply@kaggle.com>
-reply-to:	Kaggle <no-reply@kaggle.com>
-to:	mohdibadullah75@gmail.com
+from:	Kaggle <user13@example.invalid>
+reply-to:	Kaggle <user14@example.invalid>
+to:	user15@example.invalid
 date:	16 Apr 2026, 03:35
 subject:	Competition Launch: The IJCAI-ECAI 2026 NeuroGolf Challenge
 mailing list:	<d3d572f2a797bc005fbf0c631ac17de03856ef11.google.com> Filter messages from this mailing list
@@ -172,7 +172,7 @@ Kaggle Competitions
 
 Kaggle, Inc 1600 Amphitheatre Pkwy Mountain View, CA 94043
 
-This email was sent to mohdibadullah75@gmail.com because you indicated that you'd like to receive news and updates about Kaggle. If you don't want to receive these emails in the future, please unsubscribe here. You can also change your preferences on your account's profile page by logging in at kaggle.com.
+This email was sent to user16@example.invalid because you indicated that you'd like to receive news and updates about Kaggle. If you don't want to receive these emails in the future, please unsubscribe here. You can also change your preferences on your account's profile page by logging in at kaggle.com.
 
 
 
@@ -183,13 +183,13 @@ Using Gmail with screen readers
 Hi Mohd, welcome to Google AI Studio
 Inbox
 
-Google AI Studio <googleaistudio-noreply@google.com> Unsubscribe
+Google AI Studio <user17@example.invalid> Unsubscribe
 Wed 15 Apr, 06:11 (2 days ago)
 to me
 
-from:	Google AI Studio <googleaistudio-noreply@google.com>
-reply-to:	googleaistudio-noreply@google.com
-to:	mohdibadullah75@gmail.com
+from:	Google AI Studio <user18@example.invalid>
+reply-to:	user19@example.invalid
+to:	user20@example.invalid
 date:	15 Apr 2026, 06:11
 subject:	Hi Mohd, welcome to Google AI Studio
 mailing list:	<f99f2495468846153ede376909eb48cd6de931e1.google.com> Filter messages from this mailing list
@@ -275,7 +275,7 @@ Upcoming global events
  
 © 2026 Google LLC 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA
 
-This email was sent to mohdibadullah75@gmail.com because you signed up to receive emails about Google AI. If you do not wish to receive these emails, please unsubscribe.
+This email was sent to user21@example.invalid because you signed up to receive emails about Google AI. If you do not wish to receive these emails, please unsubscribe.
 
 
 
@@ -285,13 +285,13 @@ Using Gmail with screen readers
 It’s time to create your first pull request on GitHub
 Inbox
 
-GitHub <no-reply@github.com> Unsubscribe
+GitHub <user22@example.invalid> Unsubscribe
 Tue 14 Apr, 10:14 (3 days ago)
 to me
 
-from:	GitHub <no-reply@github.com>
-reply-to:	no-reply@github.com
-to:	mohdibadullah75@gmail.com
+from:	GitHub <user23@example.invalid>
+reply-to:	user24@example.invalid
+to:	user25@example.invalid
 date:	14 Apr 2026, 10:14
 subject:	It’s time to create your first pull request on GitHub
 mailed-by:	sgmail.github.com
@@ -338,13 +338,13 @@ Using Gmail with screen readers
 Welcome to the Claude Platform
 Inbox
 
-Claude Team <no-reply@email.claude.com> Unsubscribe
+Claude Team <user26@example.invalid> Unsubscribe
 Sun 12 Apr, 15:58 (5 days ago)
 to me
 
-from:	Claude Team <no-reply@email.claude.com>
-reply-to:	no-reply@email.claude.com
-to:	mohdibadullah75@gmail.com
+from:	Claude Team <user27@example.invalid>
+reply-to:	user28@example.invalid
+to:	user29@example.invalid
 date:	12 Apr 2026, 15:58
 subject:	Welcome to the Claude Platform
 mailed-by:	email.claude.com
@@ -382,7 +382,7 @@ Claude
 Instagram LinkedIn X Youtube
 Anthropic PBC, 548 Market St, PMB 90375, San Francisco, CA 94104
 
-This email was sent to mohdibadullah75@gmail.com. To opt out of future emails, click unsubscribe.
+This email was sent to user30@example.invalid. To opt out of future emails, click unsubscribe.
 
 
 
@@ -392,13 +392,13 @@ Using Gmail with screen readers
 Ready to code? Your first repository awaits
 Inbox
 
-GitHub <no-reply@github.com> Unsubscribe
+GitHub <user31@example.invalid> Unsubscribe
 Sun 12 Apr, 10:13 (5 days ago)
 to me
 
-from:	GitHub <no-reply@github.com>
-reply-to:	no-reply@github.com
-to:	mohdibadullah75@gmail.com
+from:	GitHub <user32@example.invalid>
+reply-to:	user33@example.invalid
+to:	user34@example.invalid
 date:	12 Apr 2026, 10:13
 subject:	Ready to code? Your first repository awaits
 mailed-by:	sgmail.github.com
@@ -447,13 +447,13 @@ Using Gmail with screen readers
 Get started with Git – the power behind GitHub
 Inbox
 
-GitHub <no-reply@github.com> Unsubscribe
+GitHub <user35@example.invalid> Unsubscribe
 Fri 10 Apr, 10:12 (7 days ago)
 to me
 
-from:	GitHub <no-reply@github.com>
-reply-to:	no-reply@github.com
-to:	mohdibadullah75@gmail.com
+from:	GitHub <user36@example.invalid>
+reply-to:	user37@example.invalid
+to:	user38@example.invalid
 date:	10 Apr 2026, 10:12
 subject:	Get started with Git – the power behind GitHub
 mailed-by:	sgmail.github.com
@@ -472,7 +472,7 @@ Your challenge today: Set up your Git identity.
 2️⃣ Set your name and email in Git:
 
 git config --global user.name "Your Name"
-git config --global user.email "your.email@example.com"
+git config --global user.email "user39@example.invalid"
 
 3️⃣ Learn the basics with this video
 
@@ -501,12 +501,12 @@ Using Gmail with screen readers
 10 of 26
 Sign up for AWS - Email Verification
 Inbox
-no-reply@signup.aws
+user40@example.invalid
 Thu 9 Apr, 12:07 (8 days ago)
 to me
 
-from:	no-reply@signup.aws
-to:	mohdibadullah75@gmail.com
+from:	user41@example.invalid
+to:	user42@example.invalid
 date:	9 Apr 2026, 12:07
 subject:	Sign up for AWS - Email Verification
 mailed-by:	bounces.signup.aws
@@ -516,7 +516,7 @@ security:	 Standard encryption (TLS) Learn more
 Images in this message are hidden. This message appears suspicious. Don't show the images unless you trust the sender and the message.
 Show imagesReport spam
 External image icon
-Images are not displayed. Display images below - Always display images from no-reply@signup.aws
+Images are not displayed. Display images below - Always display images from user43@example.invalid
 AWS logo
 The email specified is already associated with an AWS account
 We received a request to create a new AWS account using this e-mail address. We could not complete your request because an AWS account is already associated with this e-mail address. If the account associated with this e-mail address is active, you can sign in using the following link:
@@ -534,7 +534,7 @@ Amazon Web Services will never email you and ask you to disclose or verify your 
 
 Amazon Web Services, Inc. is a subsidiary of Amazon.com, Inc. Amazon.com is a registered trademark of Amazon.com, Inc. This message was produced and distributed by Amazon Web Services, Inc., 410 Terry Ave. North, Seattle, WA 98109-5210.
 
-no-reply@signup.aws
+user44@example.invalid
 Thu 9 Apr, 12:08 (8 days ago)
 to me
 
@@ -546,15 +546,15 @@ Using Gmail with screen readers
 Get started with Google Antigravity
 Inbox
 
-Google Antigravity <antigravity-noreply@google.com> Unsubscribe
+Google Antigravity <user45@example.invalid> Unsubscribe
 Thu 9 Apr, 01:52 (8 days ago)
 to me
 
-from:	Google Antigravity <antigravity-noreply@google.com>
-to:	mohdibadullah75@gmail.com
+from:	Google Antigravity <user46@example.invalid>
+to:	user47@example.invalid
 date:	9 Apr 2026, 01:52
 subject:	Get started with Google Antigravity
-mailing list:	<cbf13b99ddbd6d1c165bcb564a3c4f84b3baa6254213a49179656b435c1b319d@google.com> Filter messages from this mailing list
+mailing list:	<user48@example.invalid> Filter messages from this mailing list
 mailed-by:	scoutcamp.bounces.google.com
 Signed by:	google.com
 security:	 Standard encryption (TLS) Learn more
@@ -597,13 +597,13 @@ Using Gmail with screen readers
 Our free, hands-on data science courses
 Inbox
 
-Kaggle <noreply@kaggle.com> Unsubscribe
+Kaggle <user49@example.invalid> Unsubscribe
 Wed 8 Apr, 23:53 (9 days ago)
 to me
 
-from:	Kaggle <noreply@kaggle.com>
-reply-to:	Kaggle <noreply@kaggle.com>
-to:	mohdibadullah75@gmail.com
+from:	Kaggle <user50@example.invalid>
+reply-to:	Kaggle <user51@example.invalid>
+to:	user52@example.invalid
 date:	8 Apr 2026, 23:53
 subject:	Our free, hands-on data science courses
 mailing list:	<d3d572f2a797bc005fbf0c631ac17de03856ef11.google.com> Filter messages from this mailing list
@@ -624,7 +624,7 @@ The Kaggle Team
 
 Kaggle, Inc 1600 Amphitheatre Pkwy Mountain View, CA 94043
 
-This email was sent to mohdibadullah75@gmail.com because you indicated that you'd like to receive news and updates about Kaggle. If you don't want to receive these emails in the future, please unsubscribe here. You can also change your preferences on your account's profile page by logging in at kaggle.com.
+This email was sent to user53@example.invalid because you indicated that you'd like to receive news and updates about Kaggle. If you don't want to receive these emails in the future, please unsubscribe here. You can also change your preferences on your account's profile page by logging in at kaggle.com.
 
 
 
@@ -635,13 +635,13 @@ Using Gmail with screen readers
 Welcome to GitHub—let’s get started 💻
 Inbox
 
-GitHub <no-reply@github.com> Unsubscribe
+GitHub <user54@example.invalid> Unsubscribe
 Mon 6 Apr, 10:10 (11 days ago)
 to me
 
-from:	GitHub <no-reply@github.com>
-reply-to:	no-reply@github.com
-to:	mohdibadullah75@gmail.com
+from:	GitHub <user55@example.invalid>
+reply-to:	user56@example.invalid
+to:	user57@example.invalid
 date:	6 Apr 2026, 10:10
 subject:	Welcome to GitHub—let’s get started 💻
 mailed-by:	sgmail.github.com
@@ -697,12 +697,12 @@ Using Gmail with screen readers
 GitHub Copilot: What’s in your free plan 🤖
 Inbox
 
-GitHub <noreply@github.com>
+GitHub <user58@example.invalid>
 Sun 5 Apr, 07:07 (12 days ago)
 to me
 
-from:	GitHub <noreply@github.com>
-to:	mohdibadullah75-design <mohdibadullah75@gmail.com>
+from:	GitHub <user59@example.invalid>
+to:	mohdibadullah75-design <user60@example.invalid>
 date:	5 Apr 2026, 07:07
 subject:	GitHub Copilot: What’s in your free plan 🤖
 mailed-by:	github.com
@@ -745,12 +745,12 @@ Using Gmail with screen readers
 New device signed in to your Roo Code Cloud account
 Inbox
 
-Roo Code Cloud <noreply@roocode.com>
+Roo Code Cloud <user61@example.invalid>
 Thu 2 Apr, 12:51
 to me
 
-from:	Roo Code Cloud <noreply@roocode.com>
-to:	mohdibadullah75@gmail.com
+from:	Roo Code Cloud <user62@example.invalid>
+to:	user63@example.invalid
 date:	2 Apr 2026, 12:51
 subject:	New device signed in to your Roo Code Cloud account
 mailed-by:	clkmail.roocode.com
@@ -772,7 +772,7 @@ Don't recognize this activity?
 To immediately sign out of this device click the button below. If you having trouble with the signing out please click here.
 
 Sign out of this device
-If you have any questions or need any help, please reach out to support@roocode.com as soon as possible.
+If you have any questions or need any help, please reach out to user64@example.invalid as soon as possible.
 
  
 © 2026 Roo Code Cloud
@@ -784,13 +784,13 @@ Using Gmail with screen readers
 Welcome to Overleaf
 Inbox
 
-Overleaf <welcome@overleaf.com>
+Overleaf <user65@example.invalid>
 Tue 24 Mar, 14:18
 to me
 
-from:	Overleaf <welcome@overleaf.com>
-reply-to:	welcome@overleaf.com
-to:	mohdibadullah75@gmail.com
+from:	Overleaf <user66@example.invalid>
+reply-to:	user67@example.invalid
+to:	user68@example.invalid
 date:	24 Mar 2026, 14:18
 subject:	Welcome to Overleaf
 mailed-by:	email.overleaf.com
@@ -804,7 +804,7 @@ Welcome to Overleaf
 
 Hi,
 
-Thanks for signing up to Overleaf! If you ever get lost, you can log in again with the email address 'mohdibadullah75@gmail.com'.
+Thanks for signing up to Overleaf! If you ever get lost, you can log in again with the email address 'user69@example.invalid'.
 
 If you're new to LaTeX, take a look at our Help Guides and Templates.
 
@@ -822,12 +822,12 @@ Using Gmail with screen readers
 Welcome to OpenRouter
 Inbox
 
-OpenRouter Team <welcome@openrouter.ai> Unsubscribe
+OpenRouter Team <user70@example.invalid> Unsubscribe
 Fri 6 Mar, 00:20
 to me
 
-from:	OpenRouter Team <welcome@openrouter.ai>
-to:	mohdibadullah75@gmail.com
+from:	OpenRouter Team <user71@example.invalid>
+to:	user72@example.invalid
 date:	6 Mar 2026, 00:20
 subject:	Welcome to OpenRouter
 mailed-by:	cio121019.openrouter.ai
@@ -860,12 +860,12 @@ Using Gmail with screen readers
 Verify your new Amazon account
 Inbox
 
-Amazon <account-update@amazon.com>
+Amazon <user73@example.invalid>
 Mon 12 Jan, 22:01
 to me
 
-from:	Amazon <account-update@amazon.com>
-to:	mohdibadullah75@gmail.com
+from:	Amazon <user74@example.invalid>
+to:	user75@example.invalid
 date:	12 Jan 2026, 22:01
 subject:	Verify your new Amazon account
 mailed-by:	bounces.amazon.com
@@ -888,7 +888,7 @@ Amazon.com is a trading name for Amazon EU Sarl, for Amazon Europe Core Sarl and
 Amazon.co.uk
 
 
-Amazon <account-update@amazon.com>
+Amazon <user76@example.invalid>
 Mon 12 Jan, 22:03
 to me
 
@@ -915,13 +915,13 @@ Using Gmail with screen readers
 Time to jump back in!
 Inbox
 
-Grammarly Insights <hello@mail.grammarly.com> Unsubscribe
+Grammarly Insights <user77@example.invalid> Unsubscribe
 Wed 28 Jan, 02:23
 to me
 
-from:	Grammarly Insights <hello@mail.grammarly.com>
-reply-to:	noreply@grammarly.com
-to:	mohdibadullah75@gmail.com
+from:	Grammarly Insights <user78@example.invalid>
+reply-to:	user79@example.invalid
+to:	user80@example.invalid
 date:	28 Jan 2026, 02:23
 subject:	Time to jump back in!
 mailed-by:	bounces.grammarly.com
@@ -984,13 +984,13 @@ Using Gmail with screen readers
 26 of 26
 Everyday-outfit for Mohd
 Inbox
-Pinterest <recommendations@discover.pinterest.com>
+Pinterest <user81@example.invalid>
 Sat 24 Jan, 22:27
 to me
 
-from:	Pinterest <recommendations@discover.pinterest.com>
-reply-to:	recommendations@reply.pinterest.com
-to:	Mohd <mohdibadullah75@gmail.com>
+from:	Pinterest <user82@example.invalid>
+reply-to:	user83@example.invalid
+to:	Mohd <user84@example.invalid>
 date:	24 Jan 2026, 22:27
 subject:	Everyday-outfit for Mohd
 mailed-by:	discover.pinterest.com
@@ -1056,13 +1056,13 @@ Using Gmail with screen readers
 Annual reminder about YouTube’s Terms of Service, Community Guidelines and Privacy Policy 
 Inbox
 
-YouTube <no-reply@youtube.com>
+YouTube <user85@example.invalid>
 Sat, 15 Nov 2025, 01:16
 to me
 
-from:	YouTube <no-reply@youtube.com>
-reply-to:	YouTube <no-reply@youtube.com>
-to:	mohdibadullah75@gmail.com
+from:	YouTube <user86@example.invalid>
+reply-to:	YouTube <user87@example.invalid>
+to:	user88@example.invalid
 date:	15 Nov 2025, 01:16
 subject:	Annual reminder about YouTube’s Terms of Service, Community Guidelines and Privacy Policy
 mailed-by:	scoutcamp.bounces.google.com
@@ -1107,12 +1107,12 @@ Using Gmail with screen readers
 Brewed this up just for you ☕️
 Inbox
 
-Zomato <noreply@mailers.zomato.com> Unsubscribe
+Zomato <user89@example.invalid> Unsubscribe
 Fri, 6 Jun 2025, 17:08
 to me
 
-from:	Zomato <noreply@mailers.zomato.com>
-to:	mohdibadullah75@gmail.com
+from:	Zomato <user90@example.invalid>
+to:	user91@example.invalid
 date:	6 Jun 2025, 17:08
 subject:	Brewed this up just for you ☕️
 mailed-by:	em9311.mailers.zomato.com

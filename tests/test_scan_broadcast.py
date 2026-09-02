@@ -201,9 +201,8 @@ async def test_pending_queue_is_bounded_across_rooms():
     total_queued == MAX_TOTAL_EVENTS. Also proves caps fail when enforcement
     is removed (mutation test).
 
-    Note: cap=10000 is at or below the previously observed 20x903=18060
-    burst estimate. During such bursts, behavior is lossy (older events
-    evicted), not "headroom".
+    Note: cap=20000 is above the previously observed 20x903=18060
+    burst estimate. If exceeded, oldest events are evicted (lossy by design).
     """
     from backend.ws.connection_manager import ConnectionManager
 
@@ -220,9 +219,10 @@ async def test_pending_queue_is_bounded_across_rooms():
         async def close(self, code=1000, reason=""): pass
 
     # ── Positive proof: fill past both caps ──
-    # PENDING_MAX_PER_ROOM=20; fill 500 rooms x 20 events = 10000,
-    # then overflow to trigger eviction.
-    for i in range(cm._MAX_ROOMS + 50):
+    # PENDING_MAX_PER_ROOM=20; fill enough rooms to exceed MAX_TOTAL_EVENTS.
+    # With 20 events/room, need ceil(MAX_TOTAL_EVENTS/20) rooms to hit cap.
+    rooms_needed = (cm._MAX_TOTAL_EVENTS // cm._PENDING_MAX_PER_ROOM) + 50
+    for i in range(max(cm._MAX_ROOMS + 50, rooms_needed)):
         ws = FakeWS()
         await cm.connect(ws, session_id=f"fill-room-{i}")
         await cm.disconnect(ws)

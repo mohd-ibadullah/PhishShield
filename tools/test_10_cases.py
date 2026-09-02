@@ -68,7 +68,7 @@ CASES = [
         "id": 6,
         "name": "Thread hijack payment switch",
         "payload": {
-            "email_text": "Re: previous thread... change payment urgently.\n\nPlease update the payment to the new account details immediately.\nThis is urgent, do not delay.\n\n-----Original Message-----\nFrom: John <john@company.com>\nSent: Monday\nSubject: Re: Project\n\nHi team, the project is going well. Looking forward to the review.\n\nBest,\nJohn"
+            "email_text": "Re: previous thread... change payment urgently.\n\nPlease update the payment to the new account details immediately.\nThis is urgent, do not delay.\n\n-----Original Message-----\nFrom: John <user1@example.invalid>\nSent: Monday\nSubject: Re: Project\n\nHi team, the project is going well. Looking forward to the review.\n\nBest,\nJohn"
         },
         "expected": "High Risk",
     },
@@ -76,7 +76,7 @@ CASES = [
         "id": 7,
         "name": "Safe GitHub welcome",
         "payload": {
-            "email_text": "from: noreply@github.com\nsubject: Welcome to GitHub!\n\nWelcome to GitHub! Your account has been created successfully. You can now start exploring repositories and collaborating with developers worldwide.\n\nHappy coding!\nThe GitHub Team\n\nTo unsubscribe from these emails, visit your notification settings."
+            "email_text": "from: user2@example.invalid\nsubject: Welcome to GitHub!\n\nWelcome to GitHub! Your account has been created successfully. You can now start exploring repositories and collaborating with developers worldwide.\n\nHappy coding!\nThe GitHub Team\n\nTo unsubscribe from these emails, visit your notification settings."
         },
         "expected": "Safe",
     },
@@ -84,7 +84,7 @@ CASES = [
         "id": 8,
         "name": "Safe banking summary",
         "payload": {
-            "email_text": "from: alerts@hdfcbank.net\nsubject: Your Weekly Banking Summary\nmailed-by: hdfcbank.net\n\nDear Customer,\n\nYour weekly banking summary is ready. You had 3 transactions this week.\n\nTotal credits: Rs. 45,000\nTotal debits: Rs. 12,500\nBalance: Rs. 1,25,000\n\nThis is an automated notification. Please do not reply.\n\nRegards,\nHDFC Bank"
+            "email_text": "from: user3@example.invalid\nsubject: Your Weekly Banking Summary\nmailed-by: hdfcbank.net\n\nDear Customer,\n\nYour weekly banking summary is ready. You had 3 transactions this week.\n\nTotal credits: Rs. 45,000\nTotal debits: Rs. 12,500\nBalance: Rs. 1,25,000\n\nThis is an automated notification. Please do not reply.\n\nRegards,\nHDFC Bank"
         },
         "expected": "Safe",
     },

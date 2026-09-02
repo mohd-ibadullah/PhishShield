@@ -29,7 +29,7 @@ from data_constants import (
 )
 
 MARKER = f"MARKER-{uuid.uuid4().hex[:16]}"
-MARKER_EMAIL = f"Subject: Test\nFrom: test@example.com\nBody: {MARKER} verify your account"
+MARKER_EMAIL = f"Subject: Test\nFrom: user1@example.invalid\nBody: {MARKER} verify your account"
 
 # §1.1: Paths are resolved lazily inside each test function so the
 # conftest session fixture has time to redirect them to tmp.
@@ -272,7 +272,10 @@ def test_scan_stores_never_contain_email_text():
 
 
 def test_feedback_row_shape_allows_only_email_text():
-    """feedback.csv columns must be exactly FEEDBACK_COLUMNS — no extra fields."""
+    """D5: feedback.csv columns must be exactly FEEDBACK_COLUMNS — no extra fields.
+
+    Column 'email_text' was replaced by 'email_hash' (D5 fix).
+    """
     import csv
     from pathlib import Path
 
@@ -288,3 +291,43 @@ def test_feedback_row_shape_allows_only_email_text():
     assert sorted(fieldnames) == sorted(FEEDBACK_COLUMNS), (
         f"feedback.csv has unexpected columns: {fieldnames}; expected: {FEEDBACK_COLUMNS}"
     )
+
+
+def test_feedback_csv_has_no_plaintext_email():
+    """D5: feedback.csv must never contain plaintext email_text.
+
+    After the D5 fix, the only email-derived field is email_hash (SHA-256).
+    """
+    import csv
+    from pathlib import Path
+
+    csv_path = Path(__file__).resolve().parents[1] / "backend" / "feedback.csv"
+    if not csv_path.exists() or csv_path.stat().st_size == 0:
+        pytest.skip("backend/feedback.csv does not exist or is empty")
+
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+
+    assert "email_text" not in fieldnames, (
+        "D5 violation: feedback.csv still contains email_text column! "
+        "Must use email_hash instead."
+    )
+    assert "email_hash" in fieldnames, (
+        "feedback.csv missing email_hash column (D5 replacement for email_text)"
+    )
+
+    # Verify hash values are valid hex strings (not plaintext)
+    import re
+    hex_pattern = re.compile(r"^[0-9a-f]{32}$")
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for i, row in enumerate(reader):
+            h = row.get("email_hash", "")
+            if h:
+                assert hex_pattern.match(h), (
+                    f"Row {i}: email_hash is not valid hex: {h!r}"
+                )
+                assert len(h) < 100, (
+                    f"Row {i}: email_hash looks like plaintext email text (too long): {len(h)} chars"
+                )

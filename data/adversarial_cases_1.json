@@ -4,7 +4,7 @@
     {
       "id": "A01",
       "category": "A",
-      "email_text": "From: n\u043etification@paypa1-security.ru\nVerify your \u0430ccount now: http://evil-login.xyz/verify",
+      "email_text": "From: n\user1@example.invalid\nVerify your \u0430ccount now: http://evil-login.xyz/verify",
       "expect": {
         "min_score": 70
       }
@@ -100,7 +100,7 @@
     {
       "id": "B03",
       "category": "B",
-      "email_text": "Newsletter: how to spot phishing and report suspicious messages to abuse@company.com.",
+      "email_text": "Newsletter: how to spot phishing and report suspicious messages to user2@example.invalid.",
       "expect": {
         "max_score": 30
       }

@@ -159,9 +159,10 @@ def _isolate_stores_to_tmp() -> None:
 def _per_test_store_bindings(request) -> None:
     """§A.1: Per-test binding check — self-naming offender report.
 
-    After each test function, sha256 the 7 guarded stores. On first difference from
-    the session-baseline, record the test name.  This makes the offender self-naming
-    instead of leaving the session-end finalizer to report only "something changed".
+    After each test function, SHA-256 hash the 7 guarded stores. On first
+    difference from the session-baseline, record the test name.  This makes
+    the offender self-naming instead of leaving the session-end finalizer
+    to report only "something changed".
 
     Rule: on first difference → print STORE-BINDING OFFENDER: <nodeid> <store> <field>
     and set baseline := current (so later tests report clean).
@@ -208,7 +209,7 @@ def _per_test_store_bindings(request) -> None:
         test_id = getattr(node, "nodeid", "unknown") if node else "unknown"
         # Print the offender
         for store, (new_hash, old_hash) in diffs.items():
-            print(f"STORE-BINDING OFFENDER: {test_id} {store} mtime_ns")
+            print(f"STORE-BINDING OFFENDER: {test_id} {store} sha256")
         # Re-baseline: update session hashes to current so later tests report clean
         _per_test_store_bindings._session_hashes = cur_hashes
 

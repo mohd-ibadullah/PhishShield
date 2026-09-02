@@ -22,7 +22,7 @@ if __name__ == "__main__":
         {
             "id": "SAFE_01: Google Login Notify",
             "category": "Safe Detection",
-            "email": "From: no-reply@accounts.google.com\nTo: user@gmail.com\nSubject: Security alert\n\nYour Google Account was just signed in to from a new Windows device. If this was you, you can safely ignore this email.",
+            "email": "From: user1@example.invalid\nTo: user2@example.invalid\nSubject: Security alert\n\nYour Google Account was just signed in to from a new Windows device. If this was you, you can safely ignore this email.",
             "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@google.com; spf=pass; dmarc=pass header.from=google.com",
             "expected_verdict": "Safe",
             "max_risk": 25
@@ -30,7 +30,7 @@ if __name__ == "__main__":
         {
             "id": "SAFE_02: Amazon Order Confirm",
             "category": "Safe Detection",
-            "email": "From: auto-confirm@amazon.in\nTo: customer@example.com\nSubject: Order Shipped\n\nYour Amazon order #123-456 has been shipped and will arrive tomorrow. Track here: https://amazon.in/orders/123-456",
+            "email": "From: user3@example.invalid\nTo: user4@example.invalid\nSubject: Order Shipped\n\nYour Amazon order #123-456 has been shipped and will arrive tomorrow. Track here: https://amazon.in/orders/123-456",
             "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@amazon.in; spf=pass; dmarc=pass",
             "expected_verdict": "Safe",
             "max_risk": 25
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         {
             "id": "SAFE_03: GitHub PR Review",
             "category": "Safe Detection",
-            "email": "From: noreply@github.com\nTo: dev@company.com\nSubject: [GitHub] Review requested\n\nA teammate requested your review on PR #88. View it here: https://github.com/org/repo/pull/88",
+            "email": "From: user5@example.invalid\nTo: user6@example.invalid\nSubject: [GitHub] Review requested\n\nA teammate requested your review on PR #88. View it here: https://github.com/org/repo/pull/88",
             "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@github.com; spf=pass; dmarc=pass",
             "expected_verdict": "Safe",
             "max_risk": 25
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         {
             "id": "SAFE_04: PayPal Payment confirmed",
             "category": "Safe Detection",
-            "email": "From: service@paypal.com\nTo: user@example.com\nSubject: You sent a payment\n\nYou sent $15.00 USD to Netflix. This transaction will appear on your statement as PAYPAL *NETFLIX.",
+            "email": "From: user7@example.invalid\nTo: user8@example.invalid\nSubject: You sent a payment\n\nYou sent $15.00 USD to Netflix. This transaction will appear on your statement as PAYPAL *NETFLIX.",
             "headers": "Authentication-Results: mx.google.com; dkim=pass header.i=@paypal.com; spf=pass; dmarc=pass",
             "expected_verdict": "Safe",
             "max_risk": 25
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         {
             "id": "SAFE_05: OTP Safety Notice",
             "category": "Safe Detection",
-            "email": "From: security@mybank.com\nTo: customer@example.com\nSubject: Security Tip\n\nRemember: Do not share your OTP with anyone, even if they claim to be from our bank. We will never ask for your password or OTP over the phone or email.",
+            "email": "From: user9@example.invalid\nTo: user10@example.invalid\nSubject: Security Tip\n\nRemember: Do not share your OTP with anyone, even if they claim to be from our bank. We will never ask for your password or OTP over the phone or email.",
             "headers": "Authentication-Results: mx.google.com; dkim=pass; spf=pass; dmarc=pass",
             "expected_verdict": "Safe",
             "max_risk": 25
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         {
             "id": "SAFE_06: Internal Newsletter",
             "category": "Safe Detection",
-            "email": "From: news@mycompany.com\nTo: employee@mycompany.com\nSubject: Weekly Digest\n\nHere is what happened this week at the office. Don't forget the pizza party on Friday!\n\nUnsubscribe from this list.",
+            "email": "From: user11@example.invalid\nTo: user12@example.invalid\nSubject: Weekly Digest\n\nHere is what happened this week at the office. Don't forget the pizza party on Friday!\n\nUnsubscribe from this list.",
             "headers": "Authentication-Results: local; dkim=pass; spf=pass; dmarc=pass",
             "expected_verdict": "Safe",
             "max_risk": 25
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         {
             "id": "SUSP_01: Unknown sender payment mention",
             "category": "Suspicious Det.",
-            "email": "From: stranger@unknown-domain.top\nTo: victim@example.com\nSubject: Regarding your payment\n\nHello, we need to discuss the payment for the services. Please check the details here: https://unknown-domain.top/payment-info",
+            "email": "From: user13@example.invalid\nTo: user14@example.invalid\nSubject: Regarding your payment\n\nHello, we need to discuss the payment for the services. Please check the details here: https://unknown-domain.top/payment-info",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=pass; dmarc=none",
             "expected_verdict": "Suspicious",
             "risk_range": (26, 60)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         {
             "id": "SUSP_02: HR onboarding vague link",
             "category": "Suspicious Det.",
-            "email": "From: hr@global-corp-onboarding.xyz\nTo: candidate@gmail.com\nSubject: Onboarding steps\n\nPlease complete your onboarding by visiting this portal: https://global-corp-onboarding.xyz/start",
+            "email": "From: user15@example.invalid\nTo: user16@example.invalid\nSubject: Onboarding steps\n\nPlease complete your onboarding by visiting this portal: https://global-corp-onboarding.xyz/start",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=none; dmarc=none",
             "expected_verdict": "Suspicious",
             "risk_range": (26, 60)
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         {
             "id": "HIGH_01: HDFC Bank OTP Phishing",
             "category": "High Risk Det.",
-            "email": "From: security@hdfc-verification.xyz\nTo: user@gmail.com\nSubject: URGENT: Account Blocked\n\nYour HDFC NetBanking account is blocked. Abhi apna OTP share karein access restore karne ke liye. Verify now: https://hdfc-verification.xyz/login",
+            "email": "From: user17@example.invalid\nTo: user18@example.invalid\nSubject: URGENT: Account Blocked\n\nYour HDFC NetBanking account is blocked. Abhi apna OTP share karein access restore karne ke liye. Verify now: https://hdfc-verification.xyz/login",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=fail; dmarc=none",
             "expected_verdict": "High Risk",
             "risk_range": (61, 89)
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         {
             "id": "HIGH_02: SBI Account Suspended",
             "category": "High Risk Det.",
-            "email": "From: alert@sbi-online-secure.top\nTo: user@yahoo.com\nSubject: Account Suspension Notice\n\nYour SBI account has been suspended. Please verify your KYC details immediately to avoid permanent closure. Link: https://sbi-online-secure.top/kyc",
+            "email": "From: user19@example.invalid\nTo: user20@example.invalid\nSubject: Account Suspension Notice\n\nYour SBI account has been suspended. Please verify your KYC details immediately to avoid permanent closure. Link: https://sbi-online-secure.top/kyc",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=fail; dmarc=none",
             "expected_verdict": "High Risk",
             "risk_range": (61, 89)
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         {
             "id": "HIGH_03: BEC CEO Wire Transfer",
             "category": "High Risk Det.",
-            "email": "From: ceo@company-ceo-urgent.com\nTo: finance-lead@company.com\nSubject: Urgent Wire Transfer\n\nI am in a meeting and cannot be disturbed. Please process a wire transfer of $45,000 for a confidential acquisition. Send the confirmation once done.",
+            "email": "From: user21@example.invalid\nTo: user22@example.invalid\nSubject: Urgent Wire Transfer\n\nI am in a meeting and cannot be disturbed. Please process a wire transfer of $45,000 for a confidential acquisition. Send the confirmation once done.",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=fail; dmarc=fail",
             "expected_verdict": "High Risk",
             "risk_range": (61, 89)
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         {
             "id": "HIGH_04: FedEx Delivery Fee Scam",
             "category": "High Risk Det.",
-            "email": "From: delivery@fedex-shipping-hold.xyz\nTo: user@example.com\nSubject: Delivery Delayed\n\nYour package is on hold. A customs fee of Rs.49 is pending. Pay now to release: https://fedex-shipping-hold.xyz/pay",
+            "email": "From: user23@example.invalid\nTo: user24@example.invalid\nSubject: Delivery Delayed\n\nYour package is on hold. A customs fee of Rs.49 is pending. Pay now to release: https://fedex-shipping-hold.xyz/pay",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=fail; dmarc=none",
             "expected_verdict": "High Risk",
             "risk_range": (61, 89)
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         {
             "id": "HIGH_05: Income Tax Refund Scam",
             "category": "High Risk Det.",
-            "email": "From: refund@incometax-gov-india.top\nTo: taxpayer@example.com\nSubject: Tax Refund Approved\n\nYour income tax refund of Rs.15,400 has been approved. Please verify your PAN and Bank details to receive it: https://incometax-gov-india.top/refund",
+            "email": "From: user25@example.invalid\nTo: user26@example.invalid\nSubject: Tax Refund Approved\n\nYour income tax refund of Rs.15,400 has been approved. Please verify your PAN and Bank details to receive it: https://incometax-gov-india.top/refund",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=fail; dmarc=none",
             "expected_verdict": "High Risk",
             "risk_range": (61, 89)
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         {
             "id": "HIGH_06: KBC Lottery Scam",
             "category": "High Risk Det.",
-            "email": "From: info@kbc-lucky-winner.xyz\nTo: user@example.com\nSubject: Congratulations! KBC Winner\n\nYou have won 25 Lakhs in KBC Lucky Draw. Contact our manager on WhatsApp +44 123456789 to claim your prize.",
+            "email": "From: user27@example.invalid\nTo: user28@example.invalid\nSubject: Congratulations! KBC Winner\n\nYou have won 25 Lakhs in KBC Lucky Draw. Contact our manager on WhatsApp +44 123456789 to claim your prize.",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=none; dmarc=none",
             "expected_verdict": "High Risk",
             "risk_range": (61, 89)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         {
             "id": "CRIT_01: Multisignal Credential Phish",
             "category": "Critical Det.",
-            "email": "From: security@login-verified.xyz\nTo: victim@example.com\nSubject: Security Alert: Account Compromised\n\nWe detected an unauthorized login to your account. Your account is locked. Please log in here to verify your identity and enter the OTP sent to your phone: https://login-verified.xyz/secure",
+            "email": "From: user29@example.invalid\nTo: user30@example.invalid\nSubject: Security Alert: Account Compromised\n\nWe detected an unauthorized login to your account. Your account is locked. Please log in here to verify your identity and enter the OTP sent to your phone: https://login-verified.xyz/secure",
             "headers": "Authentication-Results: mx.google.com; dkim=none; spf=fail; dmarc=fail",
             "expected_verdict": ["Critical", "High Risk"],
             "min_risk": 85
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         {
             "id": "HEAD_01: SPF/DKIM Fail",
             "category": "Header Tests",
-            "email": "From: security@paypal.com\nTo: user@example.com\nSubject: Alert\n\nYour account has a problem.",
+            "email": "From: user31@example.invalid\nTo: user32@example.invalid\nSubject: Alert\n\nYour account has a problem.",
             "headers": "Authentication-Results: mx.google.com; spf=fail; dkim=fail; dmarc=fail",
             "expected_verdict": ["High Risk", "Suspicious"],
             "min_risk": 40
@@ -184,7 +184,7 @@ if __name__ == "__main__":
         {
             "id": "HEAD_02: Display Name Spoof",
             "category": "Header Tests",
-            "email": "From: \"HDFC Bank\" <security@random-sender.xyz>\nTo: user@example.com\nSubject: Account Alert\n\nPlease check your account.",
+            "email": "From: \"HDFC Bank\" <user33@example.invalid>\nTo: user34@example.invalid\nSubject: Account Alert\n\nPlease check your account.",
             "headers": "Authentication-Results: mx.google.com; spf=pass; dkim=none; dmarc=none",
             "expected_verdict": ["High Risk", "Suspicious"],
             "min_risk": 30

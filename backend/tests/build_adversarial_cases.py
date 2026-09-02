@@ -10,7 +10,7 @@ cases: list[dict] = []
 
 # A: leet / unicode obfuscation phishing (expect score >= 70 for 9/10)
 a_bodies = [
-    "From: nоtification@paypa1-security.ru\nVerify your аccount now: http://evil-login.xyz/verify",
+    "From: nоuser1@example.invalid\nVerify your аccount now: http://evil-login.xyz/verify",
     "Your bаnk аccount is l0cked. L0gin: http://secure-bank.ml/auth",
     "Urgent: c0nfirm your emаil at http://amaz0n-verify.tk/otp",
     "SBI: your UPI is exp1red. http://sbi-upi-renew.xyz",
@@ -28,7 +28,7 @@ for i, t in enumerate(a_bodies, 1):
 b_bodies = [
     "Security awareness training covers phishing, OTP scams, and credential theft. No links required.",
     "Our policy: we never ask for your password or OTP by email. Regards, IT Security Team.",
-    "Newsletter: how to spot phishing and report suspicious messages to abuse@company.com.",
+    "Newsletter: how to spot phishing and report suspicious messages to user2@example.invalid.",
     "Reminder: do not share OTP or PIN with anyone, including callers claiming to be the bank.",
     "This is a simulated phishing exercise for staff education only. No action needed.",
     "HR: mandatory cybersecurity module explains spear phishing and wire fraud scenarios.",
