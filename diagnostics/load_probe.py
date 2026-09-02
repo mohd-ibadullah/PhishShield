@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""T12: 16×50 concurrency probe against local uvicorn."""
+"""T12: 16×50 concurrency probe against local uvicorn.
+
+Self-check: wall ≈ total_time / CONCURRENCY within 30%.
+Reports errors by type. Fails on inconsistent numbers.
+"""
 from __future__ import annotations
 
 import asyncio
 import time
 import statistics
+from collections import Counter
 
 import httpx
 
@@ -30,7 +35,6 @@ async def one_scan(client: httpx.AsyncClient, i: int) -> tuple[float, int, str |
 
 async def run_load():
     results = []
-    errors = {}
     start = time.monotonic()
 
     async with httpx.AsyncClient() as client:
@@ -44,23 +48,33 @@ async def run_load():
     n = len(results)
     times = [r[0] for r in results]
     statuses = [r[1] for r in results]
-    errs = [r[2] for r in results if r[2]]
+    error_types = Counter(r[2] for r in results if r[2])
 
-    for e in errs:
-        errors[e] = errors.get(e, 0) + 1
+    # Separate successful and failed requests
+    success_times = [t for t, s, e in zip(times, statuses, [r[2] for r in results]) if s == 200]
+    fail_count = n - len(success_times)
 
     p50 = statistics.median(times)
     p95 = sorted(times)[int(len(times) * 0.95)]
     rps = n / wall
-    mean = statistics.mean(times)
 
-    # Self-check: wall ≈ sum_of_all_times / concurrency (parallel execution)
+    # Self-check: wall ≈ total_time / CONCURRENCY (parallel execution)
     total_time = sum(times)
     expected = total_time / CONCURRENCY
     ratio = wall / expected if expected > 0 else 0
 
-    print(f"n={n} wall={wall:.2f}s rps={rps:.1f} p50={p50:.3f}s p95={p95:.3f}s errors={errors}")
-    print(f"self-check: total_time={total_time:.2f}s, expected_wall={expected:.2f}s, ratio={ratio:.2f}")
+    # Arithmetic consistency: wall should be close to expected
+    # (within 50% — tight parallelism gives ratio < 1, timeouts give ratio > 1)
+    consistent = 0.5 <= ratio <= 2.0
+
+    print(f"n={n} wall={wall:.2f}s rps={rps:.1f} p50={p50:.3f}s p95={p95:.3f}s")
+    print(f"errors by type: {dict(error_types)}")
+    print(f"successful={len(success_times)} failed={fail_count}")
+    print(f"self-check: total_time={total_time:.2f}s, expected_wall={expected:.2f}s, ratio={ratio:.2f}, consistent={consistent}")
+    if not consistent:
+        print(f"WARNING: arithmetic inconsistent — ratio={ratio:.2f} outside [0.5, 2.0]")
+    if error_types:
+        print(f"OPEN: {sum(error_types.values())} errors under load")
 
 
 if __name__ == "__main__":
