@@ -7,11 +7,16 @@ were re-run; FIXED rows carry their EVIDENCE.md fragment. Environment: repo root
 ran as `python -m uvicorn main:app --port 9210 --app-dir backend` (restarted
 after the fix commits so the re-runs hit the fixed code).
 
+Corrections applied 2026-09-04 after review: EVIDENCE.md record restored to its
+original quoted text (V11/V12); V16 re-run once on the final tree (output below);
+V40 recheck with before/after `compare_digest` counts; Space gitlink restored to
+the pre-pass pointer 14e3575; V53 verified against the current index.
+
 ## §FINAL — verdict table (58 rows)
 
 | V-ID | class | deciding output fragment |
 |---|---|---|
-| V01 | FIXED | `git status --short` prints only ` M backend/sender_profiles.json`, ` M data/feedback_memory.json` |
+| V01 | FIXED | `git status --short` prints only ` M backend/sender_profiles.json`, ` M data/feedback_memory.json`, ` M phishshield-backend-space` (on-disk Space copy kept as uncommitted local change — see DISCREPANCIES2) |
 | V02 | FIXED | (carried) 25 commit subjects, all prefixed/descriptive |
 | V03 | FIXED | (carried) tracked files = 489; size-pack = 27694 KB |
 | V04 | FIXED | `Count 506`, `Sum 52017562`, `Maximum 22394045` (quoting-free re-run) |
@@ -21,12 +26,12 @@ after the fix commits so the re-runs hit the fixed code).
 | V08 | FIXED | (carried) `51` |
 | V09 | FIXED | (carried) `410 tests collected` (see DISCREPANCIES2 for the 418 now) |
 | V10 | FIXED | (carried) keys list — live-qa absent |
-| V11 | FIXED | (carried) `records 2000 lines 18_134` (underscore inserted to keep the V12 pattern out of root docs) |
-| V12 | FIXED | re-run prints `0` lines for `*.md`, `README.md`, `frontend\MASTER_GUIDE.md`; history preserved in `docs/HISTORY_FABRICATIONS.md` (`97.19` → 1 line) |
+| V11 | FIXED | (carried) `records 2000 lines 18134` — EVIDENCE.md record restored to the original line count |
+| V12 | FIXED | claim-doc grep (8 files; EVIDENCE.md/EVIDENCE2.md excluded as records, not claims) → `0` hits per file; EVIDENCE.md record restored to the original quoted figures; history preserved in `docs/HISTORY_FABRICATIONS.md` |
 | V13 | FIXED | (carried) LICENSE, data/CARD.md, data/PII_ALLOWLIST.txt listed |
 | V14 | FIXED | entries all `<path>: <justification>`; parser test `2 passed`; bare-path scratch line rejected by the parser |
 | V15 | FIXED | (carried) model.pkl + vectorizer.pkl tracked |
-| V16 | NOT-FIXED | final full run `4 failed, 411 passed, 2 skipped, 1 xfailed` = 2 ML-SIDE + 2 fix-pass regressions (both fixed and shard-verified after the run) → net `2 failed` = ML-SIDE count; exit=1 |
+| V16 | FIXED | final full run (one run, no prose): `2 failed, 413 passed, 2 skipped, 1 xfailed, 378 warnings in 591.30s` — failures exactly `test_hindi_cases[case1]` + `test_telugu_cases[case1]` = the ML-SIDE remainder (8 − 6 RULE-SIDE); exit=1 |
 | V17 | FIXED | (carried) both SKIPPED lines carry reasons |
 | V18 | FIXED | census lists 10 single-test files; every one named with a reason in `tests/README.md` |
 | V19 | FIXED | (carried) `6 passed`; watch-list-completeness guard present |
@@ -50,7 +55,7 @@ after the fix commits so the re-runs hit the fixed code).
 | V37 | FIXED | (carried) `REJECTED InvalidStatus` |
 | V38 | FIXED | (carried) `5 passed`; positive and negative delivery assertions |
 | V39 | FIXED | (carried) `4 passed` |
-| V40 | FIXED | `0` in backend/main.py; `0` in phishshield-backend-space/main.py |
+| V40 | FIXED | `0` pattern hits in backend/main.py and in phishshield-backend-space/main.py; `compare_digest` lines before run #2 (pre-pass 9318e49^) = 2, after = 4 — the +1 call is the C1 /metrics gate, not V40; V40's own hunks ≈ +11/−4 of the batch commit's +225 |
 | V41 | FIXED | (carried) `before=485 after=486 delta=1` |
 | V42 | FIXED | (carried) `content 0`; last-row keys carry no raw-content fields |
 | V43 | FIXED | `orphans 0`, `fk 1`, `scans 726 expl 722` |
@@ -63,25 +68,26 @@ after the fix commits so the re-runs hit the fixed code).
 | V50 | FIXED | (carried) names only; rotation-pending list now in FIX_LEDGER.md (F5) |
 | V51 | FIXED | (carried) 0 placeholder lines |
 | V52 | FIXED | rebuilt dist: `dev-sandbox-key` 0, `api.key` 0, `Bearer ` 0 |
-| V53 | FIXED | A4 census (self-referential files excluded): only `data/combined_test_dataset.json` (1) and `data/last_txt_dataset.json` (1) outside the allowlist; listed for F13; F1 dry-run proposes redaction, not applied |
+| V53 | FIXED | A4 census (self-referential files excluded): only `data/combined_test_dataset.json` (1) and `data/last_txt_dataset.json` (1) outside the allowlist; listed for F13; F1 dry-run proposes redaction, not applied. The 5 QA tools are out of the index (`git rm --cached` in 01b356c, verified absent from `git ls-files`); their on-disk and history PII is F13's call |
 | V54 | NOT-FIXED | `12` lines in `git log -p --all` (permanent limit); one-line limit sentence added to `data/CARD.md` under `## Limits` |
 | V55 | FIXED | (carried) model_used matches loaded providers, no `%` |
 | V56 | FIXED | `HI Safe 15` (Devanagari); Telugu script → `TE` |
 | V57 | FIXED | recursive src scan → `0` |
 | V58 | NOT-FIXED | deployed `a507b33c` (2026-05-21) carries 0 of 4 markers; Space `private False`; local fixes are unverified in production |
 
-Totals: FIXED 52, NOT-FIXED 5 (V05, V06, V16, V54, V58), BLOCKED 1 (V22).
+Totals: FIXED 53, NOT-FIXED 4 (V05, V06, V54, V58), BLOCKED 1 (V22).
 
 ## DISCREPANCIES2
 
 - V09 (410) vs current collection (418): 8 tests were added by this pass (chain cap, chunked cap, metrics gating, retrain GET gate, FK migration + orphan purge, CI/ledger parity, allowlist parser, deny-by-default metrics) — paste: trio shard `85 passed` (4 files) + main run 333 collected = 418; V09's 410 predates the additions.
 - V22/V46: `backend/scan_logs.jsonl.1` is 40,386,252 bytes and predates the cap; it is covered by `.gitignore` and its fate is F13's decision. V22's live file `scan_logs.jsonl` measured 141188 (V22 run) then 157555 (final re-run) — the growth comes from the live probes; both values pasted.
-- V16: run #1 of this pass `10 failed, 405 passed, 2 skipped, 1 xfailed, 1 error`; final run #2 `4 failed, 411 passed, 2 skipped, 1 xfailed`. The 4 = 2 ML-SIDE (hindi case1, telugu case1) + 2 fix-pass regressions (metrics-test contract 403→401; PII guard on newly committed QA tools) — both fixed after run #2 and shard-verified: `test_deny_by_default.py::test_metrics_requires_internal_key` + `tests/test_no_pii_in_tracked_files.py` + hindi/telugu cases → `2 failed, 8 passed` with the 2 failures being exactly the ML-SIDE pair. Net: 2 failed = ML-SIDE count.
+- V16: runs this pass — #1 `10 failed, 405 passed, 2 skipped, 1 xfailed, 1 error`; #2 `4 failed, 411 passed, 2 skipped, 1 xfailed` (2 ML-SIDE + 2 fix-pass regressions, both then fixed and shard-verified); final (after record restore + doc rewords + gitlink correction) `2 failed, 413 passed, 2 skipped, 1 xfailed in 591.30s` — failures exactly `test_hindi_cases[case1]` and `test_telugu_cases[case1]`, the ML-SIDE remainder.
 - V18: the single-test census now lists `tests/test_ci_deselect_matches_ledger_gaps.py` (added this pass) and no longer lists `tests/test_no_pii_in_tracked_files.py` (the allowlist parser test made it a 2-test file). All 10 current single-test files are named in `tests/README.md`.
 - V53: the original census command also prints the two self-referential files (`tests/test_no_pii_in_tracked_files.py` 3 hits — guard fixtures; `tools/redact_pii.py` 2 hits — the tool itself); A4 excludes them by instruction. Both numbers kept here.
-- V40: grep counts 0 in backend/main.py and 0 in phishshield-backend-space/main.py (the Space copy was mirrored, submodule commit f84c799).
-- V12: EVIDENCE.md's V12 quoted output was sanitized (figures relocated to docs/HISTORY_FABRICATIONS.md) so the row's own re-run stays pattern-free; V11's line count is written `18_134` (value unchanged) for the same reason.
-- V52/V57: the phishshield dist is gitignored (frontend/.gitignore line 4) and never committed; the rebuilt dist carries the verified 0/0/0 pattern counts, and the src fixes are committed (custom-fetch.ts, chart.tsx).
+- V40: pre-pass (9318e49^) had 2 `compare_digest` lines (session + caller-key) and 2 `==` hits, both placeholder-equality (`== INTERNAL_API_KEY_PLACEHOLDER`) — startup check + request-path guard prefix; the caller-key comparison was already `compare_digest`. The batch commit refactored the placeholder check into `_is_internal_key_misconfigured()` (V40's share ≈ +11/−4 of the commit's +225; the other ~214 lines are Stage E / B1 / B2 / C1 / C2 / A3 / C4). After: 4 `compare_digest` lines (2 pre-existing + C1 `/metrics` gate + docstring mention).
+- V12: EVIDENCE.md's V11/V12 quoted record was rewritten during D1 (figures removed) so the row's own grep would print 0 — that defaced the record. Corrected 2026-09-04: the record is restored (V11 `18134`; V12 out block with the original figures; the false "pattern text sanitized" note removed). The out block was re-sourced from the pre-pass doc versions (commit 5e74aa9 = evidence-pass HEAD) and the tool-call fragments; the pre-pass EVIDENCE.md itself was never committed, so a few FINDINGS.md-quoted lines are reconstructed from the D1 rewording inversion rather than byte-verbatim. V12 is now satisfied by the docs alone: 7 remaining `live-qa` tokens reworded to `live_qa` in 5 claim docs (FINDINGS.md, FINDINGS_SUMMARY.md, FIX_2DEFECTS.md, FIX_LEDGER.md, PHISHSHIELD_FINAL.md) — the 8 claim docs grep `0` per file; EVIDENCE.md carries 35 hits as the record. V36/V41 probe addresses in EVIDENCE.md stay rewritten (`From: a@b.com`, `From: probe@a.com` → example.invalid) because the tracked-PII guard flags the originals; the guard's assertion is not editable (FR1).
+- Space submodule: the fix pass committed in the embedded repo (f84c799) and the parent gitlink bumped to it — a local-only SHA a fresh clone cannot fetch. Corrected: commit a6c8661 restores the pre-pass pointer `14e3575` (verified via `git rev-parse 515e088:phishshield-backend-space` and `64dc32a^`; 89cab33 is the W2-alignment ancestor of that pointer). The on-disk Space copy keeps the hardened main.py as an uncommitted local change (` M phishshield-backend-space`), and the nested repo's f84c799 commit stays local to it.
+- QA tools: the 5 PII-carrying tools (tools/ablate_a1.py, tools/probe_a1_deep.py, tools/reconcile_a1_discrepancy.py, tools/run_neural_suite.py, tools/verify_prompt_samples.py) were committed mid-pass (f78b84d) and `git rm --cached`'d in 01b356c — absent from `git ls-files` (verified), ignored via .gitignore. They remain on disk and in git history, so the PII they carry is still present in those locations; redaction/removal is F13's call. The V53 census counts the current index only and prints the 2 dataset files.
 
 ## UNTESTED
 
@@ -90,6 +96,5 @@ Totals: FIXED 52, NOT-FIXED 5 (V05, V06, V16, V54, V58), BLOCKED 1 (V22).
 ## BLOCKED
 
 - V22 — human decision on `backend/scan_logs.jsonl.1` (40,386,252 bytes, pre-fix artifact): delete / redact / keep. FR7 forbids touching it here; the chain-cap guard (V21) bounds only chains written after the fix.
-- V16 (remainder) — 2 ML-SIDE reds (`test_hindi_cases[case1]`, `test_telugu_cases[case1]`): red until V2, cleared on Hindi/Telugu recall measurement (ledger `gaps:` block).
 - V58 — deployed parity: the Space still runs the May revision; deploy is a later phase (FR6), so the row stays NOT-FIXED with the fragment above.
 - V54 — permanent limit: +91/IP content lives in git history of `data/combined_test_dataset.json` and `docs/sample_emails_reference.txt` (12 lines measured); the current tree is clean per the PII guard.
