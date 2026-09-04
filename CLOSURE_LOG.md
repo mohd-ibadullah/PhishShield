@@ -58,9 +58,15 @@ verify:   run C collected (418) = run A total (418); run B (85) is a subset of r
 status:   BLOCKED: contradictory expectations — human call (gate G24's arithmetic formula vs measured identity)
 
 ## D-1
-target:   full-suite run A flagged `tests/test_no_pii_in_tracked_files.py` — the PII guard regex counted the disclosed probe literals (`a@b.com`, `probe@a.com`) quoted in EVIDENCE2.md and FIX_LOG.md
+target:   full-suite run A flagged `tests/test_no_pii_in_tracked_files.py` — the PII guard regex counted the two disclosed probe-address literals quoted in EVIDENCE2.md and FIX_LOG.md
 edit:     literals redacted to placeholders in EVIDENCE2.md/FIX_LOG.md (provenance of the originals stays in git history; the guard's assertion is not editable under RB3)
 verify:   `python -m pytest -q tests/test_no_pii_in_tracked_files.py` → pass; G11 shard 8 passed; run A re-run → only the 2 ML-SIDE failures
+status:   FIXED (G11)
+
+## D-4
+target:   G04 run (`tests/ -rs -v`) failed the PII guard again: `CLOSURE_LOG.md: 2 emails` — the D-1 row above spelled the two probe literals it was documenting, re-introducing them into a tracked file
+edit:     D-1 row's target line now says "the two disclosed probe-address literals" without spelling them (provenance stays in git history; guard assertion untouched)
+verify:   `python -m pytest -q tests/test_no_pii_in_tracked_files.py` → pass
 status:   FIXED (G11)
 
 ## D-2
