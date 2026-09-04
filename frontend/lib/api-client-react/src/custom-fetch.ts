@@ -332,9 +332,11 @@ export async function customFetch<T = unknown>(
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
 
-  // Set default API key for development/demo ease-of-use (PhishShield logic integration)
-  if (!headers.has("authorization")) {
-    headers.set("authorization", "Bearer dev-sandbox-key");
+  // Default API key for development/demo ease-of-use, sourced from the build
+  // environment (VITE_DEFAULT_AUTH). No hardcoded value is bundled into dist.
+  const defaultAuth = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_DEFAULT_AUTH;
+  if (!headers.has("authorization") && defaultAuth) {
+    headers.set("authorization", defaultAuth);
   }
 
   const resolvedUrl = resolveUrl(input);
