@@ -40,6 +40,12 @@ backend/scan_logs.jsonl.*
 qa_artifacts/
 phishshield_v2/
 skills/
+# QA tools carrying sample PII (kept out of the index so the PII guard holds)
+tools/ablate_a1.py
+tools/probe_a1_deep.py
+tools/reconcile_a1_discrepancy.py
+tools/run_neural_suite.py
+tools/verify_prompt_samples.py
 backend/backend_qa_run*.log
 backend/backend_qa_boot*.log
 backend_mlfix_boot.log

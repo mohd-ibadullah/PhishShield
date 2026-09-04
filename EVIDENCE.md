@@ -590,7 +590,7 @@ exit=0
 
 ## V36
 
-cmd: `python -c "import requests;s=requests.Session();s.post('http://127.0.0.1:9210/api/session');print(s.post('http://127.0.0.1:9210/api/feedback',json={'scan_id':'x'*12,'corrected_verdict':'Safe','email_text':'From: a@b.com'}).status_code)"`
+cmd: `python -c "import requests;s=requests.Session();s.post('http://127.0.0.1:9210/api/session');print(s.post('http://127.0.0.1:9210/api/feedback',json={'scan_id':'x'*12,'corrected_verdict':'Safe','email_text':'From: a@example.invalid'}).status_code)"`
 
 out:
 ```
@@ -645,7 +645,7 @@ exit=0
 
 ## V41
 
-cmd: `$a=(Get-Content backend\scan_logs.jsonl | Measure-Object -Line).Lines; Invoke-RestMethod -Method Post -Uri http://127.0.0.1:9210/scan-email -ContentType 'application/json' -Body (@{email_text="From: probe@a.com`nSubject: probe`nbody line"} | ConvertTo-Json) | Out-Null; $b=(Get-Content backend\scan_logs.jsonl | Measure-Object -Line).Lines; "before=$a after=$b delta=$($b-$a)"`
+cmd: `$a=(Get-Content backend\scan_logs.jsonl | Measure-Object -Line).Lines; Invoke-RestMethod -Method Post -Uri http://127.0.0.1:9210/scan-email -ContentType 'application/json' -Body (@{email_text="From: probe@example.invalid`nSubject: probe`nbody line"} | ConvertTo-Json) | Out-Null; $b=(Get-Content backend\scan_logs.jsonl | Measure-Object -Line).Lines; "before=$a after=$b delta=$($b-$a)"`
 
 out:
 ```

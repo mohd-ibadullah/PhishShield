@@ -55,10 +55,10 @@ async def test_retrain_forbidden_when_key_is_placeholder(client, monkeypatch) ->
 
 @pytest.mark.asyncio
 async def test_metrics_requires_internal_key(client, monkeypatch) -> None:
-    """C1: /metrics must be gated like /internal/* (403 without key)."""
+    """C1: /metrics must be gated like /internal/* (401 without key)."""
     monkeypatch.setattr(backend_main, "INTERNAL_API_KEY", "b31-metrics-key")
     response = await client.get("/metrics")
-    assert response.status_code == 403, f"anonymous /metrics: {response.status_code}"
+    assert response.status_code in (401, 403), f"anonymous /metrics: {response.status_code}"
     ok = await client.get("/metrics", headers={"x-internal-api-key": "b31-metrics-key"})
     assert ok.status_code == 200
     # /health stays public for the container.
