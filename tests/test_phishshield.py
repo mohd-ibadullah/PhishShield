@@ -548,7 +548,11 @@ async def test_trusted_domain_override_wins_over_vt(client, monkeypatch) -> None
 
 
 async def test_metrics_endpoint(client) -> None:
-    response = await client.get("/metrics")
+    # C1 (2026-09-04): /metrics is internal-key-gated; anonymous is rejected.
+    # (Previously asserted anonymous 200 — superseded by the V32 fix row.)
+    anonymous = await client.get("/metrics")
+    assert anonymous.status_code in (401, 403)
+    response = await client.get("/metrics", headers={"x-internal-api-key": "test-internal-key"})
 
     assert response.status_code == 200
     assert "phishshield_scans_total" in response.text
@@ -556,6 +560,8 @@ async def test_metrics_endpoint(client) -> None:
 
 
 async def test_stats_endpoint(client) -> None:
+    # Session auth now required for /stats (T0-T15 hardening)
+    await client.post("/api/session")
     response = await client.get("/stats")
 
     assert response.status_code == 200

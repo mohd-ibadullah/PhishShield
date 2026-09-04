@@ -54,7 +54,37 @@ async def test_retrain_forbidden_when_key_is_placeholder(client, monkeypatch) ->
 
 
 @pytest.mark.asyncio
+async def test_metrics_requires_internal_key(client, monkeypatch) -> None:
+    """C1: /metrics must be gated like /internal/* (403 without key)."""
+    monkeypatch.setattr(backend_main, "INTERNAL_API_KEY", "b31-metrics-key")
+    response = await client.get("/metrics")
+    assert response.status_code == 403, f"anonymous /metrics: {response.status_code}"
+    ok = await client.get("/metrics", headers={"x-internal-api-key": "b31-metrics-key"})
+    assert ok.status_code == 200
+    # /health stays public for the container.
+    health = await client.get("/health")
+    assert health.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_retrain_get_checks_key_before_method(client, monkeypatch) -> None:
+    """C2: GET /retrain denies unauthenticated callers (403), 405 only with key."""
+    monkeypatch.setattr(backend_main, "INTERNAL_API_KEY", "b31-retrain-key")
+    unauth = await client.get("/retrain")
+    assert unauth.status_code == 403, f"anonymous GET /retrain: {unauth.status_code}"
+    with_key = await client.get("/retrain", headers={"x-internal-api-key": "b31-retrain-key"})
+    assert with_key.status_code == 405, f"GET /retrain with key: {with_key.status_code}"
+
+
+@pytest.mark.asyncio
 async def test_feedback_stats_hides_retrain_threshold(client) -> None:
+    # Issue session first (now required)
+    rs = await client.post("/api/session")
+    assert rs.status_code == 200
     response = await client.get("/feedback/stats")
     assert response.status_code == 200
-    assert "retrain_threshold" not in response.json()
+    body = response.json()
+    assert "retrain_threshold" not in body
+    assert "pending_retrain" not in body
+    assert "model_improving" not in body
+    assert "total_feedback" in body

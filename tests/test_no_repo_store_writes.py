@@ -151,22 +151,15 @@ def test_detector_actually_catches_a_write(tmp_path):
     assert snap_after["size"] != snap_before["size"], "size should differ after append"
     # Undo for scenario 2.
     synthetic.write_bytes(original_content)
-
-    # ── Scenario 2: append + truncate (size restored) ──
-    # Content-hash catches this even if mtime is unchanged, because the
-    # intermediate write changes the bytes (even briefly). The SHA-256
-    # snapshot at scenario start already recorded the original content;
-    # after write+truncate the content is identical so the guard passes
-    # (no false positive). This is correct behavior.
+    # -- Scenario 2: write + restore (no false positive) --
+    # write_bytes overwrites the file; truncate pads with NUL bytes, not a true restore.
+    # Instead, write the original bytes back and verify sha256 matches (no false positive).
     snap_before2 = _snapshot(synthetic)
     synthetic.write_bytes(b"line-3-temp\n")
-    with open(synthetic, "r+b") as f:
-        f.truncate(len(original_content))
+    synthetic.write_bytes(original_content)
     snap_after2 = _snapshot(synthetic)
-    assert snap_after2["size"] == snap_before2["size"], "size restored after truncate"
-    # Content is identical after truncate, so sha256 matches — guard correctly passes.
-    assert snap_before2["sha256"] == snap_after2["sha256"], "content should be identical after truncate"
-
+    assert snap_after2["size"] == snap_before2["size"], "size identical after restore"
+    assert snap_before2["sha256"] == snap_after2["sha256"], "sha256 identical after restore (no false positive)"
     # ── Scenario 3: no-write control (no false positive) ──
     snap_before3 = _snapshot(synthetic)
     snap_after3 = _snapshot(synthetic)

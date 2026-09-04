@@ -42,9 +42,9 @@ async def test_zero_feedback_model_improving_is_false(client, tmp_path, monkeypa
         response = await session.get("/api/feedback/stats")
         assert response.status_code == 200
         body = response.json()
-        # PRE-FIX: this fails because model_improving defaults to True
-        assert body.get("model_improving") is False, (
-            f"model_improving should be False with zero feedback, got {body.get('model_improving')}"
+        # POST-FIX (T0-T15): model_improving is now redacted from public response
+        assert "model_improving" not in body, (
+            f"model_improving should be redacted from public /feedback/stats, got {body.get('model_improving')}"
         )
 
 
@@ -62,12 +62,9 @@ async def test_zero_feedback_needed_for_retrain_positive(client, tmp_path, monke
         response = await session.get("/api/feedback/stats")
         assert response.status_code == 200
         body = response.json()
-        # PRE-FIX: this fails because needed_for_retrain is 0 when pending is also 0
-        # but total_feedback is 0 too, meaning nothing has been collected
-        needed = body.get("needed_for_retrain", 0)
-        threshold = 50
-        assert needed > 0, (
-            f"needed_for_retrain should be > 0 with 0 feedback and threshold {threshold}, got {needed}"
+        # POST-FIX (T0-T15): needed_for_retrain is now redacted from public response
+        assert "needed_for_retrain" not in body, (
+            f"needed_for_retrain should be redacted from public /feedback/stats, got {body.get('needed_for_retrain')}"
         )
 
 

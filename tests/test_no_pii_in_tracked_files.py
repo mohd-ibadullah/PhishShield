@@ -14,6 +14,28 @@ def _load_allowlist() -> set[str]:
     return {line.split(":")[0].strip() for line in lines if line.strip() and not line.startswith("#")}
 
 
+ALLOWLIST_ENTRY_RE = re.compile(r"^[^#][^:]+: .+$")
+
+
+def test_allowlist_entries_are_machine_parsable():
+    """D2/V14: every non-comment allowlist line must be `<path>: <justification>`.
+    Comments are allowed only as `#` lines above the block; a line without a
+    justification (no `: ` separator) must be rejected by the parser."""
+    p = pathlib.Path("data/PII_ALLOWLIST.txt")
+    lines = p.read_text(encoding="utf-8").splitlines()
+    entries = [line for line in lines if line.strip() and not line.startswith("#")]
+    assert entries, "allowlist has no entries"
+    bad = [line for line in entries if not ALLOWLIST_ENTRY_RE.match(line)]
+    assert not bad, f"allowlist entries missing `<path>: <justification>` form: {bad}"
+    for line in entries:
+        path_part, justification = line.split(":", 1)
+        assert path_part.strip() == path_part, f"allowlist path has stray whitespace: {line!r}"
+        assert justification.strip(), f"allowlist entry has empty justification: {line!r}"
+    # Parser must reject an entry without a justification.
+    assert not ALLOWLIST_ENTRY_RE.match("data/foo.csv"), "parser accepted bare path"
+    assert not ALLOWLIST_ENTRY_RE.match("data/foo.csv: "), "parser accepted empty justification"
+
+
 def test_no_pii_in_non_allowlisted_files():
     """Only files in PII_ALLOWLIST.txt may contain email/phone patterns.
     Redacted placeholders (user<N>@example.invalid, +9100000000XX) are excluded."""

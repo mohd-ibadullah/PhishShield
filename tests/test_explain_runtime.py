@@ -96,6 +96,8 @@ async def test_retrain_rejects_invalid_feedback_labels(client, monkeypatch, tmp_
     monkeypatch.setattr(backend_main, "FEEDBACK_STATE_PATH", state_path)
     monkeypatch.setattr(backend_main, "DATASET_PATH", dataset_path)
     monkeypatch.setattr(backend_main, "RETRAIN_MIN_TRAINING_ROWS", 2)
+    # Lower the sample threshold so label validation runs before the count check
+    monkeypatch.setattr(backend_main, "RETRAIN_THRESHOLD", 1)
     backend_main.ensure_feedback_store()
     feedback_path.write_text(
         "email_text,user_label,model_prediction,timestamp,scan_id\n"
@@ -130,6 +132,8 @@ async def test_feedback_api_alias_matches_primary_route(client, sample_emails, m
 
 @pytest.mark.asyncio
 async def test_feedback_stats_api_alias(client) -> None:
+    # Session auth now required for /feedback/stats (T0-T15 hardening)
+    await client.post("/api/session")
     primary = await client.get("/feedback/stats")
     alias = await client.get("/api/feedback/stats")
     assert primary.status_code == 200
@@ -149,7 +153,9 @@ async def test_retrain_requires_feedback_rows(client, monkeypatch, tmp_path) -> 
 
     response = await client.post("/retrain", headers={"x-internal-api-key": "test-internal-key"})
     assert response.status_code == 400
-    assert "No new feedback" in response.json().get("detail", "")
+    # With 0 feedback rows, RETRAIN_THRESHOLD (50) check fires first
+    detail = response.json().get("detail", "")
+    assert "feedback" in detail.lower(), f"Expected feedback-related error, got: {detail}"
 
 
 @pytest.mark.asyncio
@@ -175,4 +181,6 @@ async def test_retrain_authorized_with_configured_key(client, monkeypatch, tmp_p
 
     response = await client.post("/retrain", headers={"x-internal-api-key": "b2-test-internal-key"})
     assert response.status_code == 400
-    assert "No new feedback" in response.json().get("detail", "")
+    # With 0 feedback rows, RETRAIN_THRESHOLD (50) check fires first
+    detail = response.json().get("detail", "")
+    assert "feedback" in detail.lower(), f"Expected feedback-related error, got: {detail}"

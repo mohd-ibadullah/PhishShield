@@ -43,6 +43,42 @@ async def test_boundary_over_cap():
         assert r.status_code == 413, f"Over cap: {r.status_code}"
 
 
+async def test_chunked_over_cap_rejected():
+    """C4: streamed body without Content-Length over the cap -> 413, handler never runs."""
+    import httpx
+
+    handler_entered = False
+    original = bm.scan_email
+
+    def _tracking_handler(*a, **kw):
+        nonlocal handler_entered
+        handler_entered = True
+        return original(*a, **kw)
+
+    bm.scan_email = _tracking_handler
+    try:
+        transport = ASGITransport(app=bm.app)
+
+        async def _body_chunks():
+            chunk = b"x" * 8192
+            sent = 0
+            while sent <= ONE_MIB + 1:
+                yield chunk
+                sent += len(chunk)
+
+        request = httpx.Request(
+            "POST",
+            "http://testserver/scan-email",
+            content=_body_chunks(),
+            headers={"Content-Type": "application/json"},
+        )
+        response = await transport.handle_async_request(request)
+        assert response.status_code == 413, f"chunked over cap: {response.status_code}"
+        assert not handler_entered, "Handler entered for oversized chunked request"
+    finally:
+        bm.scan_email = original
+
+
 async def test_handler_not_entered_on_oversize():
     """Handler must not be entered when Content-Length > 1 MiB."""
     handler_entered = False
