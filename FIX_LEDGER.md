@@ -86,7 +86,7 @@ Machine-readable product-gap list. CI deselects exactly these node ids in the ma
 | **F10** | Deploy parity unknown (Space private) | **CLOSED** | `curl HuggingFace API` | Space is public; deployed rev has 0 hardening markers |
 | **F13** | 1 MiB request cap | **CLOSED** | `python -m pytest tests -k max_request_bytes` | 4 passed (3 original + chunked-over-cap guard, added 2026-09-04); pre-parse enforced incl. chunked bodies |
 | **F32/F36** | Wrong path in MASTER_GUIDE.md | **CLOSED** | grep | Fixed to data/training_meta.json |
-| **F32** | live-QA range claim (`README.md:275` referenced a live_qa field in `training_meta.json` that is absent) | **OPEN** | grep of README.md and training_meta.json | Claim untraceable; removed from README.md 2026-09-04 (quote preserved in docs/HISTORY_FABRICATIONS.md) |
+| **F32** | `live_qa` range claim (`README.md:275` referenced a live_qa field in `training_meta.json` that is absent) | **OPEN** | grep of README.md and training_meta.json | Claim untraceable; removed from README.md 2026-09-04 (quote preserved in docs/HISTORY_FABRICATIONS.md) |
 | **A12** | Audit used wrong Space slug | **CLOSED** | Correct slug measured | private=false, sha=a507b33c |
 
 ## Test Stub Alignment Pass (2026-09-03)
@@ -131,4 +131,8 @@ Machine-readable product-gap list. CI deselects exactly these node ids in the ma
 
 ## Secrets rotation-pending (F5, 2026-09-04)
 
-Key names and .env line numbers only (values never recorded): HF_TOKEN (1, 40), VT_API_KEY (2), VIRUSTOTAL_API_KEY (3), PHISHSHIELD_INTERNAL_API_KEY (7), LLM_API_KEY (16), OPENROUTER_API_KEY (17), OPENROUTER_KEY (18), GEMINI_API_KEY (19), GOOGLE_API_KEY (20), PHISHSHIELD_PREVIEW_HMAC_KEY (44).
+Key names and .env line numbers only (values never recorded): HF_TOKEN (1, 40), VT_API_KEY (2), VIRUSTOTAL_API_KEY (3), PHISHSHIELD_INTERNAL_API_KEY (7), LLM_API_KEY (16), OPENROUTER_API_KEY (17), OPENROUTER_KEY (18), GEMINI_API_KEY (19), GOOGLE_API_KEY (20), PHISHSHIELD_PREVIEW_HMAC_KEY (44).
+
+## deploy-phase (first priority, 2026-09-04)
+
+- V05/V06 clean-env import: a bare venv cannot `import main` — `ModuleNotFoundError: No module named 'joblib'` (main.py line 34). A fresh install cannot import or run the app; every local-state claim and the README quickstart rest on the current interpreter, not a clean env. Deploy-phase gate to add: a CI job that creates a clean venv, installs the lockfile, imports `main`, and runs a pytest smoke.

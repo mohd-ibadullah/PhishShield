@@ -1010,6 +1010,7 @@ Totals: FIXED 35, NOT-FIXED 20, UNTESTED 3 (V04, V05, V06).
 
 - V22 (141188) vs V46 (141412): `backend/scan_logs.jsonl` length differs; caused by the V41 probe row appended between the two measurements. Live-file line count 486 (V42) matches V41's `after=486`.
 - V11 `records 2000 lines 18134` vs V12 matched lines in `.md` docs asserting `data/Phishing_Email.csv` ~18,133 rows and dataset rows 18,684 / train 14,947 / test 3,737: the CSV reader counts 2000 logical records; the docs' row numbers are not the current measured record count.
+- EVIDENCE.md V11/V12 lines were reconstructed 2026-09-04 from commit 5e74aa9's docs (plus tool-call fragments for the untracked FINDINGS.md lines) after an in-place edit during D1; the original file is not in git history.
 - V18: row's pipeline listed 0 single-test files (empty output, PowerShell exit 1); re-run of the same `--co -q` collection (410 node-id lines) lists 10 files with exactly 1 test. Both numbers kept.
 - V57: row's glob `frontend\artifacts\phishshield\src\**\*.tsx` = 0 lines; recursive scan of the same src tree = 1 (chart.tsx:79). Both numbers kept.
 - V46: `backend/scan_logs.jsonl.1` present at 40,386,252 bytes — pre-fix artifact exceeding the 5,000,000 rotation cap; covered by `.gitignore` (V47).
