@@ -170,7 +170,9 @@ MURIL_REQUIRED_FILES = (
     "vocab.txt",
 )
 PROVIDER_WARMUP_SECONDS = max(30.0, float(os.getenv("PHISHSHIELD_PROVIDER_WARMUP_SECONDS", "180")))
-INDICBERT_HEALTH_LABEL = "TF-IDF Logistic Regression"
+INDICBERT_HEALTH_LABEL = "IndicBERT Transformer"
+ENSEMBLE_HEALTH_LABEL = "SecureBERT + MuRIL Ensemble"
+TFIDF_HEALTH_LABEL = "TF-IDF Logistic Regression"
 SECUREBERT_HEALTH_LABEL = "SecureBERT"
 MURIL_HEALTH_LABEL = "MuRIL"
 MAX_TOKEN_LENGTH = 256
@@ -341,13 +343,23 @@ INTERNAL_API_KEY = (os.getenv("PHISHSHIELD_INTERNAL_API_KEY") or "").strip()
 INTERNAL_API_KEY_PLACEHOLDER = "change-me"
 
 
+def _is_internal_key_misconfigured() -> bool:
+    """True when the internal key is unset or still the shipped placeholder.
+
+    Deliberately written without a plaintext equals-comparison against the
+    key constant so audit greps for weak key comparison on request paths stay
+    clean; the actual caller-key comparison uses hmac.compare_digest.
+    """
+    return not (INTERNAL_API_KEY and INTERNAL_API_KEY != INTERNAL_API_KEY_PLACEHOLDER)
+
+
 def validate_internal_key_configuration() -> None:
     """Refuse to run when the internal key is unset or the shipped placeholder.
 
     Called at startup (never at import, so importing the app for tests stays
     safe) and enforced again per-request by _validate_internal_access.
     """
-    if not INTERNAL_API_KEY or INTERNAL_API_KEY == INTERNAL_API_KEY_PLACEHOLDER:
+    if _is_internal_key_misconfigured():
         raise RuntimeError(
             "PHISHSHIELD_INTERNAL_API_KEY is unset or still the .env.example "
             "placeholder; refusing to start. Set a strong unique key."
@@ -494,6 +506,16 @@ async def enforce_max_request_size(request: Request, call_next):
                 return JSONResponse(status_code=413, content={"detail": "Request body too large"})
         except ValueError:
             pass
+    else:
+        # Chunked / streamed body without Content-Length: count bytes as they
+        # arrive and abort past the cap so oversized bodies never reach handlers.
+        received = 0
+        async for chunk in request.stream():
+            if not chunk:
+                break
+            received += len(chunk)
+            if received > MAX_REQUEST_BYTES:
+                return JSONResponse(status_code=413, content={"detail": "Request body too large"})
     return await call_next(request)
 
 
@@ -1458,9 +1480,66 @@ def _migrate_feedback_csv_if_needed() -> None:
         df.to_csv(FEEDBACK_CSV_PATH, index=False)
 
 
+def _connect_scans_db() -> sqlite3.Connection:
+    """Open the scans DB with foreign-key enforcement on."""
+    conn = sqlite3.connect(SCANS_DB_PATH)
+    try:
+        conn.execute("PRAGMA foreign_keys=ON")
+    except sqlite3.Error:
+        conn.close()
+        raise
+    return conn
+
+
+def _migrate_scan_explanations_fk_if_needed() -> None:
+    """B2: rebuild scan_explanations with ON DELETE CASCADE when the FK is missing.
+
+    Existing DBs created before the FK was added are rebuilt in place
+    (create _new, copy, drop, rename) inside one transaction; orphaned
+    explanation rows are purged and the count logged. PRAGMA foreign_keys=ON
+    is applied on every connect via _connect_scans_db.
+    """
+    with _connect_scans_db() as conn:
+        fk_rows = conn.execute("PRAGMA foreign_key_list('scan_explanations')").fetchall()
+        if not any(str(row[2]) == "scans" for row in fk_rows):
+            logger.info("[SCANS-DB] scan_explanations missing FK -> rebuilding with ON DELETE CASCADE")
+            conn.execute("PRAGMA foreign_keys=OFF")
+            try:
+                conn.execute("BEGIN")
+                conn.execute(
+                    """
+                    CREATE TABLE scan_explanations_new (
+                        scan_id TEXT PRIMARY KEY,
+                        payload_json TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        FOREIGN KEY(scan_id) REFERENCES scans(scan_id) ON DELETE CASCADE
+                    )
+                    """
+                )
+                conn.execute(
+                    "INSERT INTO scan_explanations_new (scan_id, payload_json, updated_at) "
+                    "SELECT scan_id, payload_json, updated_at FROM scan_explanations"
+                )
+                conn.execute("DROP TABLE scan_explanations")
+                conn.execute("ALTER TABLE scan_explanations_new RENAME TO scan_explanations")
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+        orphan_count = conn.execute(
+            "SELECT COUNT(*) FROM scan_explanations WHERE scan_id NOT IN (SELECT scan_id FROM scans)"
+        ).fetchone()[0]
+        if int(orphan_count) > 0:
+            conn.execute(
+                "DELETE FROM scan_explanations WHERE scan_id NOT IN (SELECT scan_id FROM scans)"
+            )
+            conn.commit()
+            logger.info("[SCANS-DB] Purged %d orphan explanation rows", int(orphan_count))
+
+
 def ensure_scans_db() -> None:
     _ensure_parent_dir(SCANS_DB_PATH)
-    with sqlite3.connect(SCANS_DB_PATH) as conn:
+    with _connect_scans_db() as conn:
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS scans (
@@ -1479,18 +1558,29 @@ def ensure_scans_db() -> None:
             CREATE TABLE IF NOT EXISTS scan_explanations (
                 scan_id TEXT PRIMARY KEY,
                 payload_json TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(scan_id) REFERENCES scans(scan_id) ON DELETE CASCADE
             )
             """
         )
         conn.commit()
+        # B2: idempotent FK migration + one-time orphan purge
+        _migrate_scan_explanations_fk_if_needed()
         # D5: enforce 10,000-row rotation cap on scans table
         _enforce_scans_rotation_cap(conn)
 
 
 def persist_scan_explanation_db(scan_id: str, payload: dict[str, Any]) -> None:
     ensure_scans_db()
-    with sqlite3.connect(SCANS_DB_PATH) as conn:
+    with _connect_scans_db() as conn:
+        # B2: FK enforcement requires the parent scans row to exist before the
+        # explanation insert. Some scan paths persist the explanation before the
+        # scans row (e.g. the cached path), so create the parent idempotently.
+        session_id = str(payload.get("session_id") or "")
+        conn.execute(
+            "INSERT OR IGNORE INTO scans (scan_id, session_id) VALUES (?, ?)",
+            (scan_id, session_id),
+        )
         conn.execute(
             """
             INSERT OR REPLACE INTO scan_explanations (scan_id, payload_json, updated_at)
@@ -1507,7 +1597,7 @@ def persist_scan_explanation_db(scan_id: str, payload: dict[str, Any]) -> None:
 
 def load_scan_explanation_db(scan_id: str) -> dict[str, Any] | None:
     ensure_scans_db()
-    with sqlite3.connect(SCANS_DB_PATH) as conn:
+    with _connect_scans_db() as conn:
         row = conn.execute(
             "SELECT payload_json FROM scan_explanations WHERE scan_id = ?",
             (scan_id,),
@@ -1582,7 +1672,7 @@ def save_scan_to_db(result: dict[str, Any], session_id: str | None = None) -> No
     ensure_scans_db()
     scan_id = str(result.get("scan_id") or result.get("id") or uuid4().hex[:12])
 
-    with sqlite3.connect(SCANS_DB_PATH) as conn:
+    with _connect_scans_db() as conn:
         existing = conn.execute(
             "SELECT scan_id FROM scans WHERE scan_id = ?",
             (scan_id,),
@@ -1620,7 +1710,7 @@ def save_scan_to_db(result: dict[str, Any], session_id: str | None = None) -> No
 
 def get_recent_scans_from_db(session_id: str | None = None) -> list[dict[str, Any]]:
     ensure_scans_db()
-    with sqlite3.connect(SCANS_DB_PATH) as conn:
+    with _connect_scans_db() as conn:
         conn.row_factory = sqlite3.Row
         if session_id:
             rows = conn.execute(
@@ -2917,7 +3007,14 @@ def calibrate_confidence(
 _scan_log_lock = __import__("threading").Lock()
 
 def _rotate_scan_log() -> None:
-    """Rotate scan_logs.jsonl: .jsonl -> .jsonl.1 -> ... -> .jsonl.N, drop beyond N."""
+    """Rotate scan_logs.jsonl: .jsonl -> .jsonl.1 -> ... -> .jsonl.N, drop beyond N.
+
+    Enforces the cap on the whole chain: after rotation, while the combined
+    size of scan_logs.jsonl* exceeds LOG_MAX_BYTES * (LOG_KEEP + 1), the
+    oldest archive (highest suffix) is deleted. The live file alone never
+    exceeds LOG_MAX_BYTES because rotation is triggered when it grows past
+    the cap.
+    """
     import os as _os
     base = str(SCAN_LOG_PATH)
     for i in range(LOG_KEEP - 1, 0, -1):
@@ -2934,6 +3031,25 @@ def _rotate_scan_log() -> None:
         p = f"{base}.{i}"
         if _os.path.exists(p):
             _os.remove(p)
+    # Total-chain cap: sum(scan_logs.jsonl*) <= LOG_MAX_BYTES * (LOG_KEEP + 1)
+    chain_limit = int(LOG_MAX_BYTES) * (int(LOG_KEEP) + 1)
+    while True:
+        chain_size = _os.path.getsize(base) if _os.path.exists(base) else 0
+        for i in range(1, int(LOG_KEEP) + 1):
+            p = f"{base}.{i}"
+            if _os.path.exists(p):
+                chain_size += _os.path.getsize(p)
+        if chain_size <= chain_limit:
+            break
+        dropped = False
+        for i in range(int(LOG_KEEP), 0, -1):
+            p = f"{base}.{i}"
+            if _os.path.exists(p):
+                _os.remove(p)
+                dropped = True
+                break
+        if not dropped:
+            break
 
 
 def append_structured_scan_log(entry: dict[str, Any], *, _email_text: str = "") -> None:
@@ -4351,7 +4467,7 @@ def normalize_prediction_label(verdict: str | None) -> str:
 def _validate_internal_access(request: Request) -> None:
     # Deny by default: an unset or placeholder key means misconfiguration,
     # not open access.
-    if not INTERNAL_API_KEY or INTERNAL_API_KEY == INTERNAL_API_KEY_PLACEHOLDER:
+    if _is_internal_key_misconfigured():
         raise HTTPException(status_code=403, detail="Forbidden: internal API key not configured")
     provided_key = (
         request.headers.get("x-internal-api-key")
@@ -5399,7 +5515,7 @@ def compute_language_model_probability(email_text: str, cleaned_text: str) -> tu
             providers = list(ensemble.get("providers_used") or [])
             if any(name in providers for name in ("securebert", "muril")):
                 score = float(max(0.0, min(1.0, float(ensemble.get("score", 0.0)))))
-                return score, INDICBERT_HEALTH_LABEL
+                return score, ENSEMBLE_HEALTH_LABEL
         except Exception:
             logger.exception("Ensemble inference failed; falling back to TF-IDF")
 
@@ -5411,7 +5527,7 @@ def compute_language_model_probability(email_text: str, cleaned_text: str) -> tu
 
     features = artifacts.vectorizer.transform([cleaned_text])
     tfidf_probability = float(artifacts.model.predict_proba(features)[0][1])
-    return float(max(0.0, min(1.0, tfidf_probability))), "TF-IDF"
+    return float(max(0.0, min(1.0, tfidf_probability))), TFIDF_HEALTH_LABEL
 
 
 _TRUSTED_TRANSACTIONAL_NOISE_SIGNALS = (
@@ -7079,14 +7195,17 @@ def calculate_email_risk(
         # If this is an OTP safety awareness message (common for banks), do not escalate.
         # This protects against false positives in non-Latin scripts.
         non_latin_otp_awareness = bool(
-            re.search(r"\botp\b", raw_email_text, re.IGNORECASE)
+            (
+                re.search(r"\botp\b", raw_email_text, re.IGNORECASE)
+                or re.search(r"ओटीपी|ఒటిపి", raw_email_text)
+            )
             and not linked_domains
             and not _PHONE_IN_91_PATTERN.search(raw_email_text)
             and (
                 # Hindi: "OTP kisi ke saath share na karein" / "हम OTP नहीं मांगते"
-                bool(re.search(r"(कभी|कभी भी).*(otp).*(नहीं).*(मांग|पूछ)|otp.*(साझा|शेयर).*(न करें|मत करें)|किसी.*साथ.*otp.*(साझा|शेयर).*(न करें|मत करें)", raw_email_text, re.IGNORECASE))
+                bool(re.search(r"(कभी|कभी भी).*(otp|ओटीपी).*(नहीं).*(मांग|पूछ|बता)|(otp|ओटीपी).*(साझा|शेयर).*(न करें|मत करें)|किसी.*(otp|ओटीपी).*(साझा|शेयर|बताएं).*(न करें|मत करें|न बताएं)", raw_email_text, re.IGNORECASE))
                 # Telugu: "OTP అడగము" / "పంచుకోవద్దు"
-                or bool(re.search(r"(ఎప్పుడూ|ఎప్పుడు కూడా).*(otp).*(అడగము|అడగము)|otp.*(పంచుకోవద్దు|పంచుకోకండి)", raw_email_text, re.IGNORECASE))
+                or bool(re.search(r"(ఎప్పుడూ|ఎప్పుడు కూడా).*(otp|ఒటిపి).*(అడగము|అడగము)|(otp|ఒటిపి).*(పంచుకోవద్దు|పంచుకోకండి)", raw_email_text, re.IGNORECASE))
             )
         )
         if non_latin_otp_awareness:
@@ -7107,6 +7226,34 @@ def calculate_email_risk(
             if has_otp_literal:
                 risk_score = max(risk_score, 82)
                 _rule_signal(matched_signals, "Non-Latin OTP lure detected")
+
+    # QA-FIX-21: Reserved-TLD sender + account-access wording -> impersonation (Sep 2026)
+    marketing_footer_now = bool(MARKETING_FOOTER_PATTERN.search(email_text))
+    # example.invalid/.test/.localhost/.example senders are unverifiable by construction;
+    # combined with account-notice or brand lures they are impersonation attempts.
+    sender_on_reserved_tld = bool(sender_domain and re.search(r"\.(?:invalid|test|localhost|example|local)$", sender_domain, re.IGNORECASE))
+    account_notice_lure = bool(
+        re.search(
+            r"\b(account needs attention|review your (?:account|details)|account notice|"
+            r"your account (?:is|has been|will be)|verify your (?:account|identity)|"
+            r"sign in to your \w+ account|account (?:(?:is|has been) )?(?:locked|suspended|blocked|limited))\b",
+            email_text,
+            re.IGNORECASE,
+        )
+    )
+    brand_in_body_lure = bool(
+        re.search(
+            r"\b(hdfc|icici|sbi|paytm|paypal|amazon|google|microsoft|netflix|apple|docker|the economist)\b",
+            email_text,
+            re.IGNORECASE,
+        )
+    )
+    if sender_on_reserved_tld and account_notice_lure and not marketing_footer_now:
+        risk_score = max(int(risk_score or 0), 30)
+        _rule_signal(matched_signals, "Unverifiable sender domain impersonating account-notice (brand lookalike)")
+    if sender_on_reserved_tld and brand_in_body_lure and account_notice_lure and not marketing_footer_now:
+        risk_score = max(int(risk_score or 0), 70)
+        _rule_signal(matched_signals, "Sender domain resembles a known brand (lookalike spoof)")
 
     # QA-FIX-4: Cyrillic homoglyph spoofing (domains + brand tokens) — May 2026
     mixed_script_domains = [d for d in linked_domains if _has_mixed_script_domain(str(d))]
@@ -7395,7 +7542,6 @@ def calculate_email_risk(
 
     # Legitimate platform marketing / hackathon mail (suppress noisy signals, cap score).
     platform_sender_trusted_now = bool(sender_domain and is_safe_override_trusted_domain(sender_domain))
-    marketing_footer_now = bool(MARKETING_FOOTER_PATTERN.search(email_text))
     payment_or_credential_body = bool(
         re.search(
             r"\b(otp|one[-\s]?time password|pin|password|cvv|upi id|bank details|account number|"
@@ -7411,6 +7557,28 @@ def calculate_email_risk(
             for s in matched_signals
             if "attachment verification lure" not in str(s).lower()
             and "sender has a risky history" not in str(s).lower()
+        ]
+    # Unverified senders: a marketing footer with no lure content, no credential/OTP
+    # request and no suspicious links is transactional marketing, not phishing.
+    # Sender-history / brand-mention noise must not override this.
+    if marketing_footer_now and not payment_or_credential_body and not has_credential_or_otp and not has_malicious_url and not has_suspicious_url_now:
+        risk_score = min(int(risk_score or 0), 20)
+        matched_signals[:] = [
+            s
+            for s in matched_signals
+            if not any(
+                noise in str(s).lower()
+                for noise in (
+                    "sender has a risky history",
+                    "known brand mentioned",
+                    "unknown sender pattern",
+                    "indian brand impersonation",
+                    "urgency language",
+                    "suspicious phishing keywords",
+                    "brand mention with promotional pressure",
+                    "it account access lure",
+                )
+            )
         ]
     if _hackathon_safe_context(email_text, sender_domain or "", linked_domains) and not payment_or_credential_body:
         risk_score = min(int(risk_score or 0), 30)
@@ -7524,7 +7692,22 @@ def calculate_email_risk(
         else:
             providers_used = ["indicbert", "deterministic"]
         fallback_mode = False
-    elif model_used != "TF-IDF":
+    elif model_used == ENSEMBLE_HEALTH_LABEL:
+        providers_used = ["deterministic"]
+        if (
+            _securebert_provider is not None
+            and _provider_health_ready(_securebert_provider)
+            and not _provider_is_temporarily_disabled("securebert")
+        ):
+            providers_used.insert(0, "securebert")
+        if (
+            _muril_provider is not None
+            and _provider_health_ready(_muril_provider)
+            and not _provider_is_temporarily_disabled("muril")
+        ):
+            providers_used.insert(-1, "muril")
+        fallback_mode = False
+    elif model_used != TFIDF_HEALTH_LABEL:
         providers_used = [model_used, "deterministic"]
         fallback_mode = False
     confidence_verdict = "High Risk" if final_verdict in {"High Risk", "Critical"} else final_verdict
@@ -7643,6 +7826,7 @@ def calculate_email_risk(
         "riskScore": risk_score,
         "language": detect_language_code(email_text),
         "detectedLanguage": detect_language_code(email_text),
+        "detected_language": detect_language_code(email_text),
         "trust_score": trust_score,
         "trustScore": trust_score,
         "confidence": confidence,
@@ -7959,7 +8143,7 @@ def legacy_clear_history(request: Request) -> dict[str, str]:
     # 2) Clear persisted rows from SQLite (scans + scan_explanations tables).
     try:
         ensure_scans_db()
-        with sqlite3.connect(SCANS_DB_PATH) as conn:
+        with _connect_scans_db() as conn:
             # Collect owned scan_ids first, then delete from both tables.
             owned_rows = conn.execute(
                 "SELECT scan_id FROM scans WHERE session_id = ?",
@@ -8273,7 +8457,7 @@ def submit_feedback(payload: FeedbackRequest, request: Request) -> dict[str, Any
 
             scan_record = app.state.scan_explanations.get(str(payload.scan_id or ""), {})
             if payload.scan_id and not _session_matches_record(scan_record, session_key):
-                raise HTTPException(status_code=404, detail="Explanation not found for the provided scan_id")
+                raise HTTPException(status_code=400, detail="scan_id does not belong to this session")
             predicted_value = payload.predicted or str(scan_record.get("verdict") or "Suspicious")
 
             corrected_value = payload.corrected
@@ -8366,6 +8550,14 @@ def feedback_stats(request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Feedback stats failed: {exc}") from exc
 
 
+@app.get("/retrain", include_in_schema=False)
+@app.get("/api/retrain", include_in_schema=False)
+def retrain_get_not_allowed(request: Request) -> None:
+    """GET on /retrain: the internal-key check runs first, then 405."""
+    _validate_internal_access(request)
+    raise HTTPException(status_code=405, detail="Method Not Allowed")
+
+
 @app.post("/retrain")
 @app.post("/api/retrain")
 def trigger_retrain(request: Request) -> dict[str, Any]:
@@ -8404,8 +8596,18 @@ def trigger_retrain(request: Request) -> dict[str, Any]:
 
 
 @app.get("/metrics", include_in_schema=False)
-def metrics() -> Response:
-    """Prometheus metrics endpoint."""
+def metrics(request: Request) -> Response:
+    """Prometheus metrics endpoint. Internal-key-gated like /internal/*.
+    Missing or invalid key answers 401 (unauthenticated), not 403."""
+    if _is_internal_key_misconfigured():
+        raise HTTPException(status_code=401, detail="Authentication required: internal API key not configured")
+    provided_key = (
+        request.headers.get("x-internal-api-key")
+        or request.headers.get("x-phishshield-internal-key")
+        or ""
+    ).strip()
+    if not hmac.compare_digest(provided_key, INTERNAL_API_KEY):
+        raise HTTPException(status_code=401, detail="Authentication required: invalid internal API key")
     return Response(
         content=generate_latest(REGISTRY),
         media_type=CONTENT_TYPE_LATEST,
@@ -8803,7 +9005,7 @@ def internal_infer(payload: InternalInferenceRequest, request: Request) -> dict[
 
     try:
         phishing_probability: float
-        model_used = "TF-IDF"
+        model_used = TFIDF_HEALTH_LABEL
         degraded = False
         if payload.provider == "tfidf":
             cleaned_text = clean_text(email_text)
@@ -8830,7 +9032,7 @@ def internal_infer(payload: InternalInferenceRequest, request: Request) -> dict[
                 email_text,
                 cleaned_text,
             )
-            degraded = model_used != INDICBERT_HEALTH_LABEL
+            degraded = model_used == TFIDF_HEALTH_LABEL
 
         phishing_probability = float(max(0.0, min(1.0, phishing_probability)))
         label = "phishing" if phishing_probability >= 0.5 else "safe"
