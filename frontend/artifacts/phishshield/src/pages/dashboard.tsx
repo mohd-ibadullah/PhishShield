@@ -826,7 +826,9 @@ function DashboardLiveFeed() {
 
     pollFeedFromBackend();
 
-    const socketBaseUrl = PYTHON_BACKEND_URL.replace(/^http/i, 'ws');
+    const socketBaseUrl = PYTHON_BACKEND_URL
+      ? PYTHON_BACKEND_URL.replace(/^http/i, 'ws')
+      : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`;
     const socketUrl = new URL('/ws/feed', socketBaseUrl);
     socketUrl.searchParams.set('session_id', `${sessionId}-${wsSessionKeyRef.current}`);
 

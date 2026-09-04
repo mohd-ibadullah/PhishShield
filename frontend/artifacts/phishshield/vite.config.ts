@@ -18,6 +18,20 @@ export default defineConfig(async () => {
     plugins.push(runtimeErrorOverlay());
   }
 
+  // Same-origin proxy for the Python backend, shared by dev and preview so the
+  // built app never needs a baked absolute host/port.
+  const proxyTarget = process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000";
+  const proxy = {
+    "/api": { target: proxyTarget, changeOrigin: true },
+    "/feedback": { target: proxyTarget, changeOrigin: true },
+    "/scan-email": { target: proxyTarget, changeOrigin: true },
+    "/retrain": { target: proxyTarget, changeOrigin: true },
+    "/health": { target: proxyTarget, changeOrigin: true },
+    "/recent-scans": { target: proxyTarget, changeOrigin: true },
+    "/report": { target: proxyTarget, changeOrigin: true },
+    "/ws": { target: proxyTarget, ws: true, changeOrigin: true },
+  };
+
   return {
     base: basePath,
     plugins,
@@ -51,37 +65,7 @@ export default defineConfig(async () => {
       port: devPort > 0 ? devPort : 5173,
       host: "0.0.0.0",
       allowedHosts: true,
-      proxy: {
-        "/api": {
-          target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/feedback": {
-          target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/scan-email": {
-          target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/retrain": {
-          target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/health": {
-          target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/recent-scans": {
-          target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/ws": {
-          target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
-          ws: true,
-          changeOrigin: true,
-        },
-      },
+      proxy,
       fs: {
         strict: true,
         deny: ["**/.*"],
@@ -91,6 +75,7 @@ export default defineConfig(async () => {
       port: 4173,
       host: "0.0.0.0",
       allowedHosts: true,
+      proxy,
     },
   };
 });

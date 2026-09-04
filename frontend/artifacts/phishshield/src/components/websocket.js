@@ -1,6 +1,11 @@
 let socket = null;
 let socketSessionId = null;
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000';
+const WS_ENV = (import.meta.env.VITE_WS_URL || '').trim();
+const WS_URL =
+  WS_ENV ||
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`
+    : '');
 
 export function getSocket(sessionId) {
   const normalizedSessionId = sessionId || 'anonymous-session';

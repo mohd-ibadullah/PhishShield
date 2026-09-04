@@ -41,11 +41,9 @@ function resolveApiBase(): string | undefined {
   }
 
   if (typeof window !== "undefined") {
-    const { protocol, hostname, origin } = window.location;
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-      return `${protocol}//${hostname}:8000`;
-    }
-    return origin;
+    // Same-origin by default: the serving host's proxy owns /api routing.
+    // No port is baked here so local hosts without a backend on :8000 still work.
+    return window.location.origin;
   }
 
   return undefined;

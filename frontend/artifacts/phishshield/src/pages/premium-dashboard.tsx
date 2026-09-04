@@ -360,11 +360,7 @@ export default function PremiumDashboard() {
         : ''
     ).trim();
 
-    const apiBase = envBase
-      ? envBase.replace(/\/$/, '')
-      : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? `${window.location.protocol}//${window.location.hostname}:8000`
-        : window.location.origin;
+    const apiBase = envBase ? envBase.replace(/\/$/, '') : window.location.origin;
 
     const reportUrl = `${apiBase}/report/${encodeURIComponent(scanId)}`;
     window.open(reportUrl, '_blank', 'noopener,noreferrer');

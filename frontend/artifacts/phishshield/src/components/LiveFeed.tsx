@@ -28,8 +28,15 @@ const VERDICT_COLOR: Record<string, string> = {
   Safe: 'text-green-600',
 };
 
-const API_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000';
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000';
+const ENV_BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string | undefined)?.trim();
+const ENV_WS_URL = (import.meta.env.VITE_WS_URL as string | undefined)?.trim();
+// Relative by default so the app follows the serving origin's proxy; no port baked into source.
+const API_URL = ENV_BACKEND_URL ?? '';
+const WS_URL =
+  ENV_WS_URL ??
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`
+    : '');
 const LIVE_FEED_STORAGE_PREFIX = 'phishshield_live_feed';
 
 function getLiveFeedStorageKey(sessionId: string) {
