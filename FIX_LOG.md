@@ -100,7 +100,7 @@ status:  FIXED
 target:  tree carried tracked modifications and untracked items far beyond the two never-staged JSONs.
 edit:    commits 9318e49, a4d23f3, 6e5d56e, 8397d9b, 64dc32a, f78b84d, 01b356c, a6c8661: per-row commits of all fix files; `.gitignore` extended (logs, bundles, `.freebuff/`, `qa_artifacts/`, `phishshield_v2/`, `skills/`, 5 PII-carrying QA tools — `git rm --cached` in 01b356c, genuinely out of the index, verified absent from `git ls-files`); `backend/sender_profiles.json` and `data/feedback_memory.json` never staged. Gitlink correction commit a6c8661 sets the Space pointer back to the measured pre-pass value: `git rev-parse 5e74aa9:phishshield-backend-space` = 14e3575 (diff: `-Subproject commit f84c799…` / `+Subproject commit 14e3575…`). Pointer timeline: 708b8fe→a507b33, 6562e60→89cab333, 161319a→3691365, caf4943→e368557, 5b816b1→c7e5f06, a67692d→0d14c7d, 515e088→14e3575, 64dc32a→f84c799 (local-only, reverted), a6c8661→14e3575. The on-disk Space copy keeps the hardened main.py as an uncommitted local change (` M phishshield-backend-space`).
 verify:  `git diff --stat` pasted per commit; post-commit tree below.
-recheck: `git status --short` → ` M backend/sender_profiles.json`, ` M data/feedback_memory.json` only.
+recheck: `git status --short` → ` M backend/sender_profiles.json`, ` M data/feedback_memory.json`, ` M phishshield-backend-space` (intentional, uncommitted per C4).
 status:  FIXED
 
 ## D4/V18
