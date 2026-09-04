@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getSessionId } from '@/lib/session';
+import { ensureSessionCookie, getSessionId } from '@/lib/session';
 
 interface ScanEvent {
   type: string;
@@ -252,6 +252,7 @@ export default function LiveFeed() {
 
     const loadEvents = async () => {
       try {
+        await ensureSessionCookie(API_URL);
         const localHistoryEvents = loadLocalHistoryEvents();
         const cachedEvents = loadStoredLiveFeedEvents(sessionId);
 

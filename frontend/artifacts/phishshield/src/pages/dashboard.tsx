@@ -17,7 +17,7 @@ import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { ScanLoadingPanel } from '@/components/ScanLoadingPanel';
 import { useGetScanHistory, useGetModelMetrics, useClearScanHistory } from '@workspace/api-client-react';
 import { cn } from '@/lib/utils';
-import { getLiveFeedStorageKey, getSessionId } from '@/lib/session';
+import { ensureSessionCookie, getLiveFeedStorageKey, getSessionId } from '@/lib/session';
 import { toast } from '@/hooks/use-toast';
 import { SCAN_STAGE_MESSAGES, RESULT_REVEAL_MS, formatRelativeTimestamp, usePrefersReducedMotion } from '@/lib/motion';
 import { formatBenchmarkCaveat, formatBenchmarkFpr, formatBenchmarkMetric } from '@/lib/metricFormatters';
@@ -779,6 +779,10 @@ function DashboardLiveFeed() {
       return;
     }
 
+    // Session cookie handshake: gated endpoints (/recent-scans, /api/history,
+    // /feedback/stats) need it before the first poll/hydration can succeed.
+    void ensureSessionCookie(PYTHON_BACKEND_URL);
+
     unmountedRef.current = false;
     wsFailCountRef.current = 0;
     wsEverConnectedRef.current = false;
@@ -1066,7 +1070,11 @@ const HISTORY_PAGE_SIZE = 10;
 const SAFE_SENDERS_KEY = 'phishshield_safe_senders';
 const RETRAIN_META_KEY = 'phishshield_retrain_meta';
 const PYTHON_BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string | undefined)?.trim() ?? '';
-const HAS_CONFIGURED_BACKEND = PYTHON_BACKEND_URL.length > 0;
+// When the app runs in a browser the backend is same-origin via the serving
+// proxy (relative default), so an empty VITE_BACKEND_URL is a configured
+// backend, not "no backend". Offline is decided by the /health result below.
+const HAS_CONFIGURED_BACKEND =
+  typeof window === 'undefined' ? PYTHON_BACKEND_URL.length > 0 : true;
 
 type BackendConnectionState = 'checking' | 'connected' | 'degraded' | 'offline';
 
@@ -1944,7 +1952,10 @@ export default function Dashboard() {
     const response = await fetch(`${PYTHON_BACKEND_URL}/report/${scanResult.id}`);
 
     if (!response.ok) {
-      alert("Report not available. Please re-scan first.");
+      toast({
+        title: 'Report not available',
+        description: 'Please re-scan the email first, then download the report.',
+      });
       return;
     }
 
@@ -2168,7 +2179,10 @@ export default function Dashboard() {
 
     const email_text = rawEmailText;
     if (!email_text || email_text.trim() === '') {
-      alert('Email cannot be empty');
+      toast({
+        title: 'Cannot scan',
+        description: 'Email content is empty — paste an email to scan.',
+      });
       return baseResult;
     }
 

@@ -23,3 +23,27 @@ export function getSessionId() {
 export function getLiveFeedStorageKey(sessionId: string) {
   return `${LIVE_FEED_STORAGE_PREFIX}_${sessionId}`;
 }
+
+// The hardened backend issues an HttpOnly session cookie via POST /api/session
+// and gates history/feed/metrics endpoints on it. The UI must perform this
+// handshake once per page load; the cookie then rides along on same-origin
+// requests automatically. Single-flight so boot paths can share the call.
+let sessionCookiePromise: Promise<boolean> | null = null;
+
+export function ensureSessionCookie(apiBase = ''): Promise<boolean> {
+  if (typeof window === 'undefined') {
+    return Promise.resolve(false);
+  }
+  if (!sessionCookiePromise) {
+    const base = (apiBase || '').trim();
+    sessionCookiePromise = fetch(`${base}/api/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      credentials: 'same-origin',
+    })
+      .then((r) => r.ok)
+      .catch(() => false);
+  }
+  return sessionCookiePromise;
+}

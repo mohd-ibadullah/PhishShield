@@ -22,6 +22,11 @@ import {
   useGetModelMetrics,
   useGetScanHistory,
 } from '@workspace/api-client-react';
+import { ensureSessionCookie } from '@/lib/session';
+
+// Gated endpoints (/api/history, /api/metrics, /api/feedback) require the
+// HttpOnly session cookie; mint it once per load.
+void ensureSessionCookie();
 
 const SAMPLE_EMAILS = [
   {
