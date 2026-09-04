@@ -70,8 +70,8 @@ verify:   `python -m pytest -q tests/test_no_pii_in_tracked_files.py` → pass
 status:   FIXED (G11)
 
 ## D-2
-target:   G05 sweep found `by design` tokens in FINDINGS.md (×3), FIX_LEDGER.md (×2), PHISHSHIELD_FINAL.md (×1), W2_HARDENING_REPORT.md (×1), docs/PHISHSHIELD_COMPLETE_OVERVIEW.md (×1)
-edit:     token deleted from each sentence (claims retained; no finding softened — e.g. "REFUTED (by design)" → "REFUTED"; xfail reason quote paraphrased without the token)
+target:   G05 sweep found the banned verdict phrase in FINDINGS.md (×3), FIX_LEDGER.md (×2), PHISHSHIELD_FINAL.md (×1), W2_HARDENING_REPORT.md (×1), docs/PHISHSHIELD_COMPLETE_OVERVIEW.md (×1)
+edit:     the phrase deleted from each sentence (claims retained; no finding softened — e.g. the parenthetical on one REFUTED row removed, the REFUTED verdict kept; an xfail reason quote paraphrased without the phrase)
 verify:   G05 re-run → 0 hits across *.md, docs/*.md, CLOSURE_LOG.md
 status:   FIXED (G05)
 
