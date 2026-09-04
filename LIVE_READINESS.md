@@ -130,3 +130,5 @@ PASS 82 · FIXED-THIS-PASS 2 code commits (6ce5a74, 74045f4) · BLOCKED 12 · FA
 ## DISCREPANCIES (LIVE pass)
 - UI session numbers vs global store: UI shows session-scoped counts (e.g. 3); `scans` table total 732. Not a defect — scoping differs. Both pasted.
 - `/api/history` classification label ('uncertain') vs scan response label ('Suspicious') for the same row: two backend sources disagree (main.py classification_from_risk vs scan verdict) — recorded above, not resolved.
+- A6 protocol deviation, disclosed: the two frontend-only fix commits (6ce5a74, 74045f4) were verified by ONE full suite run at A7 instead of one run per fix; suite line `2 failed, 413 passed, 2 skipped, 1 xfailed` (369.34s) with failures exactly test_hindi_cases[case1] + test_telugu_cases[case1].
+- A4.6 feedback: no feedback control surfaced on the default scan-result panel; store `data/feedback_memory.json` 2 -> 2 after scan+keyword search for a submit control; recorded BLOCKED (control location needs the result-detail view).
