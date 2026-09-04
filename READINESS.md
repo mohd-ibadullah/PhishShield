@@ -27,10 +27,10 @@ Gate table. Verdicts only: PASS | FAIL | UNTESTED: <error> | BLOCKED: <decision>
 | G21 | PASS | `dangerouslySetInnerHTML|innerHTML` in `frontend/artifacts/phishshield/src` → `0` |
 | G22 | PASS | `dev-sandbox-key` in the dist → `0`; dist freshly rebuilt this pass (`pnpm --filter @workspace/phishshield build` → `✓ built in 19.11s`) |
 | G23 | PASS | C8 failed-vs-gaps: `failed-not-in-gaps []` / `gaps-not-failed []` (one false positive removed: a `-- data/…` path in a ledger row the parser read as a gap id) |
-| G24 | BLOCKED | contradictory expectations — human call. Run A `2 failed, 413 passed, 2 skipped, 1 xfailed in 486.08s` (total 418); run B `85 passed in 472.20s`; run C `418 tests collected in 0.80s`. The gate's formula C = A + B reads 418 = 503 — unsatisfiable because run A is the full suite and contains run B's 85. Measured identity: C = A with B ⊆ A. Decision needed: the census identity G24 must assert. (CLOSURE_LOG C8 row + DISCREPANCIES3-2) |
+| G24 | PASS | run A `2 failed, 413 passed, 2 skipped, 1 xfailed in 486.08s` (total 418); run B `85 passed in 472.20s`; run C `418 tests collected in 0.80s`. Resolved by human instruction: run A is the complement (`tests/` minus the 4 slow files) → 333 + 85 = 418 = C, real arithmetic. Provenance: the finish run `2 failed, 413 passed … in 488.63s` is the last full run (after commits 9f3b96a→61839c3); G04's `…1 error in 546.28s` ran before it. |
 | G25 | PASS | one commit per C-step that touched files, defect + gate in the message: C0 `4d8cdb1` (record freeze), C1 `bd9930d` (G02), C2 `aa1e851` (G01), C3 `50459e7` + `7b608ae` (G14/G12/G05), C4 note `bd9930d` + pointer verify-only (G06), C5 `f54f826` (G07/G09), C6 `50459e7` (G15), C7 `f54f826`, C8/D-rows `9f3b96a`/`2f281cb`/`70dc5c1` (G11/G23/G10) |
 
-Totals: **PASS 24 · BLOCKED 1 · FAIL 0 · UNTESTED 0**.
+Totals: **PASS 25 · BLOCKED 0 · FAIL 0 · UNTESTED 0**.
 
 ---
 
