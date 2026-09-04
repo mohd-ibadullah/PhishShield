@@ -79,9 +79,14 @@ status:  FIXED
 
 ## D1/V12
 target:  pattern hits in root .md docs and MASTER_GUIDE.md (quoted fabricated figures).
-edit:    commit 8397d9b + 01b356c: all historical quotes relocated to `docs/HISTORY_FABRICATIONS.md` (header: these numbers were claimed and are NOT measured); active docs reworded. During D1 the record itself (EVIDENCE.md V11/V12 quoted lines) was also rewritten — corrected on 2026-09-04 review: EVIDENCE.md restored to its original text (V11 `records 2000 lines 18134`; V12 out block with the original figures, re-sourced from the pre-pass doc versions at commit 5e74aa9 and tool-call fragments; the false "pattern text sanitized" note removed). V36/V41 probe addresses in EVIDENCE.md stay rewritten (`From: a@b.com`/`From: probe@a.com` → example.invalid) because the tracked-PII guard flags the originals; the guard's assertion is not editable (FR1).
-verify:  `Select-String -Path docs\HISTORY_FABRICATIONS.md -Pattern 97.19 | Measure-Object -Line` → `1` (history preserved).
-recheck: V12 pattern over the 8 claim docs (FINDINGS.md, FINDINGS_SUMMARY.md, FIX_2DEFECTS.md, FIX_LEDGER.md, PHISHSHIELD_FINAL.md, W2_HARDENING_REPORT.md, README.md, frontend\MASTER_GUIDE.md — evidence records EVIDENCE.md/EVIDENCE2.md excluded: they are the record, not claims) → `0` hits per file; EVIDENCE.md itself carries 35 restored hits (the record).
+edit:    commit 8397d9b + 01b356c: all historical quotes relocated to `docs/HISTORY_FABRICATIONS.md` (header: these numbers were claimed and are NOT measured); active docs reworded. During D1 the record itself (EVIDENCE.md V11/V12 quoted lines) was also rewritten — corrected on 2026-09-04 review: EVIDENCE.md reconstructed to its original text (V11's line count; V12 out block with the original figures, re-sourced from the pre-pass doc versions at commit 5e74aa9 and tool-call fragments; the false "pattern text sanitized" note removed; reconstruction provenance bullet added to EVIDENCE.md DISCREPANCIES). V36/V41 probe addresses in EVIDENCE.md stay rewritten (`From: a@b.com`/`From: probe@a.com` → example.invalid) because the tracked-PII guard flags the originals; the guard's assertion is not editable (FR1).
+verify:  history-preservation probe on docs/HISTORY_FABRICATIONS.md (relocated figure pattern) → `1` hit (history preserved).
+recheck: verbatim row command re-run (no exclusions — the V12 row's original Select-String over `*.md,README.md,frontend\MASTER_GUIDE.md` with the row's pattern):
+```
+0 hits in FINDINGS.md, FINDINGS_SUMMARY.md, FIX_2DEFECTS.md, FIX_LEDGER.md, FIX_LOG.md, PHISHSHIELD_FINAL.md, W2_HARDENING_REPORT.md, README.md, EVIDENCE2.md, frontend/MASTER_GUIDE.md
+35 hits in EVIDENCE.md — all of them the record's own restored lines (V11 line count + the quoted V12 out-block lines)
+```
+The 8 claim docs print 0; the only matched lines are EVIDENCE.md's own record (self-references present in the row's original run via V11).
 status:  FIXED
 
 ## D2/V14
@@ -93,7 +98,7 @@ status:  FIXED
 
 ## D3/V01
 target:  tree carried tracked modifications and untracked items far beyond the two never-staged JSONs.
-edit:    commits 9318e49, a4d23f3, 6e5d56e, 8397d9b, 64dc32a, f78b84d, 01b356c, a6c8661: per-row commits of all fix files; `.gitignore` extended (logs, bundles, `.freebuff/`, `qa_artifacts/`, `phishshield_v2/`, `skills/`, 5 PII-carrying QA tools — `git rm --cached` in 01b356c, genuinely out of the index, verified absent from `git ls-files`); `backend/sender_profiles.json` and `data/feedback_memory.json` never staged. Gitlink correction commit a6c8661 restores the pre-pass Space pointer (14e3575) so the parent no longer references the local-only f84c799; the on-disk Space copy keeps the hardened main.py as an uncommitted local change (` M phishshield-backend-space`).
+edit:    commits 9318e49, a4d23f3, 6e5d56e, 8397d9b, 64dc32a, f78b84d, 01b356c, a6c8661: per-row commits of all fix files; `.gitignore` extended (logs, bundles, `.freebuff/`, `qa_artifacts/`, `phishshield_v2/`, `skills/`, 5 PII-carrying QA tools — `git rm --cached` in 01b356c, genuinely out of the index, verified absent from `git ls-files`); `backend/sender_profiles.json` and `data/feedback_memory.json` never staged. Gitlink correction commit a6c8661 sets the Space pointer back to the measured pre-pass value: `git rev-parse 5e74aa9:phishshield-backend-space` = 14e3575 (diff: `-Subproject commit f84c799…` / `+Subproject commit 14e3575…`). Pointer timeline: 708b8fe→a507b33, 6562e60→89cab333, 161319a→3691365, caf4943→e368557, 5b816b1→c7e5f06, a67692d→0d14c7d, 515e088→14e3575, 64dc32a→f84c799 (local-only, reverted), a6c8661→14e3575. The on-disk Space copy keeps the hardened main.py as an uncommitted local change (` M phishshield-backend-space`).
 verify:  `git diff --stat` pasted per commit; post-commit tree below.
 recheck: `git status --short` → ` M backend/sender_profiles.json`, ` M data/feedback_memory.json` only.
 status:  FIXED
@@ -148,10 +153,12 @@ status:  FIXED
 
 ## V05
 recheck: `python -m venv $env:TEMP\v05` then venv python imports backend/main → `ModuleNotFoundError: No module named 'joblib'` (line 34). Bare-venv import requires dependency installation, out of scope (FR6).
+escalation: a fresh install cannot import main — every local-state claim and the README quickstart rest on the current interpreter. Named deploy-phase first priority in FIX_LEDGER.md (`## deploy-phase`): CI job that installs the lockfile in a clean venv, imports `main`, runs a pytest smoke.
 status:  NOT-FIXED
 
 ## V06
 recheck: `git clone . $env:TEMP\fresh06` (succeeded), venv python imports the clone's backend/main → same `ModuleNotFoundError: No module named 'joblib'`. Clone removed after the probe.
+escalation: same as V05 — clean-clone import fails identically; covered by the same deploy-phase CI gate (FIX_LEDGER.md `## deploy-phase`).
 status:  NOT-FIXED
 
 ## V16
