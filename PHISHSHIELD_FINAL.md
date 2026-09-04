@@ -126,7 +126,8 @@ Hinglish (mixed Latin + Devanagari) scores correctly because the Latin trigger w
 1. MuRIL/IndicBERT model integration (currently not committed — safetensors not in repo)
 2. Language-specific heuristic rules for Devanagari/Telugu script patterns
 
-**F32 | live_qa range claim** — an untraceable `live_qa` range claim was quoted at `README.md:275` ("That honest range is also stored under live_qa in `data/training_meta.json`") but the field does not exist in `data/training_meta.json`. The claim was removed from README.md on 2026-09-04; the quote is preserved in docs/HISTORY_FABRICATIONS.md.
+
+The Space copy is a manual mirror; the parent tracks a pointer that is not fetchable; parity is verified by fetching the deployed `main.py` (V58), not by submodule commands.
 
 ## (2) Claims Removed Because Unprovable
 

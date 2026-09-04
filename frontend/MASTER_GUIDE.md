@@ -4,7 +4,7 @@
 
 ---
 
-## Current Project Status (May 2026 — live QA hardened)
+## Current Project Status (May 2026 — hardened)
 
 As of **May 2026**, this repo contains a working phishing-defense project with:
 
@@ -925,7 +925,7 @@ Curated suites can look perfect while live traffic fails. The 100-email UI run f
 We added **safe-context suppressors** (newsletters, official alerts, IT onboarding, security research) *after* high-risk boosts and kept strict floors for credential/OTP pressure, typosquats, and social engineering.
 
 ### 25. What are the next steps after May 2026 hardening?
-Expand multilingual training data, add stronger sender authentication/allowlist signals, improve paraphrase robustness for Hinglish, and add a recurring “live QA batch” process to prevent regression.
+Expand multilingual training data, add stronger sender authentication/allowlist signals, improve paraphrase robustness for Hinglish, and add a recurring post-launch QA batch process to prevent regression.
 
 ---
 

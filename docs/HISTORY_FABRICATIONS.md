@@ -33,3 +33,9 @@
 
 All entries above were relocated here on 2026-09-04 so the active docs contain
 only traceable, measured numbers. No entry here is a current claim.
+## live-QA range claim
+
+The QA-field range claim quoted at README.md:275 (field absent from `data/training_meta.json`, probe
+prints NOT PRESENT) — full quotes above (F32 paragraph and F08 row). Active-doc copies of those rows were
+removed from FINDINGS.md, FINDINGS_SUMMARY.md, FIX_2DEFECTS.md, FIX_LEDGER.md, PHISHSHIELD_FINAL.md on
+2026-09-04 (closure pass C1: delete or relocate, no renaming).

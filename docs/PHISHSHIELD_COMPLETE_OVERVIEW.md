@@ -4,7 +4,7 @@
 
 ---
 
-## Current Project Status (May 2026 — live QA hardened)
+## Current Project Status (May 2026 — hardened)
 
 As of **May 2026**, this repo contains a working phishing-defense project with:
 
