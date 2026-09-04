@@ -1,9 +1,14 @@
 """§1.2: Meta-test — detect any test writing to repo store files.
 
-Records (size, content-hash, line count) of every persisted store under backend/
-and data/ via a session-scoped fixture that fires before ANY test runs.
-A later test asserts none of those snapshots changed. Detection is content-hash
-(SHA-256) based — mtime-only changes are invisible by design (accepted scope).
+Records (size, mtime_ns, line count, SHA-256) of every persisted store under
+backend/ and data/ via a session-scoped fixture that fires before ANY test runs.
+A later test asserts none of those snapshots changed. Detection compares the
+full stat dict — a delta in ANY field, including a pure mtime change with
+identical content, trips the session finalizer. mtime is included deliberately:
+an append-then-truncate-back evasion restores size and SHA-256, so only mtime
+gives it away. (Earlier text claiming "mtime-only changes are invisible by
+design" contradicted the code and the 2026-09-04 reproduced teardown error;
+corrected 2026-09-04.)
 
 The self-proving test (test_isolation_redirect_works) writes to the
 module-level constant (which the conftest session fixture redirected to
@@ -191,11 +196,15 @@ def test_detector_actually_catches_a_write(tmp_path):
 # ordering-immune check works on the real repo store.
 
 # --- Guard scope: content-only (mtime-only NOT caught) ---
-def test_content_hash_ignores_mtime_only(tmp_path):
-    """Prove the guard is content-hash based: mtime-only changes are not flagged.
+def test_snapshot_captures_mtime_only_change(tmp_path):
+    """Prove the snapshot includes mtime_ns: a pure mtime change (identical
+    content) makes the snapshots differ, so the session finalizer flags it.
 
-    If this test fails because the guard NOW catches mtime-only changes,
-    the guard got stronger -- DELETE this test, don't weaken the guard.
+    This is load-bearing: an append-then-truncate-back evasion restores size
+    and SHA-256, leaving mtime as the only trace. The earlier name and text
+    ("mtime-only changes are not flagged / finalizer skips when sha256
+    matches") contradicted the code and the 2026-09-04 reproduced teardown
+    error; corrected 2026-09-04. The finalizer does not skip on sha256 match.
     """
     synthetic = tmp_path / "scope_test.jsonl"
     synthetic.write_bytes(b"original content\n")
@@ -208,9 +217,8 @@ def test_content_hash_ignores_mtime_only(tmp_path):
     # Content is identical
     assert snap_before["sha256"] == snap_after["sha256"]
     assert snap_before["size"] == snap_after["size"]
-    # Stat fields differ (mtime changed)
+    # Stat fields differ (mtime changed) — the finalizer's comparison sees it
     assert snap_before != snap_after
-    # But the finalizer skips when sha256 matches -- accepted scope limitation.
 
 # MUST be the last test in the file (after detector test).
 import subprocess as _sp
@@ -271,8 +279,12 @@ def test_finalizer_catches_real_store_write() -> None:
     with open(real_path, "r+b") as f:
         f.truncate(original_size)
     # Restore mtime to the pre-write value (truncate changes it).
-    original_mtime_s = snap_before["mtime_ns"] / 1e9
-    os.utime(str(real_path), (original_mtime_s, original_mtime_s))
+    # Integer-ns restore: the old float path (mtime_ns / 1e9) cannot represent
+    # the value in float64 (28 ns error measured) and os.utime rounds to the
+    # nearest 100 ns NTFS tick, so the restore landed one tick off and the
+    # session finalizer caught the test's own cleanup (reproduced 2026-09-04:
+    # mtime_ns ...5700 -> ...5600, size/sha256 identical).
+    os.utime(str(real_path), ns=(snap_before["mtime_ns"], snap_before["mtime_ns"]))
     snap_restored = _snapshot(real_path)
     assert snap_restored["size"] == original_size, (
         f"Cleanup failed: size {snap_restored['size']} != {original_size}"
