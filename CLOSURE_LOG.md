@@ -55,7 +55,7 @@ status:   FIXED
 target:   run A `python -m pytest -q` → `2 failed, 413 passed, 2 skipped, 1 xfailed in 486.08s` (failures exactly the 2 gaps ids: test_hindi_cases[case1], test_telugu_cases[case1]); run B shard → `85 passed in 472.20s`; run C `--co` → `418 tests collected in 0.80s`
 edit:     none (measurement only)
 verify:   run C collected (418) = run A total (418); run B (85) is a subset of run A — the literal "C = A + B" sum gives 418 ≠ 503 and is unsatisfiable as written (see DISCREPANCIES3-2, gate G24)
-status:   BLOCKED: contradictory expectations — human call (gate G24's arithmetic formula vs measured identity)
+status:   BLOCKED: contradictory expectations — human call; command to run: the three C8 invocations above (their raw lines are in this row); decision needed: state the census identity G24 must assert — C = A with B ⊆ A (measured) or a C that excludes the shard
 
 ## D-1
 target:   full-suite run A flagged `tests/test_no_pii_in_tracked_files.py` — the PII guard regex counted the two disclosed probe-address literals quoted in EVIDENCE2.md and FIX_LOG.md
@@ -85,3 +85,4 @@ status:   FIXED (G02)
 - DISCREPANCIES3-1 (two lockfile sources disagree): `pip freeze` of the working interpreter (325 lines, numpy==2.5.2, torch==2.11.0, joblib==1.4.2) fails a fresh install with `ResolutionImpossible … conflicting dependencies`; requirements-based lockfile (25 lines, backend/requirements.txt + joblib==1.4.2) installs clean (exit 0, CLEAN-IMPORT-OK, health 200). Both pasted in the C3 row; the requirements-based file is the one committed.
 - DISCREPANCIES3-2 (C8/gate G24 arithmetic): run C `418 tests collected`; run A total `418` (2 failed + 413 passed + 2 skipped + 1 xfailed); run B `85 passed`. 418 = 418 + 85 is false — run A is the full suite and already contains run B's 85. The gate's "sum" formula is unsatisfiable as written; the measured identity is C = A with B ⊆ A.
 - DISCREPANCIES3-3 (joblib version, two interpreters): working interpreter joblib 1.4.2; the earlier psenv (built from backend/requirements.txt unpinned) resolved joblib 1.6.0. Both recorded; the lockfile pins 1.4.2 per C3.
+- DISCREPANCIES3-4 (C9 sweep, numbers in docs): the census sweep found suite values besides C8's: `8 failed, 399 passed` (EVIDENCE.md V16 rows and EVIDENCE2-era runs — the fix-pass baseline record), `404 collected, 403 passed` (FINAL_REPORT.md, PHISHSHIELD_FINAL.md, FIX_LEDGER.md L7 — dated W2-era shard measurements), and C8's `418 collected / 413 passed` (CLOSURE_LOG.md C8 row, labelled run A/C). The records are not rewritten; C8's numbers are the current labelled set.
