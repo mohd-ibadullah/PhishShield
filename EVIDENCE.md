@@ -223,53 +223,46 @@ cmd: `python -c "import csv,pathlib;p=pathlib.Path('data/Phishing_Email.csv');pr
 
 out:
 ```
-records 2000 lines 18_134
+records 2000 lines 18134
 ```
 exit=0
 
 ## V12
 
 cmd: `Select-String -Path *.md,README.md,frontend\MASTER_GUIDE.md -Pattern "18,?13[0-9]|18,?684|14,?947|3,?737|97\.19|96\.52|98\.9|98\.6|97\.4|live-qa" | Select-Object -ExpandProperty Line`
-(pattern text sanitized here on 2026-09-04 so the row itself stays pattern-free for the V12 re-run; the original pattern also matched the live-qa identifier)
 
 out:
 ```
-| A14 | Claims | Claimed accuracy figure contradicted training_meta.json (100%) |
-| F07 | A14 | MASTER_GUIDE.md claimed a fabricated accuracy/F1 pair while data/training_meta.json reports 100% accuracy / F1 | CONFIRMED | HIGH | figures relocated to docs/HISTORY_FABRICATIONS.md | Update MASTER_GUIDE.md to reference the actual training_meta.json values (1.0 / 100%) | grep MASTER_GUIDE.md for the claimed figure | 15 min |
-| F08 | A14 | `data/training_meta.json` claims a live-qa range exists but field is absent | CONFIRMED | MED | probe printed NOT PRESENT; README.md:275 quote relocated to docs/HISTORY_FABRICATIONS.md | Remove the claim from README.md | Edit `data/training_meta.json` or `README.md` | 10 min |
-| F32 | A14 | README.md accuracy section uses dynamic reference (`from training_meta.json`) - claim is traceable but values changed since the fabricated figure was written | CONFIRMED | LOW | `sed -n '260,270p' README.md` shows `| Accuracy | from training_meta.json |`; actual value is 1.0 (100%) | README.md section is correct (uses dynamic ref); MASTER_GUIDE.md hardcoded figure removed | See F07 | 15 min |
-3. **F07 - HIGH:** MASTER_GUIDE.md claimed a fabricated accuracy figure in 4 locations, but `data/training_meta.json` (the canonical source per README.md) reports 100% (1.0). The discrepancy means either training_meta.json was overwritten after the claim was written, or the claim references a stale version. Both cannot be correct. (Figures relocated to docs/HISTORY_FABRICATIONS.md.)
-| Claimed accuracy figure | `frontend/MASTER_GUIDE.md:26,41,252,536` | `backend/training_meta.json` (wrong path) / `data/training_meta.json` (shows 100%) | **No** - contradiction with canonical source |
-| Claimed F1 figure | `frontend/MASTER_GUIDE.md:26,536` | Same as above | **No** - same contradiction |
+| A14 | Claims | 97.19% claim contradicts training_meta.json (100%) |
+| F07 | A14 | `frontend/MASTER_GUIDE.md` claims 97.19% accuracy / 96.52% F1 but `data/training_meta.json` reports 100% accuracy / F1 | CONFIRMED | HIGH | `grep "97.19" frontend/MASTER_GUIDE.md`  4 occurrences; `python -c "import json; print(json.load(open('data/training_meta.json'))['metrics'])"`  `{'accuracy': 1.0, 'precision': 1.0, 'recall': 1.0, 'f1_score': 1.0}` | Update MASTER_GUIDE.md to reference the actual training_meta.json values (1.0 / 100%) | `grep -n "97.19" frontend/MASTER_GUIDE.md` then edit each occurrence | 15 min |
+| F08 | A14 | `data/training_meta.json` claims `live_qa` range exists but field is absent | CONFIRMED | MED | `python -c "import json; d=json.load(open('data/training_meta.json')); print('live_qa:', d.get('live_qa','NOT PRESENT'))"`  `live_qa: NOT PRESENT`; `README.md:275` says "That honest range is also stored under `live_qa` in `data/training_meta.json`" | Either add `live_qa` field to training_meta.json or remove the claim from README.md | Edit `data/training_meta.json` or `README.md` | 10 min |
+| F32 | A14 | README.md accuracy section uses dynamic reference (`from training_meta.json`) - claim is traceable but values changed since 97.19% was written | CONFIRMED | LOW | `sed -n '260,270p' README.md` shows `| Accuracy | from training_meta.json |`; actual value is 1.0 (100%) | README.md section is correct (uses dynamic ref); MASTER_GUIDE.md has hardcoded 97.19% - fix MASTER_GUIDE.md | See F07 | 15 min |
+3. **F07 - HIGH:** `frontend/MASTER_GUIDE.md` claims 97.19% accuracy in 4 locations, but `data/training_meta.json` (the canonical source per README.md) reports 100% (1.0). The discrepancy means either training_meta.json was overwritten after the claim was written, or the claim references a stale version. Both cannot be correct.
+| 97.19% accuracy | `frontend/MASTER_GUIDE.md:26,41,252,536` | `backend/training_meta.json` (wrong path) / `data/training_meta.json` (shows 100%) | **No** - contradiction with canonical source |
+| 96.52% F1 | `frontend/MASTER_GUIDE.md:26,536` | Same as above | **No** - same contradiction |
 | live-qa range claim | `README.md:275` | `data/training_meta.json` live-qa field | **No** - field absent from file |
-**Numbers with no traceable source: 3** (fabricated accuracy, fabricated F1, live-qa range) - figures relocated to docs/HISTORY_FABRICATIONS.md
--        "accuracy": _format_health_metric(metrics.get("accuracy"), default="<old fabricated default - see docs/HISTORY_FABRICATIONS.md>"),
--        "f1_score": _format_health_metric(metrics.get("f1_score", metrics.get("f1")), default="<old fabricated default - see docs/HISTORY_FABRICATIONS.md>"),
-     # removed: live-qa metadata read (relocated to docs/HISTORY_FABRICATIONS.md)
-
-| **D7** | **(7) Misleading model health labels**: `/health` and status endpoints reported a fabricated transformer-accuracy label even when running CPU TF-IDF fallback. | **CLOSED** | `resolve_health_model_fields()` dynamically reports actual model. Tests: `test_health_reports_active_model`, `test_stats_reports_honest_model`. | `pytest tests/test_w2_harden.py -k health_reports` | 2 passed | **CLOSED** |
-| **D8** | **(8) Unsupported marketing claims in UI/docs**: UI and overview claimed a fabricated transformer-accuracy figure in live demo and fabricated training-row counts. | **CLOSED** | Replaced fabricated figures in `frontend/MASTER_GUIDE.md` with honest labels. Added historical disclaimer to `frontend/artifacts/reports/qa/system-readiness-audit-latest.md`. | grep of MASTER_GUIDE.md for the fabricated figure = 0 | | **CLOSED** |
-| **D12** | **(12) README honesty and command reproducibility**: README contains unverified headline numbers without reproduction commands. | **CLOSED** | Replaced hardcoded fabricated metrics with dynamic references to `training_meta.json`. Added reproduction commands. Updated test count to 403+. | grep of README.md for fabricated figures | 0 | **CLOSED** |
-| **M1** | **Health label lies**: INDICBERT_HEALTH_LABEL hardcoded with a fabricated transformer-accuracy label while running TF-IDF. | **CLOSED** | Changed to TF-IDF Logistic Regression in both backend and Space. | Grep: INDICBERT_HEALTH_LABEL = "TF-IDF Logistic Regression" | **CLOSED** |
-| **51** | `data/training_meta.json` carried non-reproducible metadata (fabricated accuracy / fabricated row count / absolute path) and was overwritten by multiple writers. | **CLOSED** | `train_model.py` is the sole writer via deterministic `build_training_metadata()`; retraining writes `data/retraining_metadata.json`; duplicate `backend/data/training_meta.json` removed; CI runs `git diff --exit-code -- data/training_meta.json` after training. | `pytest tests/test_training_metadata_reproducibility.py`; CI diff-check | Metadata regenerates byte-identical; diff-check exit 0. | **CLOSED** |
-| **F07** | MASTER_GUIDE.md claimed a fabricated accuracy figure | **CLOSED** | `python -m pytest tests/test_docs_metrics_match_artifacts.py` | 1 passed; hardcoded values replaced |
-| **F08** | training_meta.json live-qa claim absent | **CLOSED** | Same test + README.md edit | Claim removed |
-| **F32** | live-QA range claim (README.md:275 referenced a live-qa field in `training_meta.json` that is absent) | **OPEN** | grep of README.md and training_meta.json | Claim untraceable: the live-qa field does not exist in `training_meta.json`. Removed from README.md 2026-09-04 (quote in docs/HISTORY_FABRICATIONS.md). |
-**F32 | live-qa range claim** - an untraceable live-QA range claim was quoted at `README.md:275`; the live-qa field does not exist in `data/training_meta.json`. Removed from README.md on 2026-09-04; quote preserved in docs/HISTORY_FABRICATIONS.md.
-- Health label: fabricated transformer-accuracy label -> TF-IDF Logistic Regression (figure relocated to docs/HISTORY_FABRICATIONS.md)
-- README false numbers (relocated to docs/HISTORY_FABRICATIONS.md)
-| fabricated health-label figure | 0 | 2 |
-- `data/Phishing_Email.csv` (2,000 records - see `data/CARD.md`)
-> for the current committed row count. (A previously referenced row count was relocated to docs/HISTORY_FABRICATIONS.md.)
-| fabricated health-label figure | 0 | 2 |
-- `data/Phishing_Email.csv` (2,000 records - see `data/CARD.md`)
-> for the current committed row count. (A previously referenced row count was relocated to docs/HISTORY_FABRICATIONS.md.)
-- dataset rows: see `data/training_meta.json`
-- train rows: see `data/training_meta.json`
-- test rows: see `data/training_meta.json`
-| Dataset rows | see `data/training_meta.json` |
-| Train rows | see `data/training_meta.json` |
-| Test rows | see `data/training_meta.json` |
+**Numbers with no traceable source: 3** (97.19% accuracy, 96.52% F1, live-qa range)
+-        "accuracy": _format_health_metric(metrics.get("accuracy"), default="98.9%"),
+-        "f1_score": _format_health_metric(metrics.get("f1_score", metrics.get("f1")), default="98.6%"),
+     # removed: live-qa metadata read
+| **D7** | **(7) Misleading model health labels**: `/health` and status endpoints report `"SecureBERT/MuRIL-GPU-97.4%"` even when running CPU TF-IDF fallback. | **CLOSED** | `resolve_health_model_fields()` dynamically reports actual model. Tests: `test_health_reports_active_model`, `test_stats_reports_honest_model`. | `pytest tests/test_w2_harden.py -k health_reports` | 2 passed | **CLOSED** |
+| **D8** | **(8) Unsupported marketing claims in UI/docs**: UI and overview claims 97.4% transformer accuracy in live demo and 18,684 active training rows. | **CLOSED** | Replaced 97.4% claims in `frontend/MASTER_GUIDE.md` with honest labels. Added historical disclaimer to `frontend/artifacts/reports/qa/system-readiness-audit-latest.md`. | grep -c '97.4%' frontend/MASTER_GUIDE.md = 0 | | **CLOSED** |
+| **D12** | **(12) README honesty and command reproducibility**: README contains unverified headline numbers without reproduction commands. | **CLOSED** | Replaced hardcoded metrics (97.19%, 14,947 rows, 66 passed) with dynamic references to `training_meta.json`. Added reproduction commands. Updated test count to 403+. | `grep -c '97.4' README.md` | 0 | **CLOSED** |
+| **M1** | **Health label lies**: INDICBERT_HEALTH_LABEL hardcoded as SecureBERT/MuRIL-GPU-97.4% while running TF-IDF. | **CLOSED** | Changed to TF-IDF Logistic Regression in both backend and Space. | Grep: INDICBERT_HEALTH_LABEL = "TF-IDF Logistic Regression" | **CLOSED** |
+| **51** | `data/training_meta.json` carried non-reproducible metadata (0.9719 / 18,684 rows / absolute path) and was overwritten by multiple writers. | **CLOSED** | `train_model.py` is the sole writer via deterministic `build_training_metadata()`; retraining writes `data/retraining_metadata.json`; duplicate `backend/data/training_meta.json` removed; CI runs `git diff --exit-code -- data/training_meta.json` after training. | `pytest tests/test_training_metadata_reproducibility.py`; CI diff-check | Metadata regenerates byte-identical; diff-check exit 0. | **CLOSED** |
+| **F07** | MASTER_GUIDE.md claims 97.19% accuracy | **CLOSED** | `python -m pytest tests/test_docs_metrics_match_artifacts.py` | 1 passed; hardcoded values replaced |
+- Health label: SecureBERT/MuRIL-GPU-97.4% -> TF-IDF Logistic Regression
+- README false numbers (18684, 97.4%)
+| `97.4` | 0 | 2 |
+| `97.4` | 0 | 2 |
+- `data/Phishing_Email.csv` (~18,133 rows)
+> for the current committed row count. Previous versions referenced 18,684 rows;
+- dataset rows: **18,684**
+- train rows: **14,947**
+- test rows: **3,737**
+| Dataset rows | `18,684` |
+| Train rows | `14,947` |
+| Test rows | `3,737` |
 ```
 exit=0
 
@@ -958,8 +951,8 @@ exit=0
 | V08 | FIXED | `51` |
 | V09 | FIXED | `410 tests collected in 0.84s` (410 >= 51) |
 | V10 | FIXED | keys list `['dataset_path', 'metrics', 'rows', 'test_rows', 'train_rows']` — `model_type`/`source_rows`/`feedback_rows`/`live-qa` absent |
-| V11 | FIXED | `records 2000 lines 18_134` recorded (discrepancy flagged in DISCREPANCIES) |
-| V12 | NOT-FIXED | matched lines present (figures relocated to docs/HISTORY_FABRICATIONS.md; this row's quoted output sanitized on 2026-09-04) |
+| V11 | FIXED | `records 2000 lines 18134` recorded (discrepancy flagged in DISCREPANCIES) |
+| V12 | NOT-FIXED | matched lines present (`97.19%`, `96.52%`, `98.9%`, `98.6%`, `97.4%`, `live_qa`, `18,684`, `14,947`, `3,737`) |
 | V13 | FIXED | `LICENSE`, `data/CARD.md`, `data/PII_ALLOWLIST.txt` all listed |
 | V14 | NOT-FIXED | non-empty comment lines `# PII Allowlist ...`, `# Each entry ...`, `# These are the only files ...` lack the `<path>: <justification>` form |
 | V15 | FIXED | `backend/model.pkl` + `backend/vectorizer.pkl` tracked |
@@ -1016,7 +1009,7 @@ Totals: FIXED 35, NOT-FIXED 20, UNTESTED 3 (V04, V05, V06).
 ### 2. DISCREPANCIES
 
 - V22 (141188) vs V46 (141412): `backend/scan_logs.jsonl` length differs; caused by the V41 probe row appended between the two measurements. Live-file line count 486 (V42) matches V41's `after=486`.
-- V11 `records 2000 lines 18_134` vs V12 matched lines in `.md` docs asserting a ~18k-row CSV and a dataset split of 18.7k/14.9k/3.7k (figures relocated to docs/HISTORY_FABRICATIONS.md): the CSV reader counts 2000 logical records; the docs' row numbers are not the current measured record count. (V11's line count is written as `18_134` to keep the V12 pattern out of root docs; value unchanged.)
+- V11 `records 2000 lines 18134` vs V12 matched lines in `.md` docs asserting `data/Phishing_Email.csv` ~18,133 rows and dataset rows 18,684 / train 14,947 / test 3,737: the CSV reader counts 2000 logical records; the docs' row numbers are not the current measured record count.
 - V18: row's pipeline listed 0 single-test files (empty output, PowerShell exit 1); re-run of the same `--co -q` collection (410 node-id lines) lists 10 files with exactly 1 test. Both numbers kept.
 - V57: row's glob `frontend\artifacts\phishshield\src\**\*.tsx` = 0 lines; recursive scan of the same src tree = 1 (chart.tsx:79). Both numbers kept.
 - V46: `backend/scan_logs.jsonl.1` present at 40,386,252 bytes — pre-fix artifact exceeding the 5,000,000 rotation cap; covered by `.gitignore` (V47).

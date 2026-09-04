@@ -41,7 +41,7 @@
 -        false_positive_rate = float(offline_raw.get("fpr", 0.0) or 0.0)
 +        false_positive_rate = None
  
-    # removed: live-qa metadata read (relocated to docs/HISTORY_FABRICATIONS.md)
+    # removed: live_qa metadata read (relocated to docs/HISTORY_FABRICATIONS.md)
 @@ -109,7 +109,7 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
          "precision": precision,
          "recall": recall,

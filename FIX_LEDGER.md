@@ -81,12 +81,12 @@ Machine-readable product-gap list. CI deselects exactly these node ids in the ma
 | **F05/F27** | /api/feedback/stats leaks retrain state | **CLOSED** | `python -m pytest tests -k operational_stats` | 1 passed; session-gated, retrain fields redacted |
 | **F06** | /stats leaks operational stats | **CLOSED** | Same test | Session-gated |
 | **F07** | MASTER_GUIDE.md claimed a fabricated accuracy figure | **CLOSED** | `python -m pytest tests -k docs_metrics_match_artifacts` | 1 passed; hardcoded values replaced (figures relocated to docs/HISTORY_FABRICATIONS.md) |
-| **F08** | training_meta.json live-qa claim absent | **CLOSED** | Same test + README.md edit | Claim removed from README.md 2026-09-04 |
+| **F08** | training_meta.json live_qa claim absent | **CLOSED** | Same test + README.md edit | Claim removed from README.md 2026-09-04 |
 | **F09** | 100% accuracy suggests overfitting | **DEFERRED-ML** | Needs ML re-evaluation | Requires model retrain with real-world emails |
 | **F10** | Deploy parity unknown (Space private) | **CLOSED** | `curl HuggingFace API` | Space is public; deployed rev has 0 hardening markers |
 | **F13** | 1 MiB request cap | **CLOSED** | `python -m pytest tests -k max_request_bytes` | 4 passed (3 original + chunked-over-cap guard, added 2026-09-04); pre-parse enforced incl. chunked bodies |
 | **F32/F36** | Wrong path in MASTER_GUIDE.md | **CLOSED** | grep | Fixed to data/training_meta.json |
-| **F32** | live-QA range claim (`README.md:275` referenced a live-qa field in `training_meta.json` that is absent) | **OPEN** | grep of README.md and training_meta.json | Claim untraceable; removed from README.md 2026-09-04 (quote preserved in docs/HISTORY_FABRICATIONS.md) |
+| **F32** | live-QA range claim (`README.md:275` referenced a live_qa field in `training_meta.json` that is absent) | **OPEN** | grep of README.md and training_meta.json | Claim untraceable; removed from README.md 2026-09-04 (quote preserved in docs/HISTORY_FABRICATIONS.md) |
 | **A12** | Audit used wrong Space slug | **CLOSED** | Correct slug measured | private=false, sha=a507b33c |
 
 ## Test Stub Alignment Pass (2026-09-03)

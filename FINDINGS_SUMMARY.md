@@ -76,12 +76,12 @@
 |-------|----------|-------------|------------|
 | Claimed accuracy figure | `frontend/MASTER_GUIDE.md:26,41,252,536` | `backend/training_meta.json` (wrong path) / `data/training_meta.json` (shows 100%) | **No** — contradiction with canonical source |
 | Claimed F1 figure | `frontend/MASTER_GUIDE.md:26,536` | Same as above | **No** — same contradiction |
-| live-qa range claim | `README.md:275` | `data/training_meta.json` live-qa field | **No** — field absent from file |
+| live_qa range claim | `README.md:275` | `data/training_meta.json` live_qa field | **No** — field absent from file |
 | 100% accuracy | `data/training_meta.json` | `python diagnostics/reproduce_headlines.py` | **Yes** — reproduces 1.0 |
 | 2,000 rows | `data/training_meta.json` | `python -c "import csv; print(sum(1 for _ in csv.reader(open('data/Phishing_Email.csv')))-1)"` | **Yes** — traceable |
 | 133 feedback | `/api/feedback/stats` | `backend/feedback.csv` line count | **Yes** — traceable at runtime |
 
-**Numbers with no traceable source: 3** (fabricated accuracy, fabricated F1, live-qa range) — figures relocated to docs/HISTORY_FABRICATIONS.md
+**Numbers with no traceable source: 3** (fabricated accuracy, fabricated F1, live_qa range) — figures relocated to docs/HISTORY_FABRICATIONS.md
 
 ---
 
