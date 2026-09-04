@@ -1,0 +1,16 @@
+{
+  "pytest_stdout": "",
+  "pytest_stderr": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --timeout=10\n  inifile: C:\\Users\\froms\\Desktop\\2\\pytest.ini\n  rootdir: C:\\Users\\froms\\Desktop\\2\n\nsys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute",
+  "pytest_exitcode": 4,
+  "retrain_status": 403,
+  "retrain_json": {
+    "detail": "Forbidden: invalid internal API key"
+  },
+  "explain_status": 404,
+  "explain_json": {
+    "detail": "Explanation not found for the provided scan_id"
+  },
+  "frontend_build_stdout": "> @workspace/phishshield@0.0.0 build C:\\Users\\froms\\Desktop\\2\\frontend\\artifacts\\phishshield\n> vite build --config vite.config.ts\n\n\u001b[36mvite v7.3.2 \u001b[32mbuilding client environment for production...\u001b[36m\u001b[39m\ntransforming...\n\u001b[32mâœ“\u001b[39m 2796 modules transformed.\nrendering chunks...\ncomputing gzip size...\n\u001b[2mdist/public/\u001b[22m\u001b[32mindex.html                 \u001b[39m\u001b[1m\u001b[2m    1.72 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m â”‚ gzip:   0.75 kB\u001b[22m\n\u001b[2mdist/public/\u001b[22m\u001b[35massets/index-CZoh4ffn.css  \u001b[39m\u001b[1m\u001b[2m  147.48 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m â”‚ gzip:  23.10 kB\u001b[22m\n\u001b[2mdist/public/\u001b[22m\u001b[36massets/index-B38LCAiN.js   \u001b[39m\u001b[1m\u001b[2m1,011.83 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m â”‚ gzip: 300.82 kB\u001b[22m\n\u001b[32mâœ“ built in 47.33s\u001b[39m",
+  "frontend_build_stderr": "",
+  "frontend_build_exitcode": 0
+}

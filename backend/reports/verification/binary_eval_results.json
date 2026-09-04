@@ -1,0 +1,311 @@
+{
+  "methodology": {
+    "binary_labels": "phishing/spam→1, safe/ham→0",
+    "ece_method": "10-bin ECE on binary phishing probability vs binary label",
+    "auc_method": "trapezoidal AUC-ROC",
+    "energy_method": "negative Bernoulli entropy proxy",
+    "note": "Previous ECE=1.0883 was impossible; this recomputes correctly"
+  },
+  "results": [
+    {
+      "name": "elite_raw (all)",
+      "n_total": 1536,
+      "n_phishing": 768,
+      "n_safe": 768,
+      "accuracy": 0.5930989583333334,
+      "precision": 0.5772972972972973,
+      "recall_phishing": 0.6953125,
+      "fpr": 0.5091145833333334,
+      "tp": 534,
+      "fp": 391,
+      "fn": 234,
+      "tn": 377,
+      "ece_correct": 0.3856814150652781,
+      "auc_roc": 0.6375918918185771,
+      "mean_energy": 0.07808748050658038,
+      "std_energy": 0.15781864858697578,
+      "mean_entropy": 0.07808748050658038,
+      "std_entropy": 0.15781864858697578,
+      "phish_prob_stats": {
+        "mean": 0.6915038189719098,
+        "std": 0.4448476454638478,
+        "median": 0.9967486262321472
+      },
+      "safe_prob_stats": {
+        "mean": 0.5121639673665944,
+        "std": 0.47033428059366383,
+        "median": 0.5920118093490601
+      }
+    },
+    {
+      "name": "combined_test",
+      "n_total": 393,
+      "n_phishing": 314,
+      "n_safe": 79,
+      "accuracy": 0.37404580152671757,
+      "precision": 0.8148148148148148,
+      "recall_phishing": 0.2802547770700637,
+      "fpr": 0.25316455696202533,
+      "tp": 88,
+      "fp": 20,
+      "fn": 226,
+      "tn": 59,
+      "ece_correct": 0.6132425770571435,
+      "auc_roc": 0.6182778360074173,
+      "mean_energy": 0.057717198133286594,
+      "std_energy": 0.1346710262297737,
+      "mean_entropy": 0.057717198133286594,
+      "std_entropy": 0.1346710262297737,
+      "phish_prob_stats": {
+        "mean": 0.2825670907942906,
+        "std": 0.43272743475140113,
+        "median": 0.0030964218312874436
+      },
+      "safe_prob_stats": {
+        "mean": 0.2618157269814069,
+        "std": 0.4205472767634976,
+        "median": 0.0017298136372119188
+      }
+    },
+    {
+      "name": "dataset_100",
+      "n_total": 80,
+      "n_phishing": 40,
+      "n_safe": 40,
+      "accuracy": 0.525,
+      "precision": 0.5138888888888888,
+      "recall_phishing": 0.925,
+      "fpr": 0.875,
+      "tp": 37,
+      "fp": 35,
+      "fn": 3,
+      "tn": 5,
+      "ece_correct": 0.4645778254824109,
+      "auc_roc": 0.6668750000000001,
+      "mean_energy": 0.04765551722894129,
+      "std_energy": 0.06692056667717504,
+      "mean_entropy": 0.04765551722894129,
+      "std_entropy": 0.06692056667717504,
+      "phish_prob_stats": {
+        "mean": 0.9169899788525072,
+        "std": 0.26145852707241374,
+        "median": 0.9981386959552765
+      },
+      "safe_prob_stats": {
+        "mean": 0.8660752833544393,
+        "std": 0.3221486339547747,
+        "median": 0.9957023859024048
+      }
+    },
+    {
+      "name": "eval_keyword",
+      "n_total": 35,
+      "n_phishing": 35,
+      "n_safe": 0,
+      "accuracy": 0.05714285714285714,
+      "precision": 1.0,
+      "recall_phishing": 0.05714285714285714,
+      "fpr": 0.0,
+      "tp": 2,
+      "fp": 0,
+      "fn": 33,
+      "tn": 0,
+      "ece_correct": 0.9231173346426137,
+      "auc_roc": NaN,
+      "mean_energy": 0.0788229930852495,
+      "std_energy": 0.15871743449837042,
+      "mean_entropy": 0.0788229930852495,
+      "std_entropy": 0.15871743449837042,
+      "phish_prob_stats": {
+        "mean": 0.07688266535738617,
+        "std": 0.22001612146836852,
+        "median": 0.000659293495118618
+      },
+      "safe_prob_stats": {
+        "mean": 0.0,
+        "std": 0.0,
+        "median": 0.0
+      }
+    },
+    {
+      "name": "eval_paraphrased",
+      "n_total": 25,
+      "n_phishing": 25,
+      "n_safe": 0,
+      "accuracy": 0.64,
+      "precision": 1.0,
+      "recall_phishing": 0.64,
+      "fpr": 0.0,
+      "tp": 16,
+      "fp": 0,
+      "fn": 9,
+      "tn": 0,
+      "ece_correct": 0.3649487471254543,
+      "auc_roc": NaN,
+      "mean_energy": 0.13688615193397305,
+      "std_energy": 0.19946290808831127,
+      "mean_entropy": 0.13688615193397305,
+      "std_entropy": 0.19946290808831127,
+      "phish_prob_stats": {
+        "mean": 0.6350512528745458,
+        "std": 0.4378374697923273,
+        "median": 0.9450221061706543
+      },
+      "safe_prob_stats": {
+        "mean": 0.0,
+        "std": 0.0,
+        "median": 0.0
+      }
+    },
+    {
+      "name": "eval_bec",
+      "n_total": 40,
+      "n_phishing": 40,
+      "n_safe": 0,
+      "accuracy": 0.0,
+      "precision": 0.0,
+      "recall_phishing": 0.0,
+      "fpr": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 40,
+      "tn": 0,
+      "ece_correct": 0.9995713815766066,
+      "auc_roc": NaN,
+      "mean_energy": 0.003706006267352943,
+      "std_energy": 0.0015853876021956744,
+      "mean_entropy": 0.003706006267352943,
+      "std_entropy": 0.0015853876021956744,
+      "phish_prob_stats": {
+        "mean": 0.0004286184233933454,
+        "std": 0.0002092356803358409,
+        "median": 0.0003655302571132779
+      },
+      "safe_prob_stats": {
+        "mean": 0.0,
+        "std": 0.0,
+        "median": 0.0
+      }
+    },
+    {
+      "name": "eval_legitimate",
+      "n_total": 100,
+      "n_phishing": 0,
+      "n_safe": 100,
+      "accuracy": 0.54,
+      "precision": 0.0,
+      "recall_phishing": 0.0,
+      "fpr": 0.46,
+      "tp": 0,
+      "fp": 46,
+      "fn": 0,
+      "tn": 54,
+      "ece_correct": 0.46020309395651565,
+      "auc_roc": NaN,
+      "mean_energy": 0.12906318215323254,
+      "std_energy": 0.2061994578503947,
+      "mean_entropy": 0.12906318215323254,
+      "std_entropy": 0.2061994578503947,
+      "phish_prob_stats": {
+        "mean": 0.0,
+        "std": 0.0,
+        "median": 0.0
+      },
+      "safe_prob_stats": {
+        "mean": 0.46020309395651565,
+        "std": 0.45793075012795037,
+        "median": 0.40517333149909973
+      }
+    },
+    {
+      "name": "eval_benign-security",
+      "n_total": 20,
+      "n_phishing": 0,
+      "n_safe": 20,
+      "accuracy": 1.0,
+      "precision": 0.0,
+      "recall_phishing": 0.0,
+      "fpr": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 20,
+      "ece_correct": 0.0009924801270244643,
+      "auc_roc": NaN,
+      "mean_energy": 0.007570390976398859,
+      "std_energy": 0.005179223824400301,
+      "mean_entropy": 0.007570390976398859,
+      "std_entropy": 0.005179223824400301,
+      "phish_prob_stats": {
+        "mean": 0.0,
+        "std": 0.0,
+        "median": 0.0
+      },
+      "safe_prob_stats": {
+        "mean": 0.0009924801270244643,
+        "std": 0.0007605113133383726,
+        "median": 0.0006643774104304612
+      }
+    },
+    {
+      "name": "eval_ID_vs_OOD",
+      "n_total": 135,
+      "n_phishing": 35,
+      "n_safe": 100,
+      "accuracy": 0.4148148148148148,
+      "precision": 0.041666666666666664,
+      "recall_phishing": 0.05714285714285714,
+      "fpr": 0.46,
+      "tp": 2,
+      "fp": 46,
+      "fn": 33,
+      "tn": 54,
+      "ece_correct": 0.5755229230125056,
+      "auc_roc": 0.24714285714285714,
+      "mean_energy": 0.11603794795042212,
+      "std_energy": 0.19624160289015477,
+      "mean_entropy": 0.11603794795042212,
+      "std_entropy": 0.19624160289015477,
+      "phish_prob_stats": {
+        "mean": 0.07688266535738617,
+        "std": 0.22001612146836852,
+        "median": 0.000659293495118618
+      },
+      "safe_prob_stats": {
+        "mean": 0.46020309395651565,
+        "std": 0.45793075012795037,
+        "median": 0.40517333149909973
+      }
+    },
+    {
+      "name": "eval_OOD_paraphrase_bec",
+      "n_total": 65,
+      "n_phishing": 65,
+      "n_safe": 0,
+      "accuracy": 0.24615384615384617,
+      "precision": 1.0,
+      "recall_phishing": 0.24615384615384617,
+      "fpr": 0.0,
+      "tp": 16,
+      "fp": 0,
+      "fn": 49,
+      "tn": 0,
+      "ece_correct": 0.755485752941548,
+      "auc_roc": NaN,
+      "mean_energy": 0.05492913921605298,
+      "std_energy": 0.13964862515693618,
+      "mean_entropy": 0.05492913921605298,
+      "std_entropy": 0.13964862515693618,
+      "phish_prob_stats": {
+        "mean": 0.24451424705845196,
+        "std": 0.41116408079946226,
+        "median": 0.0006091914838179946
+      },
+      "safe_prob_stats": {
+        "mean": 0.0,
+        "std": 0.0,
+        "median": 0.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,332 @@
+[
+  {
+    "id": "A1",
+    "group": "Group A (Legitimate)",
+    "name": "Bank statement (SBI)",
+    "expected": "Safe",
+    "score": 35,
+    "verdict": "Suspicious",
+    "ml_prob": 0.9938,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": false,
+    "signals": [
+      "Known brand mentioned"
+    ]
+  },
+  {
+    "id": "A2",
+    "group": "Group A (Legitimate)",
+    "name": "OTP safety advisory (ICICI)",
+    "expected": "Safe",
+    "score": 11,
+    "verdict": "Safe",
+    "ml_prob": 0.0009,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": [
+      "Known brand mentioned"
+    ]
+  },
+  {
+    "id": "A3",
+    "group": "Group A (Legitimate)",
+    "name": "Netflix receipt",
+    "expected": "Safe",
+    "score": 10,
+    "verdict": "Safe",
+    "ml_prob": 0.0012,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": []
+  },
+  {
+    "id": "A4",
+    "group": "Group A (Legitimate)",
+    "name": "Office meeting (Sprint review)",
+    "expected": "Safe",
+    "score": 15,
+    "verdict": "Safe",
+    "ml_prob": 0.0003,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": []
+  },
+  {
+    "id": "A5",
+    "group": "Group A (Legitimate)",
+    "name": "HR policy update (verify payroll)",
+    "expected": "Safe",
+    "score": 15,
+    "verdict": "Safe",
+    "ml_prob": 0.0006,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": []
+  },
+  {
+    "id": "A6",
+    "group": "Group A (Legitimate)",
+    "name": "Password expiry from IT",
+    "expected": "Safe",
+    "score": 15,
+    "verdict": "Safe",
+    "ml_prob": 0.0019,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": []
+  },
+  {
+    "id": "A7",
+    "group": "Group A (Legitimate)",
+    "name": "UPI credit alert (GPay)",
+    "expected": "Safe",
+    "score": 35,
+    "verdict": "Suspicious",
+    "ml_prob": 0.0006,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": false,
+    "signals": [
+      "Known brand mentioned",
+      "Aadhaar number pattern detected"
+    ]
+  },
+  {
+    "id": "A8",
+    "group": "Group A (Legitimate)",
+    "name": "IRCTC confirmed ticket",
+    "expected": "Safe",
+    "score": 35,
+    "verdict": "Suspicious",
+    "ml_prob": 0.0002,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": false,
+    "signals": [
+      "Known brand mentioned"
+    ]
+  },
+  {
+    "id": "B1",
+    "group": "Group B (Attacks)",
+    "name": "SBI Account freeze + OTP scam",
+    "expected": "High Risk",
+    "score": 70,
+    "verdict": "High Risk",
+    "ml_prob": 0.9984,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": [
+      "Sender domain uses risky brand-action keyword pattern",
+      "Sender domain uses high-risk TLD (.tk/.ml/.xyz)",
+      "OTP request detected",
+      "OTP sharing request detected",
+      "Indian brand impersonation",
+      "Unknown sender pattern"
+    ]
+  },
+  {
+    "id": "B2",
+    "group": "Group B (Attacks)",
+    "name": "KYC Aadhaar-PAN link + phishing URL",
+    "expected": "High Risk",
+    "score": 85,
+    "verdict": "High Risk",
+    "ml_prob": 0.0193,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": [
+      "Credential-harvesting pattern (sensitive request plus urgency or link)",
+      "Brand impersonation pattern (brand cue plus domain mismatch/lookalike)",
+      "High-risk TLD detected (.tk/.ml/.xyz)",
+      "Sender domain uses high-risk TLD (.tk/.ml/.xyz)",
+      "Multiple high-risk TLD domains detected",
+      "URL reputation indicates malicious destination",
+      "Urgency plus branded link pressure",
+      "Urgency language",
+      "Indian brand impersonation",
+      "Suspicious phishing keywords",
+      "Link included in message",
+      "Suspicious verification link",
+      "Unknown sender pattern"
+    ]
+  },
+  {
+    "id": "B3",
+    "group": "Group B (Attacks)",
+    "name": "Paytm Reward scam + OTP/UPI lure",
+    "expected": "High Risk",
+    "score": 82,
+    "verdict": "High Risk",
+    "ml_prob": 0.0106,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": [
+      "Sender domain resembles a known brand (lookalike spoof)",
+      "Linked domain resembles a known brand (lookalike spoof)",
+      "Brand impersonation pattern (brand cue plus domain mismatch/lookalike)",
+      "Reward or prize scam lure detected",
+      "URL reputation indicates suspicious destination",
+      "Indian brand impersonation",
+      "Suspicious phishing keywords",
+      "Small delivery fee with payment link",
+      "UPI handle detected",
+      "Sensitive identity or payment data request",
+      "Link included in message",
+      "Suspicious verification link",
+      "Unknown sender pattern",
+      "Typosquat / brand-lookalike domain spoof escalation applied"
+    ]
+  },
+  {
+    "id": "B4",
+    "group": "Group B (Attacks)",
+    "name": "Vendor payment / BEC (no URLs)",
+    "expected": "High Risk",
+    "score": 75,
+    "verdict": "High Risk",
+    "ml_prob": 0.0012,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": [
+      "Business email compromise pattern (payment instruction plus secrecy/urgency)",
+      "Urgency language",
+      "Unknown sender pattern"
+    ]
+  },
+  {
+    "id": "B5",
+    "group": "Group B (Attacks)",
+    "name": "Google Security Reply-To spoof + lure",
+    "expected": "High Risk",
+    "score": 85,
+    "verdict": "High Risk",
+    "ml_prob": 0.0021,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": [
+      "Credential-harvesting pattern (sensitive request plus urgency or link)",
+      "Brand impersonation pattern (brand cue plus domain mismatch/lookalike)",
+      "High-risk TLD detected (.tk/.ml/.xyz)",
+      "URL reputation indicates suspicious destination",
+      "Urgency plus branded link pressure",
+      "Sender authenticity checks contain spoofing indicators",
+      "Urgency language",
+      "Brand mention with promotional pressure",
+      "Link included in message",
+      "Suspicious verification link",
+      "Unknown sender pattern"
+    ]
+  },
+  {
+    "id": "B6",
+    "group": "Group B (Attacks)",
+    "name": "Telugu Bank Account phishing",
+    "expected": "High Risk",
+    "score": 85,
+    "verdict": "High Risk",
+    "ml_prob": 0.9971,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": [
+      "High-risk TLD detected (.tk/.ml/.xyz)",
+      "Sender domain uses high-risk TLD (.tk/.ml/.xyz)",
+      "Multiple high-risk TLD domains detected",
+      "URL reputation indicates malicious destination",
+      "OTP request detected",
+      "Link included in message",
+      "Suspicious verification link",
+      "Unknown sender pattern",
+      "Non-Latin high-risk banking keyword cluster detected",
+      "Non-Latin OTP lure detected"
+    ]
+  },
+  {
+    "id": "C1",
+    "group": "Group C (Benign Indic)",
+    "name": "Hindi GST report info",
+    "expected": "Safe",
+    "score": 35,
+    "verdict": "Suspicious",
+    "ml_prob": 0.0028,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": false,
+    "signals": [
+      "Known brand mentioned"
+    ]
+  },
+  {
+    "id": "C2",
+    "group": "Group C (Benign Indic)",
+    "name": "Hindi Airtel bill transactional",
+    "expected": "Safe",
+    "score": 26,
+    "verdict": "Suspicious",
+    "ml_prob": 0.829,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": false,
+    "signals": [
+      "Known brand mentioned"
+    ]
+  },
+  {
+    "id": "C3",
+    "group": "Group C (Benign Indic)",
+    "name": "Telugu Electricity bill notification",
+    "expected": "Safe",
+    "score": 15,
+    "verdict": "Safe",
+    "ml_prob": 0.9972,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": []
+  },
+  {
+    "id": "C4",
+    "group": "Group C (Benign Indic)",
+    "name": "Telugu Andhra Bank meter reading",
+    "expected": "Safe",
+    "score": 15,
+    "verdict": "Safe",
+    "ml_prob": 0.9919,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": []
+  },
+  {
+    "id": "D1",
+    "group": "Group D (Paraphrase)",
+    "name": "Transfer money favor before flight",
+    "expected": "Flagged",
+    "score": 15,
+    "verdict": "Safe",
+    "ml_prob": 0.0044,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": false,
+    "signals": []
+  },
+  {
+    "id": "D2",
+    "group": "Group D (Paraphrase)",
+    "name": "One-time sign-in refresh link + 6 digits",
+    "expected": "Flagged",
+    "score": 10,
+    "verdict": "Safe",
+    "ml_prob": 0.0007,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": false,
+    "signals": []
+  },
+  {
+    "id": "D3",
+    "group": "Group D (Paraphrase)",
+    "name": "Landlord changed account PDF lure",
+    "expected": "Flagged",
+    "score": 74,
+    "verdict": "High Risk",
+    "ml_prob": 0.0003,
+    "model_used": "SecureBERT/MuRIL-GPU-97.4%",
+    "passed": true,
+    "signals": [
+      "Known brand mentioned"
+    ]
+  }
+]

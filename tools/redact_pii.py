@@ -75,7 +75,8 @@ def main():
         if f in allowlist:
             continue
         p = Path(f)
-        if not p.exists():
+        if not p.exists() or not p.is_file():
+            # submodule gitlinks and directories are not files to redact
             continue
         emails, phones = process_file(p, args.dry_run)
         if emails + phones > 0:

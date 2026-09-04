@@ -31,3 +31,18 @@ backend/vectorizer.pkl
 
 # JSONL rotation artifacts (T4)
 backend/scan_logs.jsonl.*
+
+# Local QA/session artifacts (D3, 2026-09-04)
+*.log
+*.err
+*.zip
+.freebuff/
+qa_artifacts/
+phishshield_v2/
+skills/
+backend/backend_qa_run*.log
+backend/backend_qa_boot*.log
+backend_mlfix_boot.log
+backend_server.log
+frontend_qa_boot*.log
+server.log
