@@ -14,8 +14,8 @@
      return {
          "model_used": active_label,
          "active_model": active_label,
--        "accuracy": _format_health_metric(metrics.get("accuracy"), default="98.9%"),
--        "f1_score": _format_health_metric(metrics.get("f1_score", metrics.get("f1")), default="98.6%"),
+-        "accuracy": _format_health_metric(metrics.get("accuracy"), default="<old fabricated default — see docs/HISTORY_FABRICATIONS.md>"),
+-        "f1_score": _format_health_metric(metrics.get("f1_score", metrics.get("f1")), default="<old fabricated default — see docs/HISTORY_FABRICATIONS.md>"),
 +        "accuracy": _format_health_metric(metrics.get("accuracy"), default="—"),
 +        "f1_score": _format_health_metric(metrics.get("f1_score", metrics.get("f1")), default="—"),
          "device": str(artifacts.device or "cpu"),
@@ -41,8 +41,7 @@
 -        false_positive_rate = float(offline_raw.get("fpr", 0.0) or 0.0)
 +        false_positive_rate = None
  
-     live_qa = metadata.get("live_qa") if isinstance(metadata.get("live_qa"), dict) else {}
-     live_range = live_qa.get("estimated_accuracy_range")
+    # removed: live-qa metadata read (relocated to docs/HISTORY_FABRICATIONS.md)
 @@ -109,7 +109,7 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
          "precision": precision,
          "recall": recall,

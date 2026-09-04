@@ -13,5 +13,9 @@
 |------|------|-------------|
 | Phishing_Email.csv | 2000 | Main training/evaluation dataset |
 | training_meta.json | — | Training metadata (accuracy, precision, recall, F1) |
+
+## Limits
+
+- Git history of `data/combined_test_dataset.json` and `docs/sample_emails_reference.txt` still contains +91 phone and IP-address content (V54: 12 lines measured 2026-09-04) — truth lives in git history, outside the current tree; the current tree is clean per the PII guard.
 | feedback_memory.json | — | Runtime feedback memory |
 | feedback_state.json | — | Feedback retrain state |

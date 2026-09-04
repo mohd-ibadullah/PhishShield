@@ -227,7 +227,7 @@ The loadable extension sources live under **`frontend/artifacts/chrome-extension
 ## Dataset
 This repo contains multiple phishing datasets and curated test corpora in `data/`.  
 Key visible files include:
-- `data/Phishing_Email.csv` (~18,133 rows)
+- `data/Phishing_Email.csv` (2,000 records — see `data/CARD.md`)
 - `data/Phishing_Email_cleaned.csv` (~1,401 rows)
 - `data/elite_emails_1000.json` (~1,020 items)
 - `data/phishtank_dataset.json` (~200 items)
@@ -237,7 +237,7 @@ Source notes in the code/docs reference curated phishing corpora plus internally
 The training metadata in `data/training_meta.json` reports the current committed dataset size.
 
 > **Row count note:** Run `python -c "import json; print(json.load(open('data/training_meta.json'))['rows'])"` 
-> for the current committed row count. Previous versions referenced 18,684 rows; 
+> for the current committed row count. (A previously referenced row count was relocated to docs/HISTORY_FABRICATIONS.md.)
 > the current committed dataset has been trimmed to 2,000 rows (1,600 train / 400 test).
 
 ## Environment variables (runtime honesty)

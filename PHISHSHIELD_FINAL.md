@@ -110,6 +110,24 @@ caveat={"csv_records": 2000, "families_shared_between_classes": 0, "template_fam
 
 ---
 
+## (2) Non-Latin Script Detection (CRITICAL GAP)
+
+**Hindi/Telugu phishing recall = 0%.** The TF-IDF model is trained on English text and cannot score non-Latin scripts. Test evidence:
+
+| Case | Script | Expected | Actual | Result |
+|------|--------|----------|--------|--------|
+| hindi_bank_urgency | Devanagari | risk>=65 (phishing) | risk=15 (Safe) | **MISSED** |
+| hindi_awareness_safe | Devanagari | risk<=25 (safe) | risk>25 | **FALSE POSITIVE** |
+| telugu_otp_scam | Telugu | risk>=60 (phishing) | risk=31 (Safe) | **MISSED** |
+
+Hinglish (mixed Latin + Devanagari) scores correctly because the Latin trigger words ("OTP", "suspend", "verify") are picked up by TF-IDF. Pure-script emails have zero recall.
+
+**This must be resolved before any production deployment targeting Indian-language users.** Fix requires either:
+1. MuRIL/IndicBERT model integration (currently not committed — safetensors not in repo)
+2. Language-specific heuristic rules for Devanagari/Telugu script patterns
+
+**F32 | live-qa range claim** — an untraceable live-QA range claim was quoted at `README.md:275` ("That honest range is also stored under live-qa in `data/training_meta.json`") but the field does not exist in `data/training_meta.json`. The claim was removed from README.md on 2026-09-04; the quote is preserved in docs/HISTORY_FABRICATIONS.md.
+
 ## (2) Claims Removed Because Unprovable
 
 | # | Claim | Why removed |
@@ -228,7 +246,7 @@ No security-relevant changes remain uncommitted.
 - /feedback: added require_session_key
 
 ### Data Honesty
-- Health label: SecureBERT/MuRIL-GPU-97.4% -> TF-IDF Logistic Regression
+- Health label: fabricated transformer-accuracy label -> TF-IDF Logistic Regression (figure relocated to docs/HISTORY_FABRICATIONS.md)
 - model_type: TF-IDF Active Learning -> TF-IDF Logistic Regression
 - Deleted empty FINAL_ELITE_DATASET.json
 - Added MIT LICENSE file
@@ -251,7 +269,7 @@ No security-relevant changes remain uncommitted.
 - dev-sandbox-key hardcoded in frontend JS
 - email_preview[:100] still stored
 - training_meta.json hand-edited
-- README false numbers (18684, 97.4%)
+- README false numbers (relocated to docs/HISTORY_FABRICATIONS.md)
 - PII in dataset files
 - collect_ignore 9 files excluded
 - ML model integration (model.pkl needed)
@@ -265,6 +283,6 @@ No security-relevant changes remain uncommitted.
 | `PHISHSHIELD_ENABLE_DOCS` | 1 | 0 |
 | `FORBIDDEN_RAW_CONTENT_KEYS` | 1 | 0 |
 | `dev-sandbox-key` | 0 | 0 |
-| `97.4` | 0 | 2 |
+| fabricated health-label figure | 0 | 2 |
 
 **Deployed revision `a507b33c` (2026-05-21) contains none of the hardening markers. All fixes in this repo are local until a deploy happens. No claim of production safety is made anywhere in these docs.**

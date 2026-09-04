@@ -185,6 +185,6 @@ No file skipped or counted twice across shards.
 | `PHISHSHIELD_ENABLE_DOCS` | 1 | 0 |
 | `FORBIDDEN_RAW_CONTENT_KEYS` | 1 | 0 |
 | `dev-sandbox-key` | 0 | 0 |
-| `97.4` | 0 | 2 |
+| fabricated health-label figure | 0 | 2 |
 
 **Deployed revision `a507b33c` (2026-05-21) contains none of the hardening markers. All fixes in this repo are local until a deploy happens. No claim of production safety is made anywhere in these docs.**
