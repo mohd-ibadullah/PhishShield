@@ -579,7 +579,7 @@ The repository already contains the following project artifacts:
 
 ### 3) Live validation note
 
-`pnpm validate:final` is a live integration check. If `http://127.0.0.1:5173` or `http://127.0.0.1:8000/health` is not reachable, the script exits early by design.
+`pnpm validate:final` is a live integration check. If `http://127.0.0.1:5173` or `http://127.0.0.1:8000/health` is not reachable, the script exits early when either endpoint is unreachable.
 
 ### How to say this honestly in an interview
 

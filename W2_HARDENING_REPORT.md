@@ -75,7 +75,7 @@
 **What:** `/api/history` returns `email_sha256[:16]` as a redacted preview. Plain SHA-256 (not HMAC). Short messages (<100 chars) are dictionary-recoverable from a known-key attack surface.
 
 **Evidence:**
-- `tests/test_email_sha256_adversarial.py:51-60` (`test_short_email_digests_not_in_candidate_set`): With a known test key, short-email digests are recoverable. Test is **XFAIL(strict=True)** — documents the finding. **XFAILED** (shard 1): `Known test key makes short-email digests recoverable by design; if this passes unexpectedly, the adversarial assumption changed`.
+- `tests/test_email_sha256_adversarial.py:51-60` (`test_short_email_digests_not_in_candidate_set`): With a known test key, short-email digests are recoverable. Test is **XFAIL(strict=True)** — documents the finding. **XFAILED** (shard 1): the reason string documents the known-key recoverability assumption that the test guards.
 - `tests/test_data_minimization_e2e.py:133` (`test_hmac_differs_from_plain_sha256`): Proves HMAC key produces different output than plain SHA-256. **PASSED** (shard 1).
 - `tests/test_data_minimization_e2e.py:112` (`test_input_hash_removed_from_writer`): `input_hash` field no longer present in new records. **PASSED** (shard 1).
 

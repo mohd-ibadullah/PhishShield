@@ -91,7 +91,7 @@ SQLite: 121 scans (0 dup), 137 scan_explanations (0 dup)
 
 **Mechanism:** All duplicates are pre-lock (have `input_preview`). All have same verdict across entries for the same scan_id. Same scan_id logged repeatedly with different timestamps over multiple days. Frontend has `retry: false`. Exact mechanism UNCONFIRMED — likely from old code's lack of lock causing repeated logging of same result, but cannot prove definitively from code alone.
 
-**Idempotency guard:** SQLite already has duplicate check (`save_scan_to_db` line 1489: `SELECT scan_id FROM scans WHERE scan_id = ?`). JSONL is append-only by design — duplicates are tolerated but counted.
+**Idempotency guard:** SQLite already has duplicate check (`save_scan_to_db` line 1489: `SELECT scan_id FROM scans WHERE scan_id = ?`). JSONL is append-only — duplicates are tolerated but counted.
 
 ### Frontend
 
