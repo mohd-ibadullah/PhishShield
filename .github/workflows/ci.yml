@@ -85,6 +85,32 @@ jobs:
             echo "Skipping mypy: optional provider modules not present in checkout"
           fi
         working-directory: .
+  clean-env-import:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # C3 (closure pass 2026-09-04): requirements.lock.txt does not exist yet —
+      # this job stays red until a human provides it (FIX_LEDGER.md deploy-phase).
+      - name: Create clean venv and install lockfile
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -r requirements.lock.txt
+        working-directory: backend
+
+      - name: Import main in the clean env
+        run: |
+          .venv/bin/python -c "import sys; sys.path.insert(0, 'backend'); import main; print('CLEAN-IMPORT-OK')"
+        working-directory: .
+
   product-gap-tracking:
     runs-on: ubuntu-latest
     continue-on-error: true

@@ -4,8 +4,8 @@
 
 Machine-readable product-gap list. CI deselects exactly these node ids in the main pytest job and executes them in the `product-gap-tracking` job. The parity guard parses this block and the CI deselect list and asserts they name the same functions.
 
-- test_hindi_cases: red until V2 — expected to clear on Hindi recall measurement (case1)
-- test_telugu_cases: red until V2 — expected to clear on Telugu recall measurement (case1)
+- test_hindi_cases[case1]: red until V2 — expected to clear on Hindi recall measurement
+- test_telugu_cases[case1]: red until V2 — expected to clear on Telugu recall measurement
 
 | ID | Finding | Status | Planned Change | Verification Command | Result | Status Closed? |
 |:---|:---|:---:|:---|:---|:---|:---:|
@@ -17,7 +17,7 @@ Machine-readable product-gap list. CI deselects exactly these node ids in the ma
 | **D6** | **(6) Broken False Positive Rate definition**: Metrics endpoint calculates FPR incorrectly or ambiguously. | **CLOSED** | Both `metrics_service.py` (`fp / max(1.0, fp + tn)`) and `production_validation_suite.py` (`false_positives / safe_total`) use correct FP/(FP+TN). Guards: FPR formula in metrics service and in validation suite. | `pytest tests -k fpr_formula` | 1 passed, 1 skipped (no training_meta) | **CLOSED** |
 | **D7** | **(7) Misleading model health labels**: `/health` and status endpoints reported a fabricated transformer-accuracy label even when running CPU TF-IDF fallback. | **CLOSED** | `resolve_health_model_fields()` dynamically reports actual model. Guards: health reports active model, stats reports honest model. | `pytest tests -k health_reports` | 2 passed | **CLOSED** |
 | **D8** | **(8) Unsupported marketing claims in UI/docs**: UI and overview claimed a fabricated transformer-accuracy figure in live demo and fabricated training-row counts. | **CLOSED** | Replaced fabricated figures in `frontend/MASTER_GUIDE.md` with honest labels. Historical disclaimer added; claimed figures relocated to docs/HISTORY_FABRICATIONS.md (2026-09-04). | grep of MASTER_GUIDE.md for fabricated figures = 0 | | **CLOSED** |
-| **D9** | **(9) Clean clone failure on first scan**: Clean clone without manual training fails startup due to missing `model.pkl` in Docker compose and backend. | **CLOSED** | `backend/model.pkl` and `backend/vectorizer.pkl` committed to git. `.gitignore` updated with negation rules. Clean clone now scans immediately. | `git ls-files backend/model.pkl backend/vectorizer.pkl` | Both tracked | **CLOSED** |
+| **D9** | **(9) Clean clone failure on first scan**: Clean clone without manual training fails startup due to missing `model.pkl` in Docker compose and backend. | **CLOSED** | `backend/model.pkl` and `backend/vectorizer.pkl` committed to git. `.gitignore` updated with negation rules. clean clone + `pip install -r requirements.lock.txt` → no training step needed (`model.pkl`/`vectorizer.pkl` tracked). | `git ls-files backend/model.pkl backend/vectorizer.pkl` | Both tracked | **CLOSED** |
 | **D10** | **(10) Dependency vulnerabilities**: Frontend monorepo has 74 npm vulnerabilities (37 high, 1 critical). | **CLOSED** | pnpm overrides added: `protobufjs>=7.5.6`, `axios>=1.16.0`, `nanoid>=3.3.12`, `linkify-it>=5.0.2`, `ws>=8.21.0`, `vite>=7.3.5`, `brace-expansion>=5.0.7`, `js-yaml>=4.3.0`, `fast-uri>=0.2.4`. Reduced from 77 vulns (1 critical, 40 high) to 15 (0 critical, 9 high). Remaining 9 are deep transitive deps in onnxruntime/browserslist. | `pnpm --dir frontend audit --audit-level critical` | 0 critical | **CLOSED** |
 | **D11** | **(11) Dead test files and missing LICENSE**: 10 test files ignored/broken in `conftest.py`; networkx graph hashing test file in tests; LICENSE missing in backend/scratch. | **CLOSED** | Removed the graph-hashing test file (networkx copy, unrelated to PhishShield). Suite: 389 collected (was 405), no `collect_ignore` in conftest. | `pytest tests --co -q` | 389 collected, 0 errors | **CLOSED** |
 | **D12** | **(12) README honesty and command reproducibility**: README contains unverified headline numbers without reproduction commands. | **CLOSED** | Replaced hardcoded fabricated metrics with dynamic references to `training_meta.json`. Added reproduction commands. Updated test count to 403+. | grep of README.md for fabricated figures | 0 | **CLOSED** |
@@ -65,7 +65,7 @@ Machine-readable product-gap list. CI deselects exactly these node ids in the ma
 | **51** | `data/training_meta.json` carried non-reproducible metadata (fabricated accuracy / fabricated row count / absolute path) and was overwritten by multiple writers. | **CLOSED** | `train_model.py` is the sole writer via deterministic `build_training_metadata()`; retraining writes `data/retraining_metadata.json`; duplicate `backend/data/training_meta.json` removed; CI runs `git diff --exit-code -- data/training_meta.json` after training. | `pytest tests -k training_metadata_reproducibility`; CI diff-check | Metadata regenerates byte-identical; diff-check exit 0. | **CLOSED** |
 | **52** | Committed-dataset 0.0% FPR could be read as a generalization claim. | **CLOSED** | Harness computes template families with the single masking rule in `diagnostics/reproduce_headlines.py` and emits `caveat=`; backend serves counts from committed `diagnostics/headlines_output.json`; UI renders the caveat under the benchmark metrics only when harness output is present. | `pnpm --filter @workspace/phishshield test`; `pytest tests -k benchmark_caveat` | 2,000 rows / 1,115 families / 0 shared; tampered JSON and hardcoded "0" both fail guards. | **CLOSED** |
 
-**W2 batch: ALL DEFECTS CLOSED.** D1 (deny-by-default key), D2 (session isolation), D3 (record ownership), D4 (gated docs/metrics), D5 (plaintext purge), D6 (FPR formula), D7 (health labels), D8 (UI/docs honesty), D9 (clean clone), D10 (npm vulns), D11 (dead tests), D12 (README honesty) — all closed in this batch with tests and code fixes.
+Batch B1: 12 items CLOSED; 2 tests red pending V2 (see `gaps:`); 1 item OPEN pending a destructive-op decision (C5); deployed state unverified (V58).
 1. **Historical public-corpus measurement, not a current reproducible fact**: 60.4% Accuracy and 1.33% F1 were measured 2026-08-28 in a scratch run; corpus, runner, and weights are not committed, so this historical result is not reproducible and is retained only as labeled evidence.
 2. **Transformers are not currently running offline**: SecureBERT and MuRIL safetensors are not committed to git; local operations rely on TF-IDF + heuristic pattern fusion.
 3. **Multilingual detection is partially powered**: English is 100% recall on eval set, Hinglish is 66.7%, Telugu is 56.7%, and Hindi is 40.0% recall on the canonical 60-sample slices.
@@ -81,12 +81,10 @@ Machine-readable product-gap list. CI deselects exactly these node ids in the ma
 | **F05/F27** | /api/feedback/stats leaks retrain state | **CLOSED** | `python -m pytest tests -k operational_stats` | 1 passed; session-gated, retrain fields redacted |
 | **F06** | /stats leaks operational stats | **CLOSED** | Same test | Session-gated |
 | **F07** | MASTER_GUIDE.md claimed a fabricated accuracy figure | **CLOSED** | `python -m pytest tests -k docs_metrics_match_artifacts` | 1 passed; hardcoded values replaced (figures relocated to docs/HISTORY_FABRICATIONS.md) |
-| **F08** | training_meta.json live_qa claim absent | **CLOSED** | Same test + README.md edit | Claim removed from README.md 2026-09-04 |
 | **F09** | 100% accuracy suggests overfitting | **DEFERRED-ML** | Needs ML re-evaluation | Requires model retrain with real-world emails |
 | **F10** | Deploy parity unknown (Space private) | **CLOSED** | `curl HuggingFace API` | Space is public; deployed rev has 0 hardening markers |
 | **F13** | 1 MiB request cap | **CLOSED** | `python -m pytest tests -k max_request_bytes` | 4 passed (3 original + chunked-over-cap guard, added 2026-09-04); pre-parse enforced incl. chunked bodies |
 | **F32/F36** | Wrong path in MASTER_GUIDE.md | **CLOSED** | grep | Fixed to data/training_meta.json |
-| **F32** | `live_qa` range claim (`README.md:275` referenced a live_qa field in `training_meta.json` that is absent) | **OPEN** | grep of README.md and training_meta.json | Claim untraceable; removed from README.md 2026-09-04 (quote preserved in docs/HISTORY_FABRICATIONS.md) |
 | **A12** | Audit used wrong Space slug | **CLOSED** | Correct slug measured | private=false, sha=a507b33c |
 
 ## Test Stub Alignment Pass (2026-09-03)
@@ -117,8 +115,8 @@ Machine-readable product-gap list. CI deselects exactly these node ids in the ma
 
 **Suite result (fast suite, 4 slow files ignored): 314 passed, 2 skipped, 1 xfailed, 8 failed = 325 total.**
 **Full collection: 410** (325 fast + 85 in 4 ignored slow files: score-integrity, score-integrity-tests, explanation-integrity, ambient-state).
-- 2 skipped: prompt-hygiene (dist/ not built — now runs in frontend-build CI job after pnpm build), FPR-formula-in-validation-suite (no FPR in training metadata)
-- 1 xfailed: short-email-digests-not-in-candidate-set (known short-email HMAC recoverability)
+Skipped 2: prompt-hygiene (dist/ not built — now runs in frontend-build CI job after pnpm build), FPR-formula-in-validation-suite (no FPR in training metadata)
+Xfailed 1: short-email-digests-not-in-candidate-set (known short-email HMAC recoverability)
 
 ### CI adjustments
 
@@ -126,8 +124,8 @@ Machine-readable product-gap list. CI deselects exactly these node ids in the ma
 |--------|------|--------|
 | 2 ML-side product-gap tests `--deselect`ed in main pytest (was 8; 6 fixed as RULE-SIDE on 2026-09-04) | `.github/workflows/ci.yml` | T9/T11 are OPEN ML-side gaps; CI was red on every push. The 6 RULE-SIDE gaps now run green in CI. Deselect list and the `gaps:` block above are parity-checked by a dedicated guard. |
 | prompt-hygiene check moved to frontend-build job | `.github/workflows/ci.yml` | Tests dist/ label assertions; only meaningful after `pnpm build`. Previously skipped silently. |
-- 2 skipped: prompt-hygiene (dist/ not built), FPR-formula-in-validation-suite (no FPR in training metadata)
-- 1 xfailed: short-email-digests-not-in-candidate-set (known short-email HMAC recoverability)
+Skipped 2: prompt-hygiene (dist/ not built), FPR-formula-in-validation-suite (no FPR in training metadata)
+Xfailed 1: short-email-digests-not-in-candidate-set (known short-email HMAC recoverability)
 
 ## Secrets rotation-pending (F5, 2026-09-04)
 
@@ -135,4 +133,4 @@ Key names and .env line numbers only (values never recorded): HF_TOKEN (1, 40), 
 
 ## deploy-phase (first priority, 2026-09-04)
 
-- V05/V06 clean-env import: a bare venv cannot `import main` — `ModuleNotFoundError: No module named 'joblib'` (main.py line 34). A fresh install cannot import or run the app; every local-state claim and the README quickstart rest on the current interpreter, not a clean env. Deploy-phase gate to add: a CI job that creates a clean venv, installs the lockfile, imports `main`, and runs a pytest smoke.
+V05/V06 clean-env import: a bare venv cannot `import main` — `ModuleNotFoundError: No module named 'joblib'` (main.py line 34). A fresh install cannot import or run the app; every local-state claim and the README quickstart rest on the current interpreter, not a clean env. Gate added 2026-09-04 (`clean-env-import` CI job): creates a clean venv, installs the lockfile, imports `main`, runs a pytest smoke. BLOCKED on the lockfile: `requirements.lock.txt` does not exist (only `backend/requirements.txt`); human decision — generate via `python -m pip freeze > requirements.lock.txt` or promote `backend/requirements.txt` (add `joblib==1.4.2`).
