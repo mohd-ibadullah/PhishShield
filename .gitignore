@@ -20,6 +20,7 @@ backend/scan_logs.jsonl
 backend/scans.db
 backend/vectorizer.pkl
 *.safetensors
+model_merged/
 *.pkl
 # Keep baseline TF-IDF artifacts so a clean clone scans immediately (D9).
 !backend/model.pkl

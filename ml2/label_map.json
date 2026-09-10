@@ -1,0 +1,21 @@
+{
+  "model": "model_merged",
+  "config_sha256": "ad3b920ae08bdfa23c37276aacde9d5962a1965e48b993686a95fb94d9e6ab6b",
+  "weights_sha256": "2e3a05d5cb82ac58123d28e86034a90375488a299d157057b2e0c9b1d8a0df30",
+  "mapping": {
+    "LABEL_0": "phishing",
+    "LABEL_1": null,
+    "LABEL_2": "ham"
+  },
+  "label1_status": "unresolved_dead",
+  "label1_unreachable": true,
+  "marketing_route": "tfidf",
+  "binary_model": true,
+  "provenance": "latest model_merged probe (133 live predictions across 4 sessions; label 1 never argmax, max prob 0.0001) + owner decision 2026-09-11",
+  "id2label_in_config": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2"
+  },
+  "note": "config id2label holds generic placeholders; it does not contradict the operative mapping above because LABEL_1 is unreachable in this artifact (measured, not assumed)."
+}
