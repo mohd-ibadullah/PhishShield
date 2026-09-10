@@ -1,0 +1,176 @@
+{
+  "date": "2026-09-11",
+  "summary": {
+    "threshold": 0.5,
+    "non_latin_phish": "8/8",
+    "ham_set": "8/8",
+    "injection": "2/2",
+    "any_honest_failures": 0,
+    "any_dead_class": 0,
+    "all_ok": true
+  },
+  "per_case": [
+    {
+      "id": "P10",
+      "expected": "PHISH",
+      "leg": "v2_xlmr",
+      "verdict": "PHISH",
+      "conf": 0.548,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "P11",
+      "expected": "PHISH",
+      "leg": "v2_xlmr",
+      "verdict": "PHISH",
+      "conf": 0.952,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "P12",
+      "expected": "PHISH",
+      "leg": "v2_xlmr",
+      "verdict": "PHISH",
+      "conf": 0.78,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "P13",
+      "expected": "PHISH",
+      "leg": "v2_xlmr",
+      "verdict": "PHISH",
+      "conf": 0.864,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "P14",
+      "expected": "PHISH",
+      "leg": "v2_xlmr",
+      "verdict": "PHISH",
+      "conf": 0.955,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "P15",
+      "expected": "PHISH",
+      "leg": "v2_xlmr",
+      "verdict": "PHISH",
+      "conf": 0.931,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "H1",
+      "expected": "HAM",
+      "leg": "ensemble",
+      "verdict": "HAM",
+      "conf": 0.0,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "H2",
+      "expected": "HAM",
+      "leg": "ensemble",
+      "verdict": "HAM",
+      "conf": 0.0,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "H3",
+      "expected": "HAM",
+      "leg": "ensemble",
+      "verdict": "HAM",
+      "conf": 0.0,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "H4",
+      "expected": "HAM",
+      "leg": "ensemble",
+      "verdict": "HAM",
+      "conf": 0.0,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "H5",
+      "expected": "HAM",
+      "leg": "ensemble",
+      "verdict": "HAM",
+      "conf": 0.0,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "H6",
+      "expected": "HAM",
+      "leg": "v2_xlmr",
+      "verdict": "HAM",
+      "conf": 0.755,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "HI1",
+      "expected": "HAM",
+      "leg": "v2_xlmr",
+      "verdict": "HAM",
+      "conf": 0.96,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "TE1",
+      "expected": "HAM",
+      "leg": "v2_xlmr",
+      "verdict": "HAM",
+      "conf": 0.889,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "X1",
+      "expected": "PHISH",
+      "leg": "ensemble",
+      "verdict": "PHISH",
+      "conf": 0.91,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "X2",
+      "expected": "PHISH",
+      "leg": "ensemble",
+      "verdict": "PHISH",
+      "conf": 0.91,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "red_hindi_case1",
+      "expected": "PHISH",
+      "leg": "v2_xlmr",
+      "verdict": "PHISH",
+      "conf": 0.714,
+      "status": "ok",
+      "ok": true
+    },
+    {
+      "id": "red_telugu_case1",
+      "expected": "PHISH",
+      "leg": "v2_xlmr",
+      "verdict": "PHISH",
+      "conf": 0.95,
+      "status": "ok",
+      "ok": true
+    }
+  ]
+}

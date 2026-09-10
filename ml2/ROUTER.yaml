@@ -1,0 +1,61 @@
+# ML2 ROUTER — frozen 2026-09-11 (ROUTER pass R2). Routing, not fusion.
+# One specialist decides per email. No cross-model score averaging (grandfathered EN-ensemble internals ship as-is).
+# Sources: label_map.json (binary: 0=phishing, 2=ham, 1=unresolved_dead), gauntlet rounds 1-2, MODEL_ARTIFACTS.md.
+
+version: "2026-09-11"
+label_map: ml2/label_map.json
+weights_sha256: "2e3a05d5cb82ac58123d28e86034a90375488a299d157057b2e0c9b1d8a0df30"
+
+routes:
+  # non-Latin scripts -> V2 XLM-R ONLY (replaces IndicBERT in this slot)
+  non_latin:
+    languages: [HI, TE, UR, TA, BN]
+    scripts: [devanagari, telugu, arabic, tamil, bengali]
+    detector: "detect_language_code + unicode-range fallback (main.py ranges)"
+    specialist: "v2_xlmr"
+    model_dir: "../model_merged"          # relative to backend/
+    classes: {0: phishing, 2: ham, 1: unresolved_dead}
+    threshold: 0.50                        # sanity set: 2 red-test cases + 8 non-Latin gauntlet cases, see sanity_set.yaml
+    threshold_justification: "ml2/ROUTER_SANITY.json #post-fix runs: red-test case1 pair and gauntlet non-Latin 6/6 at 0.50; no tuning performed"
+  # English -> existing ensemble path, unchanged
+  english:
+    languages: [EN]
+    specialist: "ensemble"                 # SecureBERT + MuRIL + deterministic anchor (main.py ensemble_score)
+    threshold: 0.50
+    threshold_justification: "grandfathered production behavior; re-weighting is paper-phase (ml2/DEFERRED.md)"
+  # Hinglish / code-mixed -> MuRIL
+  hinglish:
+    languages: [MX]
+    specialist: "muril"
+    model_dir: "backend/models/muril_model"
+    threshold: 0.50
+    threshold_justification: "gauntlet-2 MX phish cases hit at 0.50 with no marketing FP; no tuning"
+  # marketing/ham fast pre-filter (kept, not removed)
+  marketing_prefilter:
+    specialist: "tfidf_logreg"
+    artifacts: [backend/model.pkl, backend/vectorizer.pkl]
+    role: "fast marketing/ham guard; gauntlet: 0/4 marketing false alarms"
+
+rules:
+  # rule signals stay layered exactly where they are now (post-score rule layer, main.py)
+  layered: true
+  location: "backend/main.py rule layer (QA-FIX-2 non-Latin cluster etc.)"
+
+dead_class_guard:
+  # XLM-R argmax == LABEL_1 must route to the honest-unresolved path, never silently 1->ham/1->phish
+  on_label1: "unresolved"
+  response: "could not classify confidently"
+  log: {email_sha256: required, leg: required, score: required, note: "dead_class_emitted"}
+
+fallback_policy:
+  # the LIVE-pass 401->local-heuristics bug must never return
+  unknown_language_or_model_failure: "honest_not_confident"
+  never: ["local_heuristics_as_verdict", "fake_confidence"]
+  missing_model_at_boot: "health_degraded_scans_503"
+
+sanity_set:
+  # run BEFORE any threshold tuning; ids listed so the set is fixed, not vibes
+  red_tests: ["tests/test_phishshield.py::test_hindi_cases[case1]", "tests/test_phishshield.py::test_telugu_cases[case1]"]
+  gauntlet_non_latin: [P10, P11, P12, P13, P14, P15]
+  gauntlet_english_ham: [H1, H2, H3, H4, H5, H6, HI1, TE1]
+  gauntlet_injection: [X1, X2]
