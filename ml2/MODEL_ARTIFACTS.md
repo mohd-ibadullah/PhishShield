@@ -24,6 +24,25 @@
 - Hinglish/code-mixed: MuRIL.
 - TF-IDF+LogReg: fast marketing/ham pre-filter, kept.
 
+## Deployed-model limits (owner decision A, 2026-09-12)
+
+Classic scams strong; LLM-generated/BEC weak — partial rule mitigation only, no modern-coverage claim.
+
+- Spam class (LABEL_1) is dead in the deployed `model_merged` artifact: p1 = 0.0000 on every live probe
+  (20+ observations incl. diagnostics/gauntlet/v2_eval_artifacts/live_retest.py). The zip's training-era
+  `evaluation_results.json` shows spam recall 0.9501 on id_test — the deployed checkpoint does not
+  reproduce it. Claims stay binary (phishing-vs-rest) per label_map.json.
+- Modern-attack weakness is measured, not assumed: cross_source_ood phishing recall 0.0,
+  curated_modern_dark macro-F1 0.1836 (zip eval), plus 2/2 live misses on LLM-style and BEC-style
+  probes (2026-09-12 retest). Router rule-layer carries BEC/modern patterns as score boosts
+  (BEC_TRANSFER/CONFIDENTIAL/PAYROLL patterns, 2026-09-12) — mitigation, not detection.
+- The v2 pipeline's later-stage outputs (eval_summary beyond the zip, ONNX latency, modern-corpus
+  retrain) were cancelled by owner decision A (2026-09-12); research items stay in ml2/DEFERRED.md.
+- New V2 model rejected verbatim (owner, 2026-09-12): `rejected: dead spam class + OOD recall 0` —
+  the candidate checkpoint's spam class is unreachable (LABEL_1 never argmax in 133 live predictions)
+  and cross_source_ood phishing recall measures 0.0 (evaluation_results.json), so it cannot serve as
+  the non-Latin specialist. Evidence: diagnostics/gauntlet/v2_eval_artifacts/evaluation_results.json.
+
 ## Full artifact sha256 registry (gauntlet P0.2, measured 2026-09-11)
 
 | path | bytes | sha256 | loaded-by |
