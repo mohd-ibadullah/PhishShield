@@ -1970,6 +1970,14 @@ async def startup_event() -> None:
         logging.getLogger("uvicorn.error").info("ML2 router boot: %s", _ml2_boot_report())
     except Exception as exc:
         logging.getLogger("uvicorn.error").warning("ML2 router boot report failed: %s", exc)
+    # ML2 router-leg warmup: load XLM-R + MuRIL weights once at boot so the
+    # first scan never pays model-load latency mid-request.
+    try:
+        from ml2_router import warmup_router_legs as _ml2_warmup
+
+        logging.getLogger("uvicorn.error").info("ML2 router warmup: %s", _ml2_warmup())
+    except Exception as exc:
+        logging.getLogger("uvicorn.error").warning("ML2 router warmup failed: %s", exc)
     active_cache_entries.set(len(app.state.scan_cache))
     # Provider status visibility (required for verification)
     try:

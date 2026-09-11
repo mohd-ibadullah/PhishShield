@@ -42,6 +42,7 @@ _ROUTER_STATE: dict[str, Any] = {
     "v2_tokenizer": None,
     "v2_loaded": False,
     "v2_failed": False,
+    "muril_provider": None,
 }
 
 
@@ -162,7 +163,10 @@ def _muril_predict(text: str) -> dict[str, Any] | None:
 
         import torch  # type: ignore
 
-        provider = MurilProvider()
+        provider = _ROUTER_STATE["muril_provider"]
+        if provider is None:
+            provider = MurilProvider()
+            _ROUTER_STATE["muril_provider"] = provider
         tok = provider.get_tokenizer()
         mdl = provider.get_model()
         if tok is None or mdl is None:
@@ -184,6 +188,21 @@ def _muril_predict(text: str) -> dict[str, Any] | None:
     except Exception:
         logger.exception("ML2 router: MuRIL leg failed on MX route")
         return None
+
+
+def warmup_router_legs() -> dict[str, Any]:
+    """Boot-time warmup: load every router leg's weights once so the first scan
+    never pays model-load latency mid-request. Mirrors the main.py provider
+    warmup pattern (startup event). Returns per-leg state for the boot log."""
+    state: dict[str, Any] = {}
+    state["v2_xlmr_loaded"] = _ensure_v2_loaded()
+    try:
+        result = _muril_predict("warmup Aapka UPI PIN verify karein")
+        state["muril_loaded"] = result is not None
+    except Exception:
+        logger.exception("ML2 router: MuRIL warmup failed")
+        state["muril_loaded"] = False
+    return state
 
 
 def route_verdict(email_text: str) -> dict[str, Any] | None:
