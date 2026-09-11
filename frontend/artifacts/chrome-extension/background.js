@@ -1,5 +1,5 @@
 const API_URL_KEY = "phishshield_api_url";
-const DEFAULT_API_BASE = "http://localhost:8000";
+const DEFAULT_API_BASE = "http://localhost:9212";
 const SETTINGS_KEY = "phishshield_settings";
 const HEALTH_KEY = "phishshield_health";
 const TAB_RESULTS_KEY = "phishshield_tab_results";
@@ -50,6 +50,41 @@ function getVerdictBandFromScore(score) {
 async function getApiBaseUrl() {
   const stored = await chrome.storage.sync.get(API_URL_KEY);
   return normalizeBaseUrl(stored[API_URL_KEY]) || DEFAULT_API_BASE;
+}
+
+let sessionReadyPromise = null;
+
+/**
+ * Mint the server-issued HttpOnly session cookie once per service-worker
+ * lifetime (retried per call if it was cleared). The backend ignores
+ * payload session ids — identity comes exclusively from this cookie, and
+ * scans without it land in throwaway one-shot sessions, orphaning history
+ * and feedback ownership.
+ */
+async function ensureSession(apiBase) {
+  if (!sessionReadyPromise) {
+    sessionReadyPromise = (async () => {
+      try {
+        const response = await fetch(`${apiBase}/api/session`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (!response.ok) {
+          return { ok: false, status: response.status };
+        }
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, status: 0, error: String(err?.message || err) };
+      }
+    })();
+    // Allow a later attempt if this one failed.
+    sessionReadyPromise.finally(() => {
+      setTimeout(() => {
+        sessionReadyPromise = null;
+      }, 1000);
+    });
+  }
+  return sessionReadyPromise;
 }
 
 async function getSettings() {
@@ -164,10 +199,15 @@ async function postScanEmail(emailText) {
   if (!payload) {
     return { ok: false, status: 0, error: "empty" };
   }
+  // Identity comes from the HttpOnly cookie minted below; without it every
+  // scan creates a throwaway server-side session and history/feedback
+  // ownership break silently.
+  await ensureSession(apiBase);
   try {
     const response = await fetch(`${apiBase}/scan-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ email_text: payload }),
     });
     if (!response.ok) {
@@ -189,7 +229,7 @@ async function pingHealth() {
   };
 
   try {
-    const response = await fetch(`${apiBase}/health`, { method: "GET" });
+    const response = await fetch(`${apiBase}/health`, { method: "GET", credentials: "include" });
     if (response.ok) {
       const body = await response.json();
       const model = String(body?.model_used || body?.model || "Connected");

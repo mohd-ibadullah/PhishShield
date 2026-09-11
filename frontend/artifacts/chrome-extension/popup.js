@@ -47,6 +47,16 @@ function escAttr(value) {
     .replace(/</g, "&lt;");
 }
 
+/** HTML-escape untrusted text content (explanations, signals, verdicts) before it lands in any innerHTML template. */
+function escText(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function normalizeExplanation(explanation) {
   if (typeof explanation === "string") return explanation;
   if (explanation && typeof explanation === "object") {
@@ -66,11 +76,11 @@ function normalizeExplanation(explanation) {
 function formatExplanationMeta(explanation) {
   if (!explanation || typeof explanation !== "object") return "";
   const parts = [];
-  if (explanation.method) parts.push(`Attribution: ${explanation.method}`);
+  if (explanation.method) parts.push(`Attribution: ${escText(explanation.method)}`);
   if (explanation.explanation_degraded) {
-    parts.push(`Fallback (${explanation.degraded_reason || "timeout"})`);
+    parts.push(`Fallback (${escText(explanation.degraded_reason || "timeout")})`);
   }
-  return parts.length ? parts.join(" · ") : "";
+  return parts.length ? escText(parts.join(" · ")) : "";
 }
 
 function normalizeSignals(signals) {
@@ -219,7 +229,7 @@ function renderCurrentPage(result, activeTab) {
     pageScoreLabel.textContent = "0/100";
     setScoreBarFill(0);
     pageLastScan.textContent = "—";
-    pageDetails.innerHTML = result?.explanation_text || "No result for this tab.";
+    pageDetails.textContent = result?.explanation_text || "No result for this tab.";
     shieldIcon.classList.remove("threat-pulse");
     return;
   }
@@ -245,9 +255,9 @@ function renderCurrentPage(result, activeTab) {
   pageDetails.innerHTML = `
     <div><strong>Explanation</strong></div>
     ${meta ? `<div class="page-detail-meta">${meta}</div>` : ""}
-    <div>${explanation}</div>
+    <div>${escText(explanation)}</div>
     <div class="page-detail-signals-title"><strong>Signals</strong></div>
-    <ul class="page-detail-signals-list">${signals.map((item) => `<li>${item}</li>`).join("") || "<li>None</li>"}</ul>
+    <ul class="page-detail-signals-list">${signals.map((item) => `<li>${escText(item)}</li>`).join("") || "<li>None</li>"}</ul>
   `;
 }
 
@@ -311,21 +321,21 @@ function renderManualResult(result) {
           : "Looks safe. Stay cautious.")
   );
 
-  const pills = signals.map((s) => `<span class="signal-pill">${s}</span>`).join("") || "";
+  const pills = signals.map((s) => `<span class="signal-pill">${escText(s)}</span>`).join("") || "";
 
   manualResult.innerHTML = `
     <div class="manual-top">
       <div>
-        <div class="manual-verdict ${band}">${verdict}</div>
-        <div class="muted tiny">${category} · ${language}</div>
+        <div class="manual-verdict ${band}">${escText(verdict)}</div>
+        <div class="muted tiny">${escText(category)} · ${escText(language)}</div>
       </div>
       <div class="score-ring-wrap ${band}">${score}</div>
     </div>
     <div class="threat-analysis-label">Threat analysis</div>
-    <div class="threat-analysis-body" id="analysis-body">${explanation}</div>
+    <div class="threat-analysis-body" id="analysis-body">${escText(explanation)}</div>
     <button type="button" class="btn-text expand-analysis-btn" id="expand-analysis">Show more</button>
     <div class="signal-pills">${pills}</div>
-    <div class="rec-box ${band}">${recommendation}</div>
+    <div class="rec-box ${band}">${escText(recommendation)}</div>
   `;
   const body = document.getElementById("analysis-body");
   document.getElementById("expand-analysis")?.addEventListener("click", () => {

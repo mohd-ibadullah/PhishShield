@@ -1,4 +1,14 @@
 (function () {
+  /** HTML-escape untrusted text before it lands in any innerHTML template. */
+  function escapeHtmlText(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   const TRUSTED_SENDERS = [
     "google.com", "youtube.com", "gmail.com", "skills.google", "amazon.com", "amazon.in",
     "flipkart.com", "swiggy.com", "zomato.com", "linkedin.com", "twitter.com",
@@ -88,11 +98,11 @@
   function formatExplanationMeta(explanation) {
     if (!explanation || typeof explanation !== "object") return "";
     const parts = [];
-    if (explanation.method) parts.push(`Attribution: ${explanation.method}`);
+    if (explanation.method) parts.push(`Attribution: ${escapeHtmlText(explanation.method)}`);
     if (explanation.explanation_degraded) {
-      parts.push(`Fallback (${explanation.degraded_reason || "timeout"})`);
+      parts.push(`Fallback (${escapeHtmlText(explanation.degraded_reason || "timeout")})`);
     }
-    return parts.length ? parts.join(" · ") : "";
+    return parts.length ? escapeHtmlText(parts.join(" · ")) : "";
   }
 
   function normalizeExplanation(explanation) {
@@ -526,7 +536,7 @@
     const banner = document.createElement("div");
     banner.className = `ps-banner ${band}`;
     banner.innerHTML = `
-      <div>⚠️ PhishShield AI: This page contains phishing indicators. Risk Score: ${score}/100 — ${topSignal}. Proceed with caution.</div>
+      <div>⚠️ PhishShield AI: This page contains phishing indicators. Risk Score: ${score}/100 — ${escapeHtmlText(topSignal)}. Proceed with caution.</div>
       ${band === "suspicious" ? '<button type="button">Dismiss</button>' : ""}
     `;
     banner.querySelector("button")?.addEventListener("click", () => banner.remove());
@@ -620,8 +630,10 @@
   }
 
   function truncateUrl(url) {
-    const value = String(url || "");
-    return value.length > 40 ? `${value.slice(0, 40)}...` : value;
+    const value = escapeHtmlText(
+      String(url || "").length > 40 ? `${String(url).slice(0, 40)}...` : String(url || "")
+    );
+    return value;
   }
 
   function placeTooltip(x, y) {
@@ -685,9 +697,9 @@
     overlay.innerHTML = `
       <div class="ps-card">
         <h3>🛡️ PhishShield AI — Link Risk Warning</h3>
-        <p><strong>Destination:</strong> ${linkHref}</p>
-        <p><strong>Risk:</strong> ${bandLabel}</p>
-        <p><strong>Reason:</strong> ${reason}</p>
+        <p><strong>Destination:</strong> ${escapeHtmlText(linkHref)}</p>
+        <p><strong>Risk:</strong> ${escapeHtmlText(bandLabel)}</p>
+        <p><strong>Reason:</strong> ${escapeHtmlText(reason)}</p>
         <div class="ps-actions">
           <button type="button" class="proceed">Proceed Anyway</button>
           <button type="button" class="back">Go Back — Stay Safe</button>
@@ -855,7 +867,7 @@
     const pillTone =
       band === "high_risk" ? "" : band === "suspicious" ? "ps-signal-pill--warn" : "ps-signal-pill--safe";
     const pills =
-      signals.map((s) => `<span class="ps-signal-pill ${pillTone}">${s}</span>`).join("") ||
+      signals.map((s) => `<span class="ps-signal-pill ${pillTone}">${escapeHtmlText(s)}</span>`).join("") ||
       `<span class="ps-signal-pill ${pillTone}">None listed</span>`;
     const accentClass = trustedFlow ? "trusted" : band;
 
@@ -874,15 +886,15 @@
       </div>
       <div class="ps-divider"></div>
       <div class="ps-row-label">Sender</div>
-      <div class="ps-row-val">${meta?.sender || "unknown"}</div>
+      <div class="ps-row-val">${escapeHtmlText(meta?.sender || "unknown")}</div>
       <div class="ps-divider"></div>
       <div class="ps-row-label">Threat analysis</div>
       ${explanationMeta ? `<div class="ps-analysis-meta" style="font-size:11px;opacity:0.85;margin-bottom:4px;">${explanationMeta}</div>` : ""}
-      <div class="ps-analysis-body">${explanation}</div>
+      <div class="ps-analysis-body">${escapeHtmlText(explanation)}</div>
       <div class="ps-divider"></div>
       <div class="ps-row-label">Signals</div>
       <div>${pills}</div>
-      <div class="ps-rec-box ${band}">${recommendation}</div>
+      <div class="ps-rec-box ${band}">${escapeHtmlText(recommendation)}</div>
     `;
 
     gmailPanel.querySelector(".ps-close")?.addEventListener("click", () => {
