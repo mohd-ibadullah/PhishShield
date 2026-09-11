@@ -1,0 +1,908 @@
+{
+ "note": "sanity-gauntlet (agent-generated cases, small n) - NOT a metric claim",
+ "counts": {
+  "systems": 6,
+  "cases": 22,
+  "cells": 132
+ },
+ "rows": [
+  {
+   "id": "G01",
+   "category": "english-phish",
+   "sha256": "ad887ae83ebf847c5461a2b0e1bed13d9fa087b4a725ea93588572e93f8a09fd",
+   "expected": "PHISH",
+   "transform": "eval_set_v1.jsonl IN-KW-01 as-is",
+   "systems": {
+    "tfidf": {
+     "score": 0.8409,
+     "ms": 2,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 921,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 994,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9957,
+     "ms": 166,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.98,
+     "ms": 175,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.3287,
+     "ms": 4233,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G02",
+   "category": "hindi",
+   "sha256": "714ed46dadd467f14af91f5acacc4c69a630bb981b70c3f49853876eb6956c1d",
+   "expected": "PHISH",
+   "transform": "multilingual_test_cases.hindi_otp_scam as-is",
+   "systems": {
+    "tfidf": {
+     "score": 0.4751,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 148,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0,
+     "ms": 55,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9977,
+     "ms": 54,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.52,
+     "ms": 251,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.7907,
+     "ms": 70,
+     "pass": true
+    }
+   },
+   "integration": {
+    "http": 200,
+    "risk": 82,
+    "leg": "v2_xlmr",
+    "scan_class": "phishing",
+    "matches_expected": true,
+    "ms": 11
+   }
+  },
+  {
+   "id": "G03",
+   "category": "hindi-ham",
+   "sha256": "1c2bf7fa74be1a851e0d228531e3882a04d6d1150044c39452885f003181ada6",
+   "expected": "HAM",
+   "transform": "multilingual_test_cases.hindi_awareness_safe as-is",
+   "systems": {
+    "tfidf": {
+     "score": 0.3927,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 254,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 62,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9987,
+     "ms": 76,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.8,
+     "ms": 408,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.8828,
+     "ms": 88,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G04",
+   "category": "telugu",
+   "sha256": "7540808e9194eec68819f72df488672c452757020696bf5786543f33c71ad7cb",
+   "expected": "PHISH",
+   "transform": "multilingual_test_cases.telugu_bank_urgency as-is",
+   "systems": {
+    "tfidf": {
+     "score": 0.3927,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 249,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0,
+     "ms": 59,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9989,
+     "ms": 68,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.45,
+     "ms": 400,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.8829,
+     "ms": 91,
+     "pass": true
+    }
+   },
+   "integration": {
+    "http": 200,
+    "risk": 70,
+    "leg": "v2_xlmr",
+    "scan_class": "phishing",
+    "matches_expected": true,
+    "ms": 7
+   }
+  },
+  {
+   "id": "G05",
+   "category": "telugu-ham",
+   "sha256": "fa87084142ddf899232a836582208517f951ad1ecd22e19b1d6f22ee07c854e3",
+   "expected": "HAM",
+   "transform": "multilingual_test_cases.telugu_awareness_safe as-is",
+   "systems": {
+    "tfidf": {
+     "score": 0.3545,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 193,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 63,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9881,
+     "ms": 71,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.87,
+     "ms": 333,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.8965,
+     "ms": 83,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G06",
+   "category": "urdu",
+   "sha256": "845cc4592ed99ebbdf738b0b8198bab7b5269b30664da5503a799cc6a4657e3e",
+   "expected": "PHISH",
+   "transform": "gauntlet_results_p3.json C06 text as-committed (orig: hindi_otp_scam Devanagari->Perso-Arabic map)",
+   "systems": {
+    "tfidf": {
+     "score": 0.4751,
+     "ms": 2,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 143,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0,
+     "ms": 60,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9981,
+     "ms": 127,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.52,
+     "ms": 235,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.8165,
+     "ms": 78,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G07",
+   "category": "tamil",
+   "sha256": "6dcc5db35ea00520f886a46279d014e0de225f959500c3a5b109803facce6843",
+   "expected": "PHISH",
+   "transform": "gauntlet_results_p3.json C07 text as-committed (orig: telugu_bank_urgency Telugu->Tamil map)",
+   "systems": {
+    "tfidf": {
+     "score": 0.3927,
+     "ms": 2,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 267,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0,
+     "ms": 78,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9917,
+     "ms": 83,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.45,
+     "ms": 392,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.784,
+     "ms": 100,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G08",
+   "category": "bengali",
+   "sha256": "707701846347cda387707f22cc7de4b2d7dd368c794ba0b0e28d01f35754e191",
+   "expected": "PHISH",
+   "transform": "gauntlet_results_p3.json C08 text as-committed (orig: hindi_otp_scam Devanagari->Bengali map)",
+   "systems": {
+    "tfidf": {
+     "score": 0.4751,
+     "ms": 2,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 174,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0002,
+     "ms": 52,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9991,
+     "ms": 67,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.5201,
+     "ms": 270,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.9468,
+     "ms": 75,
+     "pass": true
+    }
+   },
+   "integration": {
+    "http": 200,
+    "risk": 82,
+    "leg": "v2_xlmr",
+    "scan_class": "phishing",
+    "matches_expected": true,
+    "ms": 8
+   }
+  },
+  {
+   "id": "G09",
+   "category": "german",
+   "sha256": "65ac15b8dc71ac08bd8720fc181a8ca9111f524ab4a8d3fd9e3b26430218680c",
+   "expected": "PHISH",
+   "transform": "gauntlet_results_p3.json C09 text as-committed (orig: CERT_CASES[0] EN->DE map)",
+   "systems": {
+    "tfidf": {
+     "score": 0.8191,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 104,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 89,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9984,
+     "ms": 92,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.94,
+     "ms": 256,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.9818,
+     "ms": 89,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G10",
+   "category": "marketing-ham",
+   "sha256": "7c8df1075d15ba8b46666afbe5f5dff8bae3d2483fb9514a41fbf09e299c5e7b",
+   "expected": "HAM",
+   "transform": "gauntlet_results_p3.json C10 redacted text as-committed (orig chain cites combined_eval.jsonl \u2014 FILE NOT IN REPO, flagged)",
+   "systems": {
+    "tfidf": {
+     "score": 0.1519,
+     "ms": 2,
+     "pass": true
+    },
+    "securebert": {
+     "score": 0.0,
+     "ms": 309,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0,
+     "ms": 291,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.2593,
+     "ms": 309,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.0,
+     "ms": 635,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.0277,
+     "ms": 345,
+     "pass": true
+    }
+   },
+   "integration": {
+    "http": 200,
+    "risk": 10,
+    "leg": null,
+    "scan_class": "ham",
+    "matches_expected": true,
+    "ms": 8
+   }
+  },
+  {
+   "id": "G11",
+   "category": "neutral-ham",
+   "sha256": "bc5c40e40dbe3cf185e77c0d32ef9864d713ebb7dac54c468318803d0f7f9fab",
+   "expected": "HAM",
+   "transform": "gauntlet_results_p3.json C11 text as-committed (orig: CERT_CASES first safe row)",
+   "systems": {
+    "tfidf": {
+     "score": 0.4145,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 0.0,
+     "ms": 57,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0,
+     "ms": 60,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.0002,
+     "ms": 62,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.0,
+     "ms": 182,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.0076,
+     "ms": 74,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G12",
+   "category": "homoglyph-url",
+   "sha256": "a5a4c1bacd170546b617491f95d5ad22e00f421bcff77e680ce973503c602548",
+   "expected": "PHISH",
+   "transform": "data/adversarial_cases.json homoglyph_bank_lure email_text as-is",
+   "systems": {
+    "tfidf": {
+     "score": 0.8032,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 83,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 69,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9982,
+     "ms": 76,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 1.0,
+     "ms": 169,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.7398,
+     "ms": 93,
+     "pass": true
+    }
+   },
+   "integration": {
+    "http": 200,
+    "risk": 82,
+    "leg": null,
+    "scan_class": "phishing",
+    "matches_expected": true,
+    "ms": 7
+   }
+  },
+  {
+   "id": "G13",
+   "category": "zero-width",
+   "sha256": "fe0af54641426cf5a47728c540c01a45ab0182d7e525b725bf327a62a6734e31",
+   "expected": "PHISH",
+   "transform": "gauntlet_results_p3.json C13 text as-committed (orig: hindi_otp_scam + U+200B every 3rd letter)",
+   "systems": {
+    "tfidf": {
+     "score": 0.2611,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 169,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0,
+     "ms": 58,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9989,
+     "ms": 97,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.45,
+     "ms": 297,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.9818,
+     "ms": 101,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G14",
+   "category": "base64-payload",
+   "sha256": "da7b19abe0fa09dab49a3a09e7f1ec5a1215198ee8cc3d536d00319a76540e01",
+   "expected": "PHISH",
+   "transform": "gauntlet_results_p3.json C14 text as-committed (orig: CERT_CASES[0] whole-text base64)",
+   "systems": {
+    "tfidf": {
+     "score": 0.3577,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 145,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 44,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.8257,
+     "ms": 139,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.8,
+     "ms": 239,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.997,
+     "ms": 148,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G15",
+   "category": "no-spaces",
+   "sha256": "41c9b5821a02b747fe41f649b3fa1901d1b966f79ed0cdeee2837981e1e88371",
+   "expected": "PHISH",
+   "transform": "elite_api_eval.json 'O-T-P bhejo abhi warna block' whitespace removed: O-T-Pbhejoabhiwarnablock",
+   "systems": {
+    "tfidf": {
+     "score": 0.4418,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 60,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 49,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9985,
+     "ms": 52,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.8,
+     "ms": 154,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.9553,
+     "ms": 62,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G16",
+   "category": "all-caps-urgency",
+   "sha256": "96680e80276a1bf02a27e0cab1790bb9bbdccfab2a560c79dfb1c66adbaacfa5",
+   "expected": "PHISH",
+   "transform": "CERT_CASES[0][0] .upper() (deterministic)",
+   "systems": {
+    "tfidf": {
+     "score": 0.7185,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 83,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 87,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9961,
+     "ms": 76,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 1.0,
+     "ms": 192,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.918,
+     "ms": 91,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G17",
+   "category": "prompt-injection",
+   "sha256": "37008be44fe0007e3e03838e9244c37c44ae254b9c7d84c2b2de0ab3a35d432d",
+   "expected": "PHISH",
+   "transform": "test_prompt_hygiene.py:34 injection string + CERT_CASES[0] lure",
+   "systems": {
+    "tfidf": {
+     "score": 0.772,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 86,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 78,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.0023,
+     "ms": 80,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 1.0,
+     "ms": 221,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.7205,
+     "ms": 102,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G18",
+   "category": "mixed-script",
+   "sha256": "9c14bba6f2946b5170b91653dcd88977ddcef85f6bc88b8f1cca1bf2d0b76ae4",
+   "expected": "PHISH",
+   "transform": "gauntlet_results_p3.json C18 text as-committed (orig: homoglyph row + telugu_bank_urgency concat)",
+   "systems": {
+    "tfidf": {
+     "score": 0.7785,
+     "ms": 2,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 284,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 98,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9988,
+     "ms": 115,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 1.0,
+     "ms": 434,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.8583,
+     "ms": 130,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G19",
+   "category": "degenerate-1char",
+   "sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+   "expected": "NONE",
+   "transform": "single-char probe; decidable-only, no label",
+   "systems": {
+    "tfidf": {
+     "score": 0.4418,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 0.0,
+     "ms": 50,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 43,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9543,
+     "ms": 39,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.35,
+     "ms": 123,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.4981,
+     "ms": 52,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G20",
+   "category": "degenerate-empty",
+   "sha256": "0aad7da77d2ed59c396c99a74e49f3a4524dcdbcb5163251b1433d640247aeb4",
+   "expected": "NONE",
+   "transform": "whitespace-only probe; decidable-only, no label",
+   "systems": {
+    "tfidf": {
+     "score": 0.4418,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 0.0,
+     "ms": 60,
+     "pass": true
+    },
+    "muril": {
+     "score": 0.0,
+     "ms": 51,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.5474,
+     "ms": 47,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.0,
+     "ms": 117,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.3778,
+     "ms": 68,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G21",
+   "category": "boilerplate-10kb",
+   "sha256": "2c07a1272a62accc24f1cb6626adc08ed4a1e388fd1563af65a229572735bf06",
+   "expected": "HAM",
+   "transform": "CERT first safe row repeated to >10KB (deterministic)",
+   "systems": {
+    "tfidf": {
+     "score": 0.7161,
+     "ms": 6,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 335,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 295,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9987,
+     "ms": 318,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 1.0,
+     "ms": 712,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.9447,
+     "ms": 599,
+     "pass": true
+    }
+   }
+  },
+  {
+   "id": "G22",
+   "category": "duplicate-of-earlier",
+   "sha256": "ad887ae83ebf847c5461a2b0e1bed13d9fa087b4a725ea93588572e93f8a09fd",
+   "expected": "PHISH",
+   "transform": "byte-identical to G01; idempotence cell",
+   "systems": {
+    "tfidf": {
+     "score": 0.8409,
+     "ms": 1,
+     "pass": true
+    },
+    "securebert": {
+     "score": 1.0,
+     "ms": 80,
+     "pass": true
+    },
+    "muril": {
+     "score": 1.0,
+     "ms": 79,
+     "pass": true
+    },
+    "indicbert": {
+     "score": 0.9957,
+     "ms": 83,
+     "pass": true
+    },
+    "ensemble": {
+     "score": 0.98,
+     "ms": 193,
+     "pass": true
+    },
+    "xlmr": {
+     "score": 0.3287,
+     "ms": 95,
+     "pass": true
+    }
+   }
+  }
+ ]
+}
