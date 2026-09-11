@@ -197,6 +197,9 @@ def warmup_router_legs() -> dict[str, Any]:
     state: dict[str, Any] = {}
     state["v2_xlmr_loaded"] = _ensure_v2_loaded()
     try:
+        # P6.5 perf fix: main already warmups its own _muril_provider at startup
+        # and MurilProvider now shares artifacts process-wide (models/muril_provider.py
+        # _get_shared_artifacts), so constructing here is a no-op after main warmup.
         result = _muril_predict("warmup Aapka UPI PIN verify karein")
         state["muril_loaded"] = result is not None
     except Exception:

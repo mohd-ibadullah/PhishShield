@@ -18,6 +18,8 @@ node_modules/
 backend/models/
 backend/scan_logs.jsonl
 backend/scans.db
+backend/scans.db-shm
+backend/scans.db-wal
 backend/vectorizer.pkl
 *.safetensors
 model_merged/

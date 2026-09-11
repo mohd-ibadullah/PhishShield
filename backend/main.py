@@ -929,9 +929,16 @@ def ensemble_score(text: str) -> dict[str, Any]:
             try:
                 import concurrent.futures
 
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    fut = ex.submit(_run_provider, "securebert", _securebert_provider)
-                    prob = float(fut.result(timeout=3.0))
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+                    fut_sec = ex.submit(_run_provider, "securebert", _securebert_provider)
+                    # MuRIL (P6.5 perf fix: both legs share one executor so the
+                    # two transformers infer in parallel on CPU; max_workers=2
+                    # keeps them concurrent in the same pool)
+                    fut_muril = None
+                    if _muril_provider is not None and not _provider_is_temporarily_disabled("muril"):
+                        if _provider_health_ready(_muril_provider):
+                            fut_muril = ex.submit(_run_provider, "muril", _muril_provider)
+                    prob = float(fut_sec.result(timeout=3.0))
                 scores.append(prob)
                 weights.append(0.45)
                 providers_used.append("securebert")
@@ -939,17 +946,22 @@ def ensemble_score(text: str) -> dict[str, Any]:
             except Exception as exc:
                 logger.warning("SecureBERT skipped (timeout/failure): %s", exc)
                 _record_provider_failure("securebert")
+                fut_muril = None  # executor context exited; re-submit below
 
     # MuRIL
     if _muril_provider is not None and not _provider_is_temporarily_disabled("muril"):
         if _provider_health_ready(_muril_provider):
+            prob_muril: float | None = None
             try:
                 import concurrent.futures
 
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    fut = ex.submit(_run_provider, "muril", _muril_provider)
-                    prob = float(fut.result(timeout=3.0))
-                scores.append(prob)
+                if fut_muril is not None:
+                    prob_muril = float(fut_muril.result(timeout=3.0))
+                else:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                        fut = ex.submit(_run_provider, "muril", _muril_provider)
+                        prob_muril = float(fut.result(timeout=3.0))
+                scores.append(prob_muril)
                 weights.append(0.35)
                 providers_used.append("muril")
                 _record_provider_success("muril")
@@ -1481,9 +1493,16 @@ def _migrate_feedback_csv_if_needed() -> None:
 
 def _connect_scans_db() -> sqlite3.Connection:
     """Open the scans DB with foreign-key enforcement on."""
-    conn = sqlite3.connect(SCANS_DB_PATH)
+    conn = sqlite3.connect(SCANS_DB_PATH, timeout=30.0)
     try:
         conn.execute("PRAGMA foreign_keys=ON")
+        # P6.5 perf fix (LOAD_RESULTS.md: PoolTimeout under parallel clients):
+        # WAL lets readers proceed during a writer and busy_timeout avoids
+        # immediate 'database is locked' errors under bursts. WAL is persistent
+        # per-DB, journal_mode is a no-op after the first set.
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=30000")
+        conn.execute("PRAGMA synchronous=NORMAL")
     except sqlite3.Error:
         conn.close()
         raise

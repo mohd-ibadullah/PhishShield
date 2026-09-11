@@ -5,7 +5,7 @@ import {
   CheckCircle, ChevronDown, ChevronUp, RefreshCw, Loader2,
   Mail, Eye, Flag, BarChart3, History, Trash2, Globe, Languages,
   TrendingUp, Scan, Lock, Shield, Download,
-  Ban, Phone, ExternalLink, Building2, Bot, Copy, Command, Search
+  Ban, Phone, ExternalLink, Building2, Bot, Copy, Command, Search, SunMoon
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Button } from '@/components/ui/button';
@@ -1847,6 +1847,14 @@ export default function Dashboard() {
   const [historySearch, setHistorySearch] = useState('');
   const [historyFilter, setHistoryFilter] = useState<'all' | 'safe' | 'uncertain' | 'phishing'>('all');
   const [privacyMode, setPrivacyMode] = useState(true);
+  // Theme toggle: dark is the cybersecurity default (App.tsx forces .dark at
+  // mount); light mode is opt-in via localStorage so it survives reloads.
+  const [themeMode, setThemeMode] = useState<'dark' | 'light'>(() =>
+    (localStorage.getItem('phishshield-theme') === 'light' ? 'light' : 'dark'));
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', themeMode === 'dark');
+    localStorage.setItem('phishshield-theme', themeMode);
+  }, [themeMode]);
   const [feedbackNote, setFeedbackNote] = useState('');
   const [safeSenders, setSafeSenders] = useState<SafeSenderEntry[]>([]);
   const [duplicateScanNotice, setDuplicateScanNotice] = useState('');
@@ -3683,6 +3691,30 @@ export default function Dashboard() {
           : 'The concise security summary is now on your clipboard.',
       });
     } catch {
+      // P6.5 fix: fall back to the legacy textarea+execCommand path when the
+      // async Clipboard API is unavailable (insecure context / restricted
+      // browser sessions); only surface the honest toast when both fail.
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = lines.join('\n');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) {
+          toast({
+            title: 'Verdict copied',
+            description: privacyMode
+              ? 'The concise security summary was copied with sensitive details redacted.'
+              : 'The concise security summary is now on your clipboard.',
+          });
+          return;
+        }
+      } catch {
+        // execCommand unavailable too — fall through to the honest toast.
+      }
       toast({
         title: 'Copy unavailable',
         description: 'Clipboard access is blocked in this browser session.',
@@ -3791,12 +3823,15 @@ export default function Dashboard() {
     void refreshPythonMetrics();
   }, [activeTab]);
 
-  // Poll backend health so model status and connectivity stay current on Analyze tab
+  // Poll backend health so model status and connectivity stay current on Analyze tab.
+  // P6.5 fix: 15 s poll (was 60 s) so the offline indicator flips within one
+  // poll cycle after a backend kill (T2 in p4_restart_check lands ~<20 s now,
+  // was 57 s at the 60 s tick).
   useEffect(() => {
     void refreshBackendHealth();
     const intervalId = window.setInterval(() => {
       void refreshBackendHealth();
-    }, 60_000);
+    }, 15_000);
     return () => window.clearInterval(intervalId);
   }, []);
 
@@ -3919,6 +3954,18 @@ export default function Dashboard() {
               <span className={cn('h-1.5 w-1.5 rounded-full', privacyMode ? 'bg-safe' : 'bg-muted-foreground')} />
               {privacyMode ? 'Redacted exports' : 'Full exports'}
             </div>
+            {/* Theme toggle: dark default, light opt-in */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setThemeMode((v) => (v === 'dark' ? 'light' : 'dark'))}
+              title="Switch between dark cybersecurity theme and light mode. Preference is saved locally."
+              className="hidden sm:inline-flex h-8 text-[11px] font-bold border-border/60"
+            >
+              <SunMoon className="w-3.5 h-3.5 mr-1.5" />
+              {themeMode === 'dark' ? 'Dark' : 'Light'}
+            </Button>
             {/* Tab switcher */}
             <div className="flex items-center bg-secondary/50 border border-border/50 rounded-lg p-0.5 gap-0.5">
               <button
