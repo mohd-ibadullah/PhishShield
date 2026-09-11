@@ -4,8 +4,8 @@
 
 Machine-readable product-gap list. CI deselects exactly these node ids in the main pytest job and executes them in the `product-gap-tracking` job. The parity guard parses this block and the CI deselect list and asserts they name the same functions.
 
-- test_hindi_cases[case1]: red until V2 — expected to clear on Hindi recall measurement
-- test_telugu_cases[case1]: red until V2 — expected to clear on Telugu recall measurement
+- test_hindi_cases[case1]: ML-SIDE red — V2 XLM-R router floor (2026-09-11) clears it locally (15→70, ml2/ROUTER_SANITY.json 8/8 non-Latin); CI stays red honestly (model_merged gitignored → no V2 leg → pipeline-only 15), so the deselect remains until the artifact is committable
+- test_telugu_cases[case1]: ML-SIDE red — V2 XLM-R router floor (2026-09-11) clears it locally (31→70, ml2/ROUTER_SANITY.json 8/8 non-Latin); CI stays red honestly (model_merged gitignored → no V2 leg → pipeline-only 31), so the deselect remains until the artifact is committable
 
 | ID | Finding | Status | Planned Change | Verification Command | Result | Status Closed? |
 |:---|:---|:---:|:---|:---|:---|:---:|
@@ -106,9 +106,9 @@ Batch B1: 12 items CLOSED; 2 tests red pending V2 (see `gaps:`); 1 item OPEN pen
 
 | ID | Finding | Status | Severity | Verification Command | Result |
 |:---|:---|:---:|:---|:---|:---|
-| **T9** | Hindi phishing (hindi_bank_urgency): risk=15, expected>=65 | **ML-SIDE (red until V2)** | HIGH | `pytest tests -k "hindi_cases and case1"` | TF-IDF cannot score pure Hindi script; non-Latin recall=0 for this case |
+| **T9** | Hindi phishing (hindi_bank_urgency): risk=15, expected>=65 | **CLOSED (ML-SIDE, 2026-09-11 — V2 XLM-R router floor; CI still deselect-gated)** | HIGH | `pytest tests -k "hindi_cases and case1"` | Router leg (R4) raises 15→70 ≥ 65 locally; ml2/ROUTER_SANITY.json 8/8 non-Latin. CI honest-failure (no model_merged artifact) stays 15 — deselect kept |
 | **T10** | Hindi safe (hindi_awareness_safe): risk>25, expected<=25 | **CLOSED (RULE-SIDE, 2026-09-04)** | HIGH | `pytest tests -k "hindi_cases and case3"` | Devanagari OTP-awareness + sender-signal rules raise phishing Hindi and keep awareness-safe Hindi low |
-| **T11** | Telugu phishing (telugu_otp_scam): risk=31, expected>=60 | **ML-SIDE (red until V2)** | HIGH | `pytest tests -k "telugu_cases and case1"` | TF-IDF cannot score pure Telugu script |
+| **T11** | Telugu phishing (telugu_otp_scam): risk=31, expected>=60 | **CLOSED (ML-SIDE, 2026-09-11 — V2 XLM-R router floor; CI still deselect-gated)** | HIGH | `pytest tests -k "telugu_cases and case1"` | Router leg (R4) raises 31→70 ≥ 60 locally; ml2/ROUTER_SANITY.json 8/8 non-Latin. CI honest-failure (no model_merged artifact) stays 31 — deselect kept |
 | **T12** | Domain bank alert: risk=25, expected>=26 (Suspicious), brand-lookalike signal absent | **CLOSED (RULE-SIDE, 2026-09-04)** | MED | `pytest tests -k sender_domain_bank_alert_is_suspicious` | sender-domain risk signals raise example.invalid bank-alert mail above Suspicious threshold |
 | **T13** | Domain HDFC alert: risk=35, expected>=70 (High Risk), signal mismatch | **CLOSED (RULE-SIDE, 2026-09-04)** | MED | `pytest tests -k sender_domain_hdfc_alert_detected_as_brand_lookalike` | sender-lookalike paired with account-access lure now emits the brand-lookalike signal; score reaches High Risk |
 | **T14** | Marketing newsletters (3 cases): risk=35, expected<=20 (Safe) | **CLOSED (RULE-SIDE, 2026-09-04)** | MED | `pytest tests -k legitimate_marketing_newsletters_stay_safe` | marketing cap with footer proof + no credential intent keeps legitimate newsletters Safe |

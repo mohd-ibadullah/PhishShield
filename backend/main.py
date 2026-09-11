@@ -1957,6 +1957,13 @@ async def startup_event() -> None:
     app.state.feedback_memory = load_feedback_memory()
     app.state.sender_profiles = load_sender_profiles()
     app.state.threat_intel = load_threat_intel_feed()
+    # ML2 R3: router boot report — which legs are live, config/label-map presence, model state.
+    try:
+        from ml2_router import router_boot_report as _ml2_boot_report
+
+        logging.getLogger("uvicorn.error").info("ML2 router boot: %s", _ml2_boot_report())
+    except Exception as exc:
+        logging.getLogger("uvicorn.error").warning("ML2 router boot report failed: %s", exc)
     active_cache_entries.set(len(app.state.scan_cache))
     # Provider status visibility (required for verification)
     try:
@@ -5848,7 +5855,80 @@ def build_semantic_pattern_signals(
     return matched_signals[:8], clamp_int(pattern_score, 0, 100), hard_signal_count, safe_context_count
 
 
+def _ml2_nonlatin_otp_awareness(email_text: str, linked_domains: list[str]) -> bool:
+    """ML2 router (R4): same awareness predicates as the QA-FIX-2 rule layer, so the V2
+    specialist floor and the OTP-safety escape share one definition (no double standard)."""
+    if not (
+        re.search(r"\botp\b", email_text, re.IGNORECASE)
+        or re.search(r"ओटीपी|ఒటిపి", email_text)
+    ):
+        return False
+    if linked_domains:
+        return False
+    return bool(
+        re.search(
+            r"(कभी|कभी भी).*(otp|ओटीपी).*(नहीं).*(मांग|पूछ|बता)|(otp|ओटीपी).*(साझा|शेयर).*(न करें|मत करें)|किसी.*(otp|ओटीपी).*(साझा|शेयर|बताएं).*(न करें|मत करें|न बताएं)",
+            email_text,
+            re.IGNORECASE,
+        )
+        or re.search(
+            r"(ఎప్పుడూ|ఎప్పుడు కూడా).*(otp|ఒటిపి).*(అడగము|అడగము)|(otp|ఒటిపి).*(పంచుకోవద్దు|పంచుకోకండి)",
+            email_text,
+            re.IGNORECASE,
+        )
+    )
+
+
 def calculate_email_risk(
+    email_text: str,
+    headers_text: str | None = None,
+    attachments: list[Any] | None = None,
+    session_id: str | None = None,
+    cache_key: str | None = None,
+) -> dict[str, Any]:
+    """ML2 router entry (R4): non-Latin scripts → V2 XLM-R specialist verdict as a risk floor.
+    Routing, not fusion. Honest failure: router None / dead-class / model-missing → the
+    existing pipeline runs untouched (never fake a verdict from local heuristics)."""
+    raw_entry_text = str(email_text or "")
+    try:
+        from ml2_router import detect_route_language as _ml2_lang, route_verdict as _ml2_route
+
+        _ml2_language = _ml2_lang(raw_entry_text)
+        if _ml2_language in {"HI", "TE", "UR", "TA", "BN"}:
+            _ml2_decision = _ml2_route(raw_entry_text)
+            _ml2_confident_phish = bool(
+                _ml2_decision
+                and _ml2_decision.get("status") == "ok"
+                and _ml2_decision.get("verdict") == "phishing"
+                and float(_ml2_decision.get("confidence") or 0.0) >= 0.70
+            )
+            if _ml2_confident_phish:
+                _result = _calculate_email_risk_inner(
+                    email_text,
+                    headers_text=headers_text,
+                    attachments=attachments,
+                    session_id=session_id,
+                    cache_key=cache_key,
+                )
+                # shared escape predicate: OTP-safety awareness in hi/te must stay safe
+                _linked_now = extract_domains_from_urls(raw_entry_text)
+                _normalized_now = normalize_confusables(raw_entry_text)
+                if not _ml2_nonlatin_otp_awareness(_normalized_now, _linked_now):
+                    _result["risk_score"] = max(int(_result.get("risk_score") or 0), 70)
+                    _result["router_leg"] = "v2_xlmr"
+                return _result
+    except Exception:
+        logger.exception("ML2 router leg failed; existing pipeline continues (honest fallback)")
+    return _calculate_email_risk_inner(
+        email_text,
+        headers_text=headers_text,
+        attachments=attachments,
+        session_id=session_id,
+        cache_key=cache_key,
+    )
+
+
+def _calculate_email_risk_inner(
     email_text: str,
     headers_text: str | None = None,
     attachments: list[Any] | None = None,
