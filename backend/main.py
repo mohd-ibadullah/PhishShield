@@ -1236,10 +1236,10 @@ def _ensemble_providers_ready() -> bool:
 
 
 def _runtime_primary_model_label() -> str:
-    if artifacts.indicbert_model is not None and artifacts.indicbert_tokenizer is not None:
-        return INDICBERT_HEALTH_LABEL
+    # P2 ROUTER: label reflects the routing reality. IndicBERT files may be
+    # present but are inactive (out of the hot path) — never the primary.
     if _ensemble_providers_ready():
-        return INDICBERT_HEALTH_LABEL
+        return ENSEMBLE_HEALTH_LABEL
     return str(artifacts.active_model or "TF-IDF")
 
 
@@ -5522,10 +5522,9 @@ def build_sender_authenticity_result(headers_text: str | None) -> tuple[bool, di
 
 def compute_language_model_probability(email_text: str, cleaned_text: str) -> tuple[float, str]:
     model_used = _runtime_primary_model_label()
-    ml_probability = predict_with_indicbert(email_text)
-
-    if ml_probability is not None:
-        return float(max(0.0, min(1.0, ml_probability))), INDICBERT_HEALTH_LABEL
+    # P2 ROUTER: IndicBERT is out of the hot path (V2 XLM-R owns the non-Latin
+    # slot; EN stays ensemble). predict_with_indicbert + files remain for
+    # direct inactive-verify calls, but scoring never consults them here.
 
     if _ensemble_providers_ready():
         try:
@@ -5897,9 +5896,10 @@ def calculate_email_risk(
     session_id: str | None = None,
     cache_key: str | None = None,
 ) -> dict[str, Any]:
-    """ML2 router entry (R4): non-Latin scripts → V2 XLM-R specialist verdict as a risk floor.
-    Routing, not fusion. Honest failure: router None / dead-class / model-missing → the
-    existing pipeline runs untouched (never fake a verdict from local heuristics)."""
+    """ML2 router entry (R4, P2 MX leg): non-Latin scripts → V2 XLM-R floor;
+    Hinglish/code-mixed → MuRIL floor. Routing, not fusion. Honest failure:
+    router None / dead-class / model-missing → the existing pipeline runs
+    untouched (never fake a verdict from local heuristics)."""
     raw_entry_text = str(email_text or "")
     try:
         from ml2_router import detect_route_language as _ml2_lang, route_verdict as _ml2_route
@@ -5928,6 +5928,27 @@ def calculate_email_risk(
                     _result["risk_score"] = max(int(_result.get("risk_score") or 0), 70)
                     _result["router_leg"] = "v2_xlmr"
                 return _result
+        elif _ml2_language == "MX":
+            # P2: Hinglish/code-mixed → MuRIL specialist floor (same 0.70 bar).
+            _mx_decision = _ml2_route(raw_entry_text)
+            _mx_confident_phish = bool(
+                _mx_decision
+                and _mx_decision.get("status") == "ok"
+                and _mx_decision.get("leg") == "muril"
+                and _mx_decision.get("verdict") == "phishing"
+                and float(_mx_decision.get("confidence") or 0.0) >= 0.70
+            )
+            if _mx_confident_phish:
+                _mx_result = _calculate_email_risk_inner(
+                    email_text,
+                    headers_text=headers_text,
+                    attachments=attachments,
+                    session_id=session_id,
+                    cache_key=cache_key,
+                )
+                _mx_result["risk_score"] = max(int(_mx_result.get("risk_score") or 0), 70)
+                _mx_result["router_leg"] = "muril"
+                return _mx_result
     except Exception:
         logger.exception("ML2 router leg failed; existing pipeline continues (honest fallback)")
     return _calculate_email_risk_inner(
@@ -8384,10 +8405,18 @@ async def scan_email(payload: EmailScanRequest, request: Request, response: Resp
         # never the email body (b3.5 / D5).
         try:
             _ml2_route_info = result.get("router_leg")
+            # P2: logged language is the ROUTING authority (script detector),
+            # not the legacy detector (which reads EN on mixed-script probes).
+            try:
+                from ml2_router import detect_route_language as _ml2_log_lang
+
+                _ml2_logged_lang = _ml2_log_lang(payload.email_text)
+            except Exception:
+                _ml2_logged_lang = detect_language_code(payload.email_text)
             append_structured_scan_log(
                 {
                     "email_sha256": hashlib.sha256(payload.email_text.encode("utf-8")).hexdigest(),
-                    "detected_language": detect_language_code(payload.email_text),
+                    "detected_language": _ml2_logged_lang,
                     "leg": _ml2_route_info or "ensemble",
                     "score": int(result.get("risk_score") or 0),
                     "verdict": result.get("verdict"),
@@ -9061,6 +9090,15 @@ def _router_health_block() -> dict[str, Any]:
         v2_missing = not bool(rep.get("v2_model_present"))
         rep["degraded"] = v2_missing
         rep["degraded_reason"] = "v2_model_dir_missing" if v2_missing else None
+        # P2: IndicBERT files stay on disk but are out of the hot path (V2 owns
+        # the non-Latin slot). Listed truthfully as present-but-inactive.
+        try:
+            from pathlib import Path as _P
+
+            _ib = _P(__file__).resolve().parent / "indicbert_model" / "model.safetensors"
+            rep["indicbert"] = "present-but-inactive" if _ib.exists() else "absent"
+        except Exception:
+            rep["indicbert"] = "unknown"
         return rep
     except Exception as exc:
         return {"status": "unknown", "degraded": True, "degraded_reason": f"router_report_failed: {exc}"}

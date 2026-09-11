@@ -1,106 +1,76 @@
 {
- "generated": "2026-09-11",
- "pass": "P2 router-integration probes (LIVE-QA-<n> markers, synthetic, no PII)",
- "note": "sanity-gauntlet (agent-generated cases, small n) — NOT a metric claim",
+ "pass": "P2-router-integration",
+ "note": "sanity-gauntlet (agent-generated cases, small n) - NOT a metric claim",
  "rows": [
   {
-   "id": "G-HI-01",
+   "email_sha256": "7f46f1c7d8d3b6bc067fa44c141f5063ddb71e0e1a35b63839082a765df74827",
    "category": "HI",
-   "expected": "PHISH",
-   "email_sha256": "1d1c1a60711261c4",
-   "risk_score": 75,
-   "verdict": "High Risk",
-   "router_leg": "v2_xlmr",
-   "detected_language": "HI",
-   "ms": 1316.1
+   "marker": "LIVE-QA-8",
+   "expected": "phishing",
+   "got": "phishing",
+   "risk": 80,
+   "leg": "v2_xlmr",
+   "ms": 1841
   },
   {
-   "id": "G-TE-01",
+   "email_sha256": "81a9288ab6ff0074d48304caaff8f08db031f357a28d8157ba85d595e28702c2",
+   "category": "HI",
+   "marker": "LIVE-QA-10",
+   "expected": "phishing",
+   "got": "phishing",
+   "risk": 80,
+   "leg": "v2_xlmr",
+   "ms": 1787
+  },
+  {
+   "email_sha256": "748213db53b686966c7e412d7eca7d19475474403c4c8f846c565c2f841b207a",
    "category": "TE",
-   "expected": "PHISH",
-   "email_sha256": "c5a4fa72a45d6b57",
-   "risk_score": 85,
-   "verdict": "High Risk",
-   "router_leg": "v2_xlmr",
-   "detected_language": "TE",
-   "ms": 912.6
+   "marker": "LIVE-QA-11",
+   "expected": "phishing",
+   "got": "phishing",
+   "risk": 82,
+   "leg": "v2_xlmr",
+   "ms": 1740
   },
   {
-   "id": "G-EN-01",
+   "email_sha256": "c1974b7afe3548383d79c79c2487ac33a67697d52e1088dd6c63710634758e08",
    "category": "EN",
-   "expected": "PHISH",
-   "email_sha256": "a40b031fcfc60388",
-   "risk_score": 70,
-   "verdict": "High Risk",
-   "router_leg": null,
-   "detected_language": "EN",
-   "ms": 730.2
+   "marker": "LIVE-QA-12",
+   "expected": "ham",
+   "got": "ham",
+   "risk": 10,
+   "leg": null,
+   "ms": 303
   },
   {
-   "id": "G-EN-02",
-   "category": "EN",
-   "expected": "HAM",
-   "email_sha256": "85f9fefb349acb24",
-   "risk_score": 35,
-   "verdict": "Suspicious",
-   "router_leg": null,
-   "detected_language": "EN",
-   "ms": 67.8
-  },
-  {
-   "id": "G-UR-01",
-   "category": "UR",
-   "expected": "PHISH",
-   "email_sha256": "25dc89a17d33a2a4",
-   "risk_score": 85,
-   "verdict": "High Risk",
-   "router_leg": null,
-   "detected_language": "EN",
-   "ms": 1081.0
-  },
-  {
-   "id": "G-TA-01",
-   "category": "TA",
-   "expected": "PHISH",
-   "email_sha256": "050ad4b8f6d238b3",
-   "risk_score": 85,
-   "verdict": "High Risk",
-   "router_leg": "v2_xlmr",
-   "detected_language": "EN",
-   "ms": 1100.7
-  },
-  {
-   "id": "G-BN-01",
-   "category": "BN",
-   "expected": "PHISH",
-   "email_sha256": "05eef423eba266ce",
-   "risk_score": 85,
-   "verdict": "High Risk",
-   "router_leg": "v2_xlmr",
-   "detected_language": "EN",
-   "ms": 844.7
-  },
-  {
-   "id": "G-MX-01",
+   "email_sha256": "b9fe4b110007cb4ed44e1e2a515fe4a8de1ec38ec40eacafedceb73a12455e95",
    "category": "MX",
-   "expected": "PHISH",
-   "email_sha256": "92ad46d43e556342",
-   "risk_score": 85,
-   "verdict": "High Risk",
-   "router_leg": null,
-   "detected_language": "MX",
-   "ms": 853.1
+   "marker": "LIVE-QA-13",
+   "expected": "phishing",
+   "got": "phishing",
+   "risk": 70,
+   "leg": null,
+   "ms": 1438
   },
   {
-   "id": "G-MKT-01",
-   "category": "MKT",
-   "expected": "HAM",
-   "email_sha256": "ef1e3d40a2def50a",
-   "risk_score": 20,
-   "verdict": "Safe",
-   "router_leg": null,
-   "detected_language": "EN",
-   "ms": 66.4
+   "email_sha256": "6a7750f49448e3a1d4fe33e9b51d1f6b7cb1da0b1735cc5a4b6156cc60f915a1",
+   "category": "MX",
+   "marker": "LIVE-QA-14",
+   "expected": "phishing",
+   "got": "phishing",
+   "risk": 70,
+   "leg": "muril",
+   "ms": 2820
+  },
+  {
+   "email_sha256": "e3091a40d546f0e0556f864821b083e71e01f92f15f6e69bb28dae21a8725196",
+   "category": "HI",
+   "marker": "LIVE-QA-15",
+   "expected": "phishing",
+   "got": "phishing",
+   "risk": 80,
+   "leg": "v2_xlmr",
+   "ms": 5964
   }
  ]
 }

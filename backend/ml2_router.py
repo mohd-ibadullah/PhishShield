@@ -153,6 +153,39 @@ def _v2_predict(text: str) -> dict[str, Any] | None:
         return None
 
 
+def _muril_predict(text: str) -> dict[str, Any] | None:
+    """MuRIL standalone leg (MX route). Self-contained torch inference off the
+    shared provider (get_tokenizer/get_model) — no main import (circular).
+    Label convention matches the ensemble: index 1 = phishing."""
+    try:
+        from models.muril_provider import MurilProvider  # type: ignore
+
+        import torch  # type: ignore
+
+        provider = MurilProvider()
+        tok = provider.get_tokenizer()
+        mdl = provider.get_model()
+        if tok is None or mdl is None:
+            return None
+        enc = tok([text], return_tensors="pt", truncation=True, padding=True, max_length=512)
+        try:
+            device = str(next(mdl.parameters()).device)
+        except Exception:
+            device = "cpu"
+        if "cuda" in device:
+            enc = {k: v.to("cuda") for k, v in enc.items()}
+        mdl.eval()
+        with torch.no_grad():
+            probs = torch.softmax(mdl(**enc).logits, dim=-1)[0].tolist()
+        if len(probs) < 2:
+            return None
+        phish_prob = float(max(0.0, min(1.0, probs[1])))
+        return {"prob": phish_prob, "score": phish_prob}
+    except Exception:
+        logger.exception("ML2 router: MuRIL leg failed on MX route")
+        return None
+
+
 def route_verdict(email_text: str) -> dict[str, Any] | None:
     """Top-level router entry. Returns a decision dict or None (honest 'not confident').
 
@@ -179,15 +212,11 @@ def route_verdict(email_text: str) -> dict[str, Any] | None:
         decision = {"leg": leg, "language": lang, "verdict": verdict, "confidence": result["score"], "status": "ok", "probs": result["probs"]}
     elif lang == "MX":
         leg = "muril"
-        try:
-            from models.muril_provider import MurilProvider  # type: ignore
-
-            provider = MurilProvider()
-            prob = float(provider.predict_probability(text))
-            decision = {"leg": leg, "language": lang, "verdict": "phishing" if prob >= 0.5 else "ham", "confidence": prob, "status": "ok"}
-        except Exception:
-            logger.exception("ML2 router: MuRIL leg failed on MX route")
-            return None
+        result = _muril_predict(text)
+        if result is None:
+            return None  # honest failure
+        prob = float(result["prob"])
+        decision = {"leg": leg, "language": lang, "verdict": "phishing" if prob >= 0.5 else "ham", "confidence": prob, "status": "ok"}
     else:
         leg = "ensemble"
         try:
