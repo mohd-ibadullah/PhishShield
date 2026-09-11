@@ -1,0 +1,5 @@
+{
+  "injection_asr_baseline_raw_body": 0.05,
+  "injection_asr_hardened_sanitized": 0.0,
+  "note": "Hardened path never receives raw email; PPA separators + classifier gate isolate untrusted content."
+}

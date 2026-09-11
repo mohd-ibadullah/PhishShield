@@ -18,6 +18,9 @@ protocol exists. Each is one line + its unblock condition.
   labeling round with adjudication protocol.
 - MuRIL-alone for EN (gauntlet n=8 ham direction, not a verdict):
   DEFERRED — paper-phase candidate, not this pass (see ml2/MODEL_ARTIFACTS.md).
+- V2 retrain round: DEFERRED (owner decision A, 2026-09-12) — LLM-generated +
+  BEC corpora in-train, spam-class rebalancing so LABEL_1 is reachable in the
+  deployed artifact, same-gauntlet compare-or-discard against the current one.
 
 Operative mapping reminder: binary PHISH/HAM (0=phishing, 2=ham,
 1=unresolved_dead, never argmax in 133 live predictions). Marketing stays on

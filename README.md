@@ -297,6 +297,13 @@ Manual checks on FastAPI `:8000` + React dashboard:
 
 Also verified: `/health` (actual active model), `/stats` (Gemini + VT active), `/check-url` (VirusTotal + allowlist), `/check-headers` (spoof signals), `/explain` (Gemini/OpenRouter when keyed; otherwise `source: signal_trace`), `/feedback`, `/recent-scans` (3 session items for Live Feed), `pytest` (**403+ passed**).
 
+## Limits
+
+Classic scams strong; LLM-generated/BEC weak — partial rule mitigation only, no modern-coverage claim.
+The specialist model catches legacy-style phishing reliably but misses polished LLM-generated and
+CEO-fraud (BEC) emails; the rule layer carries BEC/modern patterns as score boosts, which is
+mitigation, not detection.
+
 ## Future Improvements
 - A live Gmail or Outlook hook is next on my list because paste-only flows still add friction for people who live inside their inbox all day, and that is where most risky threads actually land.
 - I want broader Indian-language coverage and cleaner transliteration handling because mixed-script bait already shows up in the wild and the model still stumbles when the script hops mid-sentence.

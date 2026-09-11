@@ -22,6 +22,8 @@ services:
         sync: false
       - key: PHISHSHIELD_TRY_SHAP_ON_SCAN
         value: "0"
+      - key: PHISHSHIELD_ML2_LEGS
+        value: "0"
       - key: LLM_PROVIDER
         value: openrouter
       - key: LLM_API_KEY

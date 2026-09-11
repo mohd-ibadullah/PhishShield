@@ -1,0 +1,12 @@
+{
+  "method": "TemperatureScaling",
+  "T": 1.4059,
+  "energy_ood_threshold": -3.9065,
+  "energy_percentile_source": "val_95",
+  "abstain_low": 0.5,
+  "abstain_high": 0.8,
+  "fit_on": "val_only",
+  "ece_raw": 1.0883,
+  "ece_calibrated": 1.0899,
+  "ood_auroc_val_vs_ood": 0.5203
+}

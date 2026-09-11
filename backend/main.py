@@ -2397,11 +2397,15 @@ SENDER_DOMAIN_RISK_ACTION_TOKENS = frozenset(
     }
 )
 BEC_TRANSFER_PATTERN = re.compile(
-    r"\b(?:wire(?:\s+transfer)?|bank transfer|transfer funds?|transfer money|vendor payment|approve (?:the )?payment|process (?:the )?payment|beneficiary|iban|swift|gift cards?|salary account|bank details?)\b",
+    r"\b(?:wire(?:\s+transfer)?|bank transfer|transfer funds?|transfer money|vendor payment|approve (?:the )?payment|process (?:the )?payment|beneficiary|iban|swift|gift cards?|salary account|bank details?|invoice (?:is )?due|payment by eod|process (?:by|before) eod|updated account details|revised account details|new vendor payment|release the (?:refund|payment|invoice))\b",
     re.IGNORECASE,
 )
 BEC_CONFIDENTIAL_PATTERN = re.compile(
-    r"\b(?:keep this confidential|confidential|secret|only you can|do not tell|don't tell|do not share|don't inform|do not inform|i(?:'m| am) in a meeting|i am in meetings|in a conference|conference|don't call|do not call|will explain later|urgent request)\b",
+    r"\b(?:keep this confidential|confidential|secret|only you can|do not tell|don't tell|do not share|don't inform|do not inform|i(?:'m| am) in a meeting|i am in meetings|in a conference|conference|don't call|do not call|will explain later|urgent request|can't take calls|cannot take calls|traveling and lost my phone|i'll reimburse|will reimburse|i'll repay|lost my phone|off-site today|away from my desk until|handle this for me|on my behalf)\b",
+    re.IGNORECASE,
+)
+BEC_PAYROLL_VERIFY_PATTERN = re.compile(
+    r"\b(?:payroll|salary)(?:.{0,30})?\b(?:verif\w+|confirm\w*|update\w*)\b.{0,60}\b(?:account|details?|bank)\b|\b(?:verif\w+|confirm\w*).{0,30}\b(?:payroll|salary)\b.{0,60}\baccount\b",
     re.IGNORECASE,
 )
 OTP_HARVEST_PATTERN = re.compile(
@@ -5746,13 +5750,19 @@ def build_semantic_pattern_signals(
 
     has_bec_account_change = bool(
         re.search(
-            r"\b(update (?:your )?bank account|change my salary account|change (?:the )?salary account|new bank details|update bank details)\b",
+            r"\b(update (?:your )?bank account|change my salary account|change (?:the )?salary account|new bank details|update bank details|updated account details|revised account details|updated (?:vendor )?payment details)\b",
             email_text,
             re.IGNORECASE,
         )
     )
     if has_bec_account_change and not trusted_sender:
         add_signal("Business email compromise pattern (bank account change request)", 24, hard=True)
+
+    # Modern-BEC mitigation (A2): payroll/verification pretexts that lack the classic
+    # secrecy markers. Score boost only — never a verdict override.
+    has_bec_payroll_verify = bool(BEC_PAYROLL_VERIFY_PATTERN.search(email_text))
+    if has_bec_payroll_verify and not trusted_sender and has_urgency:
+        add_signal("Payroll/verification pretext with deadline (modern BEC pattern)", 22, hard=False)
 
     if has_sender_lookalike:
         add_signal("Sender domain resembles a known brand (lookalike spoof)", 28, hard=True)
@@ -9114,8 +9124,17 @@ def _router_health_block() -> dict[str, Any]:
 
         rep = dict(_ml2_report())
         v2_missing = not bool(rep.get("v2_model_present"))
-        rep["degraded"] = v2_missing
-        rep["degraded_reason"] = "v2_model_dir_missing" if v2_missing else None
+        legs_off = not bool(rep.get("legs_enabled", True))
+        # F2-B transparency: legs disabled by env flag is a stated state, not a
+        # silent downgrade. /health always says which legs are live.
+        if legs_off:
+            rep["degraded"] = False
+            rep["degraded_reason"] = None
+            rep["legs_state"] = "disabled-by-config (en pipeline runs, honest pipeline fallback for routed languages)"
+        else:
+            rep["degraded"] = v2_missing
+            rep["degraded_reason"] = "v2_model_dir_missing" if v2_missing else None
+            rep["legs_state"] = "enabled"
         # P2: IndicBERT files stay on disk but are out of the hot path (V2 owns
         # the non-Latin slot). Listed truthfully as present-but-inactive.
         try:

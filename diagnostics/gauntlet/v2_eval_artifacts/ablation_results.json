@@ -1,0 +1,16 @@
+{
+  "calibration_none_vs_ts": {
+    "acc_no_ts": 0.9674,
+    "acc_with_ts": 0.9674,
+    "note": "TS preserves accuracy; both reported from one trained model."
+  },
+  "explanation_raw_vs_hardened": {
+    "injection_asr_raw": 0.05,
+    "injection_asr_hardened": 0.0
+  },
+  "robustness_fgm_char": {
+    "status": "NOT-RUN",
+    "reason": "Requires retraining 2 extra variants. Reproducible: python train.py with config ROBUST_MODE in {none,fgm,fgm_char}.",
+    "expected_from_literature": "char-noise gives ~93% @20% noise vs FGM-only ~60% (arXiv:2511.12085) [PAPER-DERIVED, not measured here]"
+  }
+}

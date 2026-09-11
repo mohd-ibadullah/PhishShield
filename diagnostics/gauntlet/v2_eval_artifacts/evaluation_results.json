@@ -1,0 +1,245 @@
+{
+  "validation": {
+    "name": "validation",
+    "n": 22847,
+    "per_class": {
+      "0": {
+        "precision": 0.9681,
+        "recall": 0.9563,
+        "f1": 0.9622
+      },
+      "1": {
+        "precision": 0.9645,
+        "recall": 0.9467,
+        "f1": 0.9555
+      },
+      "2": {
+        "precision": 0.968,
+        "recall": 0.9819,
+        "f1": 0.9749
+      }
+    },
+    "macro_f1": 0.9642,
+    "auc_roc_phish": 0.9992,
+    "auc_pr_phish": 0.9924,
+    "fpr_at_95tpr_phish": 0.0023,
+    "confusion_matrix": [
+      [
+        2034,
+        75,
+        18
+      ],
+      [
+        58,
+        7876,
+        385
+      ],
+      [
+        9,
+        215,
+        12177
+      ]
+    ],
+    "energy_ood_auroc": null,
+    "abstain_rate": 0.0012,
+    "phish_recall_when_not_abstained": 0.9558
+  },
+  "id_test": {
+    "name": "id_test",
+    "n": 34283,
+    "per_class": {
+      "0": {
+        "precision": 0.9733,
+        "recall": 0.9516,
+        "f1": 0.9623
+      },
+      "1": {
+        "precision": 0.9633,
+        "recall": 0.9501,
+        "f1": 0.9566
+      },
+      "2": {
+        "precision": 0.9691,
+        "recall": 0.9819,
+        "f1": 0.9754
+      }
+    },
+    "macro_f1": 0.9648,
+    "auc_roc_phish": 0.9991,
+    "auc_pr_phish": 0.993,
+    "fpr_at_95tpr_phish": 0.0028,
+    "confusion_matrix": [
+      [
+        3167,
+        123,
+        38
+      ],
+      [
+        77,
+        11793,
+        543
+      ],
+      [
+        10,
+        326,
+        18206
+      ]
+    ],
+    "energy_ood_auroc": null,
+    "abstain_rate": 0.0009,
+    "phish_recall_when_not_abstained": 0.9498
+  },
+  "cross_source_ood": {
+    "name": "cross_source_ood",
+    "n": 37892,
+    "per_class": {
+      "0": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "1": {
+        "precision": 0.948,
+        "recall": 0.9544,
+        "f1": 0.9512
+      },
+      "2": {
+        "precision": 0.9696,
+        "recall": 0.9622,
+        "f1": 0.9659
+      }
+    },
+    "macro_f1": 0.639,
+    "auc_roc_phish": null,
+    "auc_pr_phish": 0.0,
+    "fpr_at_95tpr_phish": NaN,
+    "confusion_matrix": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        37,
+        14873,
+        673
+      ],
+      [
+        27,
+        816,
+        21466
+      ]
+    ],
+    "energy_ood_auroc": 0.5203,
+    "abstain_rate": 0.0007,
+    "phish_recall_when_not_abstained": 0.0
+  },
+  "curated_modern_dark": {
+    "name": "curated_modern_dark",
+    "n": 200,
+    "per_class": {
+      "0": {
+        "precision": 0.1667,
+        "recall": 0.03,
+        "f1": 0.0508
+      },
+      "1": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "2": {
+        "precision": 0.6667,
+        "recall": 0.4,
+        "f1": 0.5
+      }
+    },
+    "macro_f1": 0.1836,
+    "auc_roc_phish": 0.3061,
+    "auc_pr_phish": 0.3814,
+    "fpr_at_95tpr_phish": 1.0,
+    "confusion_matrix": [
+      [
+        3,
+        77,
+        20
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        15,
+        45,
+        40
+      ]
+    ],
+    "energy_ood_auroc": null,
+    "abstain_rate": 0.07,
+    "phish_recall_when_not_abstained": 0.03
+  },
+  "multilingual": {
+    "korean": {
+      "name": "korean",
+      "n": 67,
+      "per_class": {
+        "0": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "1": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "2": {
+          "precision": 1.0,
+          "recall": 0.4925,
+          "f1": 0.66
+        }
+      },
+      "macro_f1": 0.22,
+      "auc_roc_phish": null,
+      "auc_pr_phish": 0.0,
+      "fpr_at_95tpr_phish": NaN,
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          32,
+          33
+        ]
+      ],
+      "energy_ood_auroc": null,
+      "abstain_rate": 0.0597,
+      "phish_recall_when_not_abstained": 0.0
+    },
+    "gap_note": "No public Hindi/Telugu/majority-language email corpora found; Korean is the only verified multilingual eval."
+  },
+  "char_noise_robustness": {
+    "5%": 0.9604,
+    "10%": 0.951,
+    "20%": 0.9247
+  },
+  "adversarial_textattack": {
+    "n": 100,
+    "flipped": null,
+    "status": "NOT-RUN",
+    "reason": "No module named 'textattack'"
+  },
+  "llm_generated_eval": {
+    "status": "NOT-RUN",
+    "reason": "PhishFuzzer requires GitHub fetch; loader unverified this run. Held out of training by design."
+  }
+}

@@ -45,6 +45,12 @@ _ROUTER_STATE: dict[str, Any] = {
     "muril_provider": None,
 }
 
+# F2-B (owner decision 2026-09-12): router legs sit behind an explicit env flag,
+# OFF by default in deployed configs. No silent downgrade — /health and the boot
+# report always state whether the legs are enabled and loaded.
+def _legs_enabled() -> bool:
+    return os.environ.get("PHISHSHIELD_ML2_LEGS", "1").strip().lower() in {"1", "true", "yes", "on"}
+
 
 def _load_router_config() -> dict[str, Any] | None:
     """Parse ROUTER.yaml without a yaml dependency: block-style key: value / nesting by indent."""
@@ -112,6 +118,8 @@ def detect_route_language(text: str) -> str:
 
 
 def _ensure_v2_loaded() -> bool:
+    if not _legs_enabled():
+        return False
     if _ROUTER_STATE["v2_loaded"]:
         return True
     if _ROUTER_STATE["v2_failed"]:
@@ -158,6 +166,8 @@ def _muril_predict(text: str) -> dict[str, Any] | None:
     """MuRIL standalone leg (MX route). Self-contained torch inference off the
     shared provider (get_tokenizer/get_model) — no main import (circular).
     Label convention matches the ensemble: index 1 = phishing."""
+    if not _legs_enabled():
+        return None
     try:
         from models.muril_provider import MurilProvider  # type: ignore
 
@@ -277,6 +287,7 @@ def router_boot_report() -> dict[str, Any]:
         "label_map_present": lm is not None,
         "label_map_mapping": (lm or {}).get("mapping"),
         "label1_unreachable": (lm or {}).get("label1_unreachable"),
+        "legs_enabled": _legs_enabled(),
         "v2_model_dir": str(V2_MODEL_DIR),
         "v2_model_present": V2_MODEL_DIR.exists(),
         "v2_loaded": _ROUTER_STATE["v2_loaded"],
