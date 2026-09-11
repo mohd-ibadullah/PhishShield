@@ -37,12 +37,12 @@ HINDI_PHISH = (
 )
 # Hindi OTP-awareness email (no links): must stay safe under the shared escape predicate.
 HINDI_OTP_AWARENESS = (
-    "From: bank@example.com\nSubject: सुरक्षा सूचना\n\n"
+    "From: bank@example.invalid\nSubject: सुरक्षा सूचना\n\n"
     "हमारा स्टाफ कभी भी आपसे ओटीपी नहीं मांगता। कृपया अपना OTP किसी के साथ साझा न करें।"
 )
 ENGLISH_PHISH = (
-    "From: security@paypa1.com\nSubject: Account suspended\n\n"
-    "Verify your account immediately: http://paypa1.com/verify"
+    "From: user1@example.invalid\nSubject: Account suspended\n\n"
+    "Verify your account immediately: http://paypa1.example/verify"
 )
 
 
