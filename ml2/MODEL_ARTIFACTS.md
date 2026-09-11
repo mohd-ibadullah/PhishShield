@@ -1,4 +1,4 @@
-# ML2 Model Artifacts — measured registry (2026-09-11, ROUTER pass R0/R1)
+# ML2 Model Artifacts — measured registry (2026-09-11, ROUTER pass R0/R1; gauntlet P0.2 extends 2026-09-11)
 
 ## model_merged (V2 XLM-RoBERTa)
 
@@ -23,3 +23,14 @@
 - English: existing ensemble (SecureBERT + MuRIL + anchor) unchanged — gauntlet round 2: 18/18 phish, 8/8 ham.
 - Hinglish/code-mixed: MuRIL.
 - TF-IDF+LogReg: fast marketing/ham pre-filter, kept.
+
+## Full artifact sha256 registry (gauntlet P0.2, measured 2026-09-11)
+
+| path | bytes | sha256 | loaded-by |
+|:---|---:|:---|:---|
+| `model_merged/model.safetensors` | 1,112,208,060 | `2e3a05d5cb82ac58123d28e86034a90375488a299d157057b2e0c9b1d8a0df30` | `backend/ml2_router.py` (V2 non-Latin leg) |
+| `backend/models/securebert_model/model.safetensors` | 498,612,824 | `bef2aa8a788efb3134ed821a495087a8a96a25b8e20891599da2cdea1a7f722d` | `backend/models/securebert_provider.py` (EN ensemble) |
+| `backend/models/muril_model/model.safetensors` | 950,254,592 | `1ed4638adc0b8c7a52f44fb6c5b348ca5a8504d6fbf2904e8f8143dfe4f36eb5` | `backend/models/muril_provider.py` (EN ensemble + MX leg) |
+| `backend/indicbert_model/model.safetensors` | 133,783,952 | `c51c0d684a0377d8edf180680c472355f0dbe15153f97deeea4fa960c477828f` | present-but-inactive (out of the hot path since ROUTER pass) |
+| `backend/model.pkl` | 22,059 | `433d162f7f3477ed0ae597c4ba824d8c6eeb4d069fe2d8c45b88de67aab494b0` | `backend/main.py` (TF-IDF LogReg + marketing pre-filter) |
+| `backend/vectorizer.pkl` | 107,193 | `373bfc706ca8fbcbed05bd3f0c534737f480e283b4f79755d55585ae66cba07e` | `backend/main.py` (TF-IDF vectorizer) |
