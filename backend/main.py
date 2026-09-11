@@ -1687,7 +1687,12 @@ def save_scan_to_db(result: dict[str, Any], session_id: str | None = None) -> No
         verdict = str(result.get("verdict") or result.get("classification") or "Suspicious")
         risk_score = int(result.get("risk_score") or result.get("riskScore") or 0)
         timestamp = str(result.get("timestamp") or datetime.now(timezone.utc).isoformat())
-        language = str(result.get("language") or result.get("detectedLanguage") or "EN")
+        language = str(
+            result.get("language")
+            or result.get("detectedLanguage")
+            or result.get("detected_language")
+            or "EN"
+        )
         domain_trust = result.get("domainTrust") if isinstance(result.get("domainTrust"), dict) else {}
         sender_domain = str(
             result.get("sender_domain")
@@ -7938,6 +7943,8 @@ def _calculate_email_risk_inner(
         "attachment_analysis": attachment_analysis,
         "url_sandbox": url_sandbox,
         "trusted_sender": trusted_sender,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "sender_domain": sender_domain,
         "header_analysis": {
             "spf": str(header_analysis.get("spf", "none")),
             "dkim": str(header_analysis.get("dkim", "none")),
@@ -8904,6 +8911,22 @@ def check_headers(payload: HeaderRequest) -> dict[str, Any]:
     }
 
 
+def _router_health_block() -> dict[str, Any]:
+    """R3: /health carries the ROUTER leg state. V2 (non-Latin specialist) missing
+    at boot -> degraded True; non-Latin scans then return the honest pipeline-
+    untouched result with router_leg absent (pinned contract), never a faked verdict."""
+    try:
+        from ml2_router import router_boot_report as _ml2_report
+
+        rep = dict(_ml2_report())
+        v2_missing = not bool(rep.get("v2_model_present"))
+        rep["degraded"] = v2_missing
+        rep["degraded_reason"] = "v2_model_dir_missing" if v2_missing else None
+        return rep
+    except Exception as exc:
+        return {"status": "unknown", "degraded": True, "degraded_reason": f"router_report_failed: {exc}"}
+
+
 @app.get("/health")
 def health() -> dict[str, Any]:
     _provider_is_temporarily_disabled("securebert")
@@ -8957,6 +8980,7 @@ def health() -> dict[str, Any]:
                 "device": "cpu",
             },
         },
+        "router": _router_health_block(),
     }
 
 
