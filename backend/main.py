@@ -8315,6 +8315,24 @@ async def scan_email(payload: EmailScanRequest, request: Request, response: Resp
 
         save_scan_to_db(result, session_key)
 
+        # ML2 ROUTER pass: per-scan structured log line must carry the routing fields
+        # (email_sha256 | detected_language | leg | score | verdict). Hash only —
+        # never the email body (b3.5 / D5).
+        try:
+            _ml2_route_info = result.get("router_leg")
+            append_structured_scan_log(
+                {
+                    "email_sha256": hashlib.sha256(payload.email_text.encode("utf-8")).hexdigest(),
+                    "detected_language": detect_language_code(payload.email_text),
+                    "leg": _ml2_route_info or "ensemble",
+                    "score": int(result.get("risk_score") or 0),
+                    "verdict": result.get("verdict"),
+                },
+                _email_text=payload.email_text,
+            )
+        except Exception as exc:
+            logger.warning("ML2 route log line failed: %s", exc)
+
         scan_id_val = result.get("scan_id") or result.get("id") or ""
         # b3.5: Never broadcast raw email body/preview. Use redacted label.
         preview = f"Scan {scan_id_val[:8]}..."

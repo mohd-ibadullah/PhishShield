@@ -1,0 +1,106 @@
+{
+ "generated": "2026-09-11",
+ "pass": "P2 router-integration probes (LIVE-QA-<n> markers, synthetic, no PII)",
+ "note": "sanity-gauntlet (agent-generated cases, small n) — NOT a metric claim",
+ "rows": [
+  {
+   "id": "G-HI-01",
+   "category": "HI",
+   "expected": "PHISH",
+   "email_sha256": "1d1c1a60711261c4",
+   "risk_score": 75,
+   "verdict": "High Risk",
+   "router_leg": "v2_xlmr",
+   "detected_language": "HI",
+   "ms": 1316.1
+  },
+  {
+   "id": "G-TE-01",
+   "category": "TE",
+   "expected": "PHISH",
+   "email_sha256": "c5a4fa72a45d6b57",
+   "risk_score": 85,
+   "verdict": "High Risk",
+   "router_leg": "v2_xlmr",
+   "detected_language": "TE",
+   "ms": 912.6
+  },
+  {
+   "id": "G-EN-01",
+   "category": "EN",
+   "expected": "PHISH",
+   "email_sha256": "a40b031fcfc60388",
+   "risk_score": 70,
+   "verdict": "High Risk",
+   "router_leg": null,
+   "detected_language": "EN",
+   "ms": 730.2
+  },
+  {
+   "id": "G-EN-02",
+   "category": "EN",
+   "expected": "HAM",
+   "email_sha256": "85f9fefb349acb24",
+   "risk_score": 35,
+   "verdict": "Suspicious",
+   "router_leg": null,
+   "detected_language": "EN",
+   "ms": 67.8
+  },
+  {
+   "id": "G-UR-01",
+   "category": "UR",
+   "expected": "PHISH",
+   "email_sha256": "25dc89a17d33a2a4",
+   "risk_score": 85,
+   "verdict": "High Risk",
+   "router_leg": null,
+   "detected_language": "EN",
+   "ms": 1081.0
+  },
+  {
+   "id": "G-TA-01",
+   "category": "TA",
+   "expected": "PHISH",
+   "email_sha256": "050ad4b8f6d238b3",
+   "risk_score": 85,
+   "verdict": "High Risk",
+   "router_leg": "v2_xlmr",
+   "detected_language": "EN",
+   "ms": 1100.7
+  },
+  {
+   "id": "G-BN-01",
+   "category": "BN",
+   "expected": "PHISH",
+   "email_sha256": "05eef423eba266ce",
+   "risk_score": 85,
+   "verdict": "High Risk",
+   "router_leg": "v2_xlmr",
+   "detected_language": "EN",
+   "ms": 844.7
+  },
+  {
+   "id": "G-MX-01",
+   "category": "MX",
+   "expected": "PHISH",
+   "email_sha256": "92ad46d43e556342",
+   "risk_score": 85,
+   "verdict": "High Risk",
+   "router_leg": null,
+   "detected_language": "MX",
+   "ms": 853.1
+  },
+  {
+   "id": "G-MKT-01",
+   "category": "MKT",
+   "expected": "HAM",
+   "email_sha256": "ef1e3d40a2def50a",
+   "risk_score": 20,
+   "verdict": "Safe",
+   "router_leg": null,
+   "detected_language": "EN",
+   "ms": 66.4
+  }
+ ]
+}
