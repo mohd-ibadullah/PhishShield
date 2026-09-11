@@ -1673,14 +1673,6 @@ def save_scan_to_db(result: dict[str, Any], session_id: str | None = None) -> No
     scan_id = str(result.get("scan_id") or result.get("id") or uuid4().hex[:12])
 
     with _connect_scans_db() as conn:
-        existing = conn.execute(
-            "SELECT scan_id FROM scans WHERE scan_id = ?",
-            (scan_id,),
-        ).fetchone()
-        if existing:
-            print(f"[DB] SKIP DUPLICATE: {scan_id} already in DB")
-            return
-
         print(f"[DB] SAVING: {scan_id}")
 
         resolved_session_id = str(session_id or result.get("session_id") or "")
@@ -1702,11 +1694,21 @@ def save_scan_to_db(result: dict[str, Any], session_id: str | None = None) -> No
             or ""
         )
 
+        # LIVE defect 1: UPSERT, not INSERT OR IGNORE. persist_scan_explanation_db
+        # writes an FK stub row (scan_id + session_id, all else NULL) before the
+        # scans row; a plain OR IGNORE would keep the hollow stub forever.
         conn.execute(
             """
-            INSERT OR IGNORE INTO scans (
+            INSERT INTO scans (
                 scan_id, session_id, verdict, risk_score, timestamp, language, sender_domain
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(scan_id) DO UPDATE SET
+                session_id=excluded.session_id,
+                verdict=excluded.verdict,
+                risk_score=excluded.risk_score,
+                timestamp=excluded.timestamp,
+                language=excluded.language,
+                sender_domain=excluded.sender_domain
             """,
             (scan_id, resolved_session_id, verdict, risk_score, timestamp, language, sender_domain),
         )
@@ -4456,6 +4458,10 @@ def store_scan_explanation(scan_id: str, payload: dict[str, Any]) -> None:
         return
     payload = dict(payload)
     payload["scan_id"] = normalized_id
+    # LIVE defect 2: stamp once at store time so /api/history never serialises
+    # the string "None". Stable across reads (never re-computed on GET).
+    if not payload.get("timestamp"):
+        payload["timestamp"] = datetime.now(timezone.utc).isoformat()
     # §2.1: Ensure email_text is never persisted — only keyed HMAC digest.
     raw_email = str(payload.get("email_text", ""))
     if "email_sha256" not in payload and raw_email:
@@ -8186,27 +8192,78 @@ def analyze_text(payload: AnalyzeTextRequest) -> dict[str, Any]:
 def legacy_history(request: Request) -> list[dict[str, Any]]:
     session_key = require_session_key(request)
     items: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    # Source 1 (fast): in-memory scan_explanations for this session.
     for record in reversed(list(app.state.scan_explanations.values())):
         record_session_id = str(record.get("session_id") or "")
         if not record_session_id or record_session_id != session_key:
             continue
-        # §1.2: Use scan_id[:8] as preview — unique, not person-linked, no hash needed.
-        scan_id_val = str(record.get("scan_id") or "")
-        email_preview = scan_id_val[:8] + "..." if scan_id_val else "[redacted]"
-        risk_score = int(record.get("risk_score", 0) or 0)
-        items.append(
-            {
-                "id": str(record.get("scan_id") or None),
-                "timestamp": str(record.get("timestamp") or None),
-                "emailPreview": email_preview,
-                "riskScore": risk_score,
-                "classification": classification_from_risk(risk_score),
-                "detectedLanguage": record.get("analysis_meta", {}).get("detected_language", "EN"),
-                "urlCount": len((record.get("explanation") or {}).get("top_words", [])),
-                "reasonCount": len((record.get("explanation") or {}).get("top_words", [])),
-            }
-        )
+        item = _history_item_from_memory_record(record)
+        sid = str(item.get("id") or "")
+        if sid and sid in seen:
+            continue
+        if sid:
+            seen.add(sid)
+        items.append(item)
+        if len(items) >= 10:
+            return items[:10]
+    # Source 2 (durable): SQLite scans table backfills rows the in-memory
+    # map lost on restart (LIVE defect 1). Same session filter, same shape,
+    # deduped by scan_id. Never email bodies (D5).
+    try:
+        for row in get_recent_scans_from_db(session_key):
+            sid = str(row.get("scan_id") or "")
+            if not sid or sid in seen:
+                continue
+            seen.add(sid)
+            risk_score = int(row.get("risk_score") or 0)
+            items.append(
+                {
+                    "id": sid,
+                    "timestamp": row.get("timestamp"),
+                    "emailPreview": _history_email_preview(sid),
+                    "riskScore": risk_score,
+                    "classification": classification_from_risk(risk_score),
+                    "verdict": _score_to_verdict(risk_score),
+                    "detectedLanguage": str(row.get("language") or "EN"),
+                    "urlCount": 0,
+                    "reasonCount": 0,
+                }
+            )
+            if len(items) >= 10:
+                break
+    except Exception:
+        logger.exception("history DB backfill failed; serving memory rows only")
     return items[:10]
+
+
+def _history_email_preview(scan_id_val: str) -> str:
+    # emailPreview policy (LIVE defect 6): the preview is NEVER email content.
+    # scan_id[:8] + '...' is unique, not person-linked, no hash needed (§1.2).
+    return scan_id_val[:8] + "..." if scan_id_val else "[redacted]"
+
+
+def _history_item_from_memory_record(record: dict[str, Any]) -> dict[str, Any]:
+    # §1.2: Use scan_id[:8] as preview — unique, not person-linked, no hash needed.
+    scan_id_val = str(record.get("scan_id") or "")
+    risk_score = int(record.get("risk_score", 0) or 0)
+    return {
+        "id": str(record.get("scan_id") or None),
+        # Honest null when the record predates timestamp capture — never the
+        # string "None" (LIVE defect 2). Current scans always carry ISO time.
+        "timestamp": record.get("timestamp") or None,
+        "emailPreview": _history_email_preview(scan_id_val),
+        "riskScore": risk_score,
+        # classification (safe/uncertain/phishing) is the frontend-typed vocab;
+        # verdict (Safe/Suspicious/High Risk) is the scan-response vocab. Same
+        # thresholds, both emitted so the labels cannot disagree (LIVE defect:
+        # row said 'uncertain' where the scan said 'Suspicious').
+        "classification": classification_from_risk(risk_score),
+        "verdict": _score_to_verdict(risk_score),
+        "detectedLanguage": record.get("analysis_meta", {}).get("detected_language", "EN"),
+        "urlCount": len((record.get("explanation") or {}).get("top_words", [])),
+        "reasonCount": len((record.get("explanation") or {}).get("top_words", [])),
+    }
 
 
 @app.get("/recent-scans")
@@ -8653,6 +8710,88 @@ def feedback_stats(request: Request) -> dict[str, Any]:
         return {k: v for k, v in full.items() if k in ("total_feedback", "last_retrain")}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Feedback stats failed: {exc}") from exc
+
+
+@app.get("/feedback/export")
+@app.get("/api/feedback/export")
+def export_feedback(request: Request, format: str = "json") -> Any:
+    """LIVE defect 4: export endpoint exists on the python backend (was 404;
+    specced in frontend/lib/api-spec/openapi.yaml as exportFeedbackData).
+    Hash-only entries — never email bodies (D5). Session-gated."""
+    require_session_key(request)
+    fmt = (format or "json").strip().lower()
+    if fmt not in ("json", "jsonl"):
+        raise HTTPException(status_code=400, detail="format must be json or jsonl")
+    try:
+        memory = app.state.feedback_memory
+        if not isinstance(memory, dict) or not memory:
+            memory = load_feedback_memory()
+        entries = memory.get("entries", {}) if isinstance(memory, dict) else {}
+        rows = [
+            {
+                "email_hash": str((entry or {}).get("email_hash") or key),
+                "predicted": str((entry or {}).get("predicted") or ""),
+                "corrected": str((entry or {}).get("corrected") or ""),
+                "count": int((entry or {}).get("count") or 0),
+                "updated_at": str((entry or {}).get("updated_at") or ""),
+            }
+            for key, entry in (entries.items() if isinstance(entries, dict) else [])
+        ]
+        if fmt == "jsonl":
+            return Response(
+                content="\n".join(json.dumps(row) for row in rows),
+                media_type="application/x-ndjson",
+            )
+        return rows
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Feedback export failed: {exc}") from exc
+
+
+class ReportRequest(BaseModel):
+    scan_id: str = Field(..., min_length=1)
+
+
+@app.post("/report")
+@app.post("/api/report")
+def generate_report(payload: ReportRequest, request: Request) -> Any:
+    """LIVE defect 4: report endpoint exists on the python backend (was 404;
+    specced in frontend/lib/api-spec/openapi.yaml as generateReport).
+    Renders a text/plain report for a caller-owned scan_id. Session-gated."""
+    session_key = require_session_key(request)
+    scan_id = str(payload.scan_id or "").strip()
+    record: dict[str, Any] = {}
+    candidate = app.state.scan_explanations.get(scan_id, {})
+    if isinstance(candidate, dict) and _session_matches_record(candidate, session_key):
+        record = candidate
+    if not record:
+        try:
+            for row in get_recent_scans_from_db(session_key):
+                if str(row.get("scan_id") or "") == scan_id:
+                    record = {
+                        "scan_id": scan_id,
+                        "verdict": str(row.get("verdict") or "Suspicious"),
+                        "risk_score": int(row.get("risk_score") or 0),
+                        "timestamp": row.get("timestamp"),
+                        "language": str(row.get("language") or "EN"),
+                    }
+                    break
+        except Exception:
+            logger.exception("report DB lookup failed")
+    if not record:
+        raise HTTPException(status_code=404, detail="Report not found for the provided scan_id")
+    risk_score = int(record.get("risk_score") or 0)
+    lines = [
+        "PhishShield scan report",
+        f"scan_id: {scan_id}",
+        f"verdict: {record.get('verdict') or _score_to_verdict(risk_score)}",
+        f"risk_score: {risk_score}",
+        f"timestamp: {record.get('timestamp') or 'unknown'}",
+        f"language: {record.get('language') or (record.get('analysis_meta', {}) or {}).get('detected_language', 'EN')}",
+        "emailPreview: [redacted by policy]",
+    ]
+    return Response(content="\n".join(lines) + "\n", media_type="text/plain")
 
 
 @app.get("/retrain", include_in_schema=False)
