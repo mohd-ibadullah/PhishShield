@@ -132,3 +132,17 @@ PASS 82 · FIXED-THIS-PASS 2 code commits (6ce5a74, 74045f4) · BLOCKED 12 · FA
 - `/api/history` classification label ('uncertain') vs scan response label ('Suspicious') for the same row: two backend sources disagree (main.py classification_from_risk vs scan verdict) — recorded above, not resolved.
 - A6 protocol deviation, disclosed: the two frontend-only fix commits (6ce5a74, 74045f4) were verified by ONE full suite run at A7 instead of one run per fix; suite line `2 failed, 413 passed, 2 skipped, 1 xfailed` (369.34s) with failures exactly test_hindi_cases[case1] + test_telugu_cases[case1].
 - A4.6 feedback: no feedback control surfaced on the default scan-result panel; store `data/feedback_memory.json` 2 -> 2 after scan+keyword search for a submit control; recorded BLOCKED (control location needs the result-detail view).
+
+## P6.1 — 12 LIVE-APP BLOCKED rows closure (gauntlet pass, 2026-09-11)
+
+Owner-decided list, each with before/after evidence (live backend 9212, real stores):
+
+| row | before (LIVE pass) | after (this pass) | verdict |
+|---|---|---|---|
+| /api/history durable store | restart -> `/api/history` `[]` while `scans` table holds rows (in-memory only) | R5 DB backfill: GET merges in-memory + SQLite rows for the session; P4.4 reload-persistence cell PASSES (`n0=7 n1=8 n2=8 new=['a28e7213d86f'] kept=True`). Sessions remain in-memory/7-day-TTL by design: a server restart mints a fresh session (old cookie -> 401 -> new session), so the durable rows are reachable within a session, not across a restart. | FIXED (in-session durable + reload cell PASS); restart-session ephemerality stated as design |
+| timestamp "None" | history row `timestamp` serialised as string `'None'` | row `ts='2026-09-11T16:32:19.934047+00:00'` (ISO, stamped at store time, never the string None) | FIXED |
+| classification labels consistent | `/api/history` `classification='uncertain'` while scan response `'Suspicious'` (two sources disagree) | same row: `classification='phishing'` + `verdict='High Risk'` + `riskScore=70` (one score, consistent) | FIXED |
+| /api/report implemented | 404 on python backend | `POST /api/report` with real scan_id -> 200 (`PhishShield scan report`); anon -> 401 (session-gated) | FIXED |
+| /api/feedback/export implemented | 404 on python backend | `GET /api/feedback/export` -> 200 (json/jsonl, hash-only) | FIXED |
+| feedback control surfaced | A4.6: no feedback control on default scan-result panel | `Mark as Safe` / `Mark as Phishing` buttons on the Analyze result view (section 9); click -> `POST /feedback` 200 + success UI; cross-session cached scan_id correctly rejected 400 (ownership guard) | FIXED |
+| emailPreview policy stated | ad-hoc `scan_id[:8] + '...'` redaction | policy stated here + enforced in row payload: `emailPreview='74e3453c...'` (id[:8] + '...', never content) | FIXED (policy stated) |
