@@ -4,6 +4,7 @@
 
 version: "2026-09-11"
 label_map: ml2/label_map.json
+marketing_route: tfidf
 weights_sha256: "2e3a05d5cb82ac58123d28e86034a90375488a299d157057b2e0c9b1d8a0df30"
 
 routes:

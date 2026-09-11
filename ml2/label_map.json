@@ -7,6 +7,10 @@
     "LABEL_1": null,
     "LABEL_2": "ham"
   },
+  "LABEL_0": "phishing",
+  "LABEL_1": null,
+  "LABEL_1_status": "unresolved_dead",
+  "LABEL_2": "ham",
   "label1_status": "unresolved_dead",
   "label1_unreachable": true,
   "marketing_route": "tfidf",
