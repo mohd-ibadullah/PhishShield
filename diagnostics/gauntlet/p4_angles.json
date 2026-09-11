@@ -1,0 +1,112 @@
+[
+ {
+  "angle": "double-submit",
+  "criterion": "no crash, resolves",
+  "status": "submitted=1 body_len=2973"
+ },
+ {
+  "angle": "input-empty",
+  "criterion": "submit disabled, no crash",
+  "status": "ok disabled=True"
+ },
+ {
+  "angle": "input-whitespace",
+  "criterion": "submit disabled, no crash",
+  "status": "ok disabled=True"
+ },
+ {
+  "angle": "input-unicode",
+  "criterion": "no crash, server-saved",
+  "status": "ok submitted=True scan_http=[200] body_len=2139"
+ },
+ {
+  "angle": "input-emoji",
+  "criterion": "no crash, server-saved",
+  "status": "ok submitted=True scan_http=[200] body_len=2505"
+ },
+ {
+  "angle": "input-xss-img",
+  "criterion": "no crash, server-saved",
+  "status": "ok submitted=True scan_http=[200] body_len=2696"
+ },
+ {
+  "angle": "input-xss-script",
+  "criterion": "no crash, server-saved",
+  "status": "ok submitted=True scan_http=[200] body_len=2139"
+ },
+ {
+  "angle": "input-sql",
+  "criterion": "no crash, server-saved",
+  "status": "ok submitted=True scan_http=[200] body_len=2139"
+ },
+ {
+  "angle": "input-nosql",
+  "criterion": "no crash, server-saved",
+  "status": "ok submitted=True scan_http=[200] body_len=2139"
+ },
+ {
+  "angle": "oversize-1MiB",
+  "criterion": "413 not crash",
+  "status": "413"
+ },
+ {
+  "angle": "xss-no-dialog",
+  "criterion": "0 dialogs",
+  "status": "fired=0 []"
+ },
+ {
+  "angle": "stored-escape",
+  "criterion": "no raw payload in history",
+  "status": "http=200 has_script_tag=False has_onerror=False"
+ },
+ {
+  "angle": "reload-persistence",
+  "criterion": "count +1, same id after reload",
+  "status": "n0=7 n1=8 n2=8 new=['a28e7213d86f'] kept=True"
+ },
+ {
+  "angle": "backend-indicator-before",
+  "criterion": "indicator text captured",
+  "status": "Backend: Connected \u2705"
+ },
+ {
+  "angle": "two-tab-broadcast",
+  "criterion": "scan_id prefix appears in tab2, no email text",
+  "status": "submitted=True id_in_tab2=True marker_in_tab2=('LIVE-QA-69' in t2)"
+ },
+ {
+  "angle": "cookie-clear-gated",
+  "criterion": "non-200",
+  "status": "401"
+ },
+ {
+  "angle": "load-20-parallel",
+  "criterion": "all 200/4xx, alive",
+  "status": "20/20 200; set=[200]"
+ },
+ {
+  "angle": "load-500-rapid",
+  "criterion": "observed behavior stated",
+  "status": "{200: 500}; alive=True"
+ },
+ {
+  "angle": "viewport-375/",
+  "criterion": "no h-scroll",
+  "status": "hscroll=False"
+ },
+ {
+  "angle": "viewport-375/premium",
+  "criterion": "no h-scroll",
+  "status": "hscroll=False"
+ },
+ {
+  "angle": "viewport-375/classic",
+  "criterion": "no h-scroll",
+  "status": "hscroll=False"
+ },
+ {
+  "angle": "console-errors",
+  "criterion": "listed",
+  "status": "n=2 sample=['Failed to load resource: the server responded with a status of 403 (Forbidden)', 'Failed to load resource: the server responded with a status of 403 (Forbidden)'] net4xx=[{'method': 'POST', 'url': 'http://127.0.0.1:4173/retrain', 'status': 403}, {'method': 'POST', 'url': 'http://127.0.0.1:4173/retrain', 'status': 403}]"
+ }
+]

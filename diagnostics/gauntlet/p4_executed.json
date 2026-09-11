@@ -1,0 +1,263 @@
+[
+ {
+  "route": "/",
+  "idx": 0,
+  "tag": "button",
+  "text": "Privacy on",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=True"
+ },
+ {
+  "route": "/",
+  "idx": 1,
+  "tag": "button",
+  "text": "Analyze",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/",
+  "idx": 2,
+  "tag": "button",
+  "text": "Dashboard",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/",
+  "idx": 3,
+  "tag": "button",
+  "text": "Scenario Lab",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/",
+  "idx": 4,
+  "tag": "button",
+  "text": "Live Paste",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/",
+  "idx": 5,
+  "tag": "button",
+  "text": "Upload File",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/",
+  "idx": 6,
+  "tag": "textarea",
+  "text": "Email content to scan",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-fill-clear",
+  "detail": "roundtrip=True"
+ },
+ {
+  "route": "/",
+  "idx": 7,
+  "tag": "button",
+  "text": "Advanced (Headers)",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/",
+  "idx": 8,
+  "tag": "button",
+  "text": "Clear draft",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-armed-not-activated",
+  "detail": "enabled=True (state-changing, not activated)"
+ },
+ {
+  "route": "/",
+  "idx": 9,
+  "tag": "button",
+  "text": "Scan Email",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-armed-not-activated",
+  "detail": "disabled=True (empty-state guard)"
+ },
+ {
+  "route": "/premium",
+  "idx": 0,
+  "tag": "button",
+  "text": "Scan now",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/premium",
+  "idx": 1,
+  "tag": "button",
+  "text": "Reset view",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-armed-not-activated",
+  "detail": "enabled=True (state-changing, not activated)"
+ },
+ {
+  "route": "/premium",
+  "idx": 2,
+  "tag": "button",
+  "text": "CFO Office\nDemo\n\nRelease this confidenti",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=True"
+ },
+ {
+  "route": "/premium",
+  "idx": 3,
+  "tag": "button",
+  "text": "HDFC Security\nDemo\n\nYour account will be",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=True"
+ },
+ {
+  "route": "/premium",
+  "idx": 4,
+  "tag": "button",
+  "text": "Google Security\nDemo\n\nSecurity alert for",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=True"
+ },
+ {
+  "route": "/premium",
+  "idx": 5,
+  "tag": "textarea",
+  "text": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-fill-clear",
+  "detail": "roundtrip=True"
+ },
+ {
+  "route": "/premium",
+  "idx": 6,
+  "tag": "button",
+  "text": "Analyze Email",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-armed-not-activated",
+  "detail": "disabled=True (empty-state guard)"
+ },
+ {
+  "route": "/premium",
+  "idx": 7,
+  "tag": "button",
+  "text": "Dismiss",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/premium",
+  "idx": 8,
+  "tag": "button",
+  "text": "Clear",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-armed-not-activated",
+  "detail": "enabled=True (state-changing, not activated)"
+ },
+ {
+  "route": "/classic",
+  "idx": 0,
+  "tag": "button",
+  "text": "Privacy on",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=True"
+ },
+ {
+  "route": "/classic",
+  "idx": 1,
+  "tag": "button",
+  "text": "Analyze",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/classic",
+  "idx": 2,
+  "tag": "button",
+  "text": "Dashboard",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/classic",
+  "idx": 3,
+  "tag": "button",
+  "text": "Scenario Lab",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/classic",
+  "idx": 4,
+  "tag": "button",
+  "text": "Live Paste",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/classic",
+  "idx": 5,
+  "tag": "button",
+  "text": "Upload File",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/classic",
+  "idx": 6,
+  "tag": "textarea",
+  "text": "Email content to scan",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-fill-clear",
+  "detail": "roundtrip=True"
+ },
+ {
+  "route": "/classic",
+  "idx": 7,
+  "tag": "button",
+  "text": "Advanced (Headers)",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-click",
+  "detail": "dom_changed=False"
+ },
+ {
+  "route": "/classic",
+  "idx": 8,
+  "tag": "button",
+  "text": "Clear draft",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-armed-not-activated",
+  "detail": "enabled=True (state-changing, not activated)"
+ },
+ {
+  "route": "/classic",
+  "idx": 9,
+  "tag": "button",
+  "text": "Scan Email",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)",
+  "outcome": "verified-armed-not-activated",
+  "detail": "disabled=True (empty-state guard)"
+ }
+]

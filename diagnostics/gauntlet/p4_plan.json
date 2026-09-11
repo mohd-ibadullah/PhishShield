@@ -1,0 +1,234 @@
+[
+ {
+  "route": "/",
+  "idx": 0,
+  "tag": "button",
+  "text": "Privacy on",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 1,
+  "tag": "button",
+  "text": "Analyze",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 2,
+  "tag": "button",
+  "text": "Dashboard",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 3,
+  "tag": "button",
+  "text": "Scenario Lab",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 4,
+  "tag": "button",
+  "text": "Live Paste",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 5,
+  "tag": "button",
+  "text": "Upload File",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 6,
+  "tag": "textarea",
+  "text": "Email content to scan",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 7,
+  "tag": "button",
+  "text": "Advanced (Headers)",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 8,
+  "tag": "button",
+  "text": "Clear draft",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/",
+  "idx": 9,
+  "tag": "button",
+  "text": "Scan Email",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 0,
+  "tag": "button",
+  "text": "Scan now",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 1,
+  "tag": "button",
+  "text": "Reset view",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 2,
+  "tag": "button",
+  "text": "CFO Office\nDemo\n\nRelease this confidenti",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 3,
+  "tag": "button",
+  "text": "HDFC Security\nDemo\n\nYour account will be",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 4,
+  "tag": "button",
+  "text": "Google Security\nDemo\n\nSecurity alert for",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 5,
+  "tag": "textarea",
+  "text": "",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 6,
+  "tag": "button",
+  "text": "Analyze Email",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 7,
+  "tag": "button",
+  "text": "Dismiss",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/premium",
+  "idx": 8,
+  "tag": "button",
+  "text": "Clear",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 0,
+  "tag": "button",
+  "text": "Privacy on",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 1,
+  "tag": "button",
+  "text": "Analyze",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 2,
+  "tag": "button",
+  "text": "Dashboard",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 3,
+  "tag": "button",
+  "text": "Scenario Lab",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 4,
+  "tag": "button",
+  "text": "Live Paste",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 5,
+  "tag": "button",
+  "text": "Upload File",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 6,
+  "tag": "textarea",
+  "text": "Email content to scan",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 7,
+  "tag": "button",
+  "text": "Advanced (Headers)",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 8,
+  "tag": "button",
+  "text": "Clear draft",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ },
+ {
+  "route": "/classic",
+  "idx": 9,
+  "tag": "button",
+  "text": "Scan Email",
+  "href": "",
+  "criterion": "per-item verified behavior (click/fill/toggle/armed)"
+ }
+]
