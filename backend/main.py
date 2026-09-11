@@ -548,11 +548,10 @@ def _csv_env_values(name: str) -> list[str]:
 
 
 def _allowed_cors_origins() -> list[str]:
+    # No baked localhost origins: dev traffic is same-origin through the vite
+    # proxy, and deployments set CORS_ALLOWED_ORIGINS explicitly (render.yaml).
     configured = _csv_env_values("CORS_ALLOWED_ORIGINS")
-    base = configured or [
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-    ]
+    base = configured or []
     # Content scripts on Gmail/Outlook send Origin: https://mail.google.com (not chrome-extension://).
     extras = [
         "https://mail.google.com",
