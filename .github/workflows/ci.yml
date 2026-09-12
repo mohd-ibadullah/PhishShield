@@ -162,7 +162,11 @@ jobs:
 
       - name: Run finalizer e2e (opt-in poisoning)
         run: |
-          OUTPUT=$(PHISHSHIELD_FINALIZER_E2E=1 python -m pytest tests/test_no_repo_store_writes.py -v 2>&1)
+          # The poison run is SUPPOSED to exit non-zero (the session finalizer
+          # catches the intentional store write). Default `bash -e` would abort
+          # the step on that exit code before the error-count check below, so
+          # capture with || true and judge by the ERROR count instead.
+          OUTPUT=$(PHISHSHIELD_FINALIZER_E2E=1 python -m pytest tests/test_no_repo_store_writes.py -v 2>&1 || true)
           echo "$OUTPUT"
           ERROR_COUNT=$(echo "$OUTPUT" | grep -c "ERROR tests/")
           echo "Intentional errors: $ERROR_COUNT"
