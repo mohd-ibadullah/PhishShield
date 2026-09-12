@@ -24,40 +24,38 @@ You are not clicking through a fake wizard: you bring the messy real message, an
 You get a risk score, a plain verdict, and short reasons you can skim in a few seconds.  
 If it looks like a scam it names the vibe; if it looks fine it says so, so you are not stuck guessing.
 
-For example, a note claiming your HDFC account is frozen until you “urgently” share the OTP for KYC over UPI can come back as **HIGH RISK** with the rule engine surfacing signals like **OTP request detected**, **Urgency language**, and **UPI handle detected**—the same kinds of reasons you see in the scan response, not a black box.
+For example, a note claiming your HDFC account is frozen until you "urgently" share the OTP for KYC over UPI can come back as **HIGH RISK** with the rule engine surfacing signals like **OTP request detected**, **Urgency language**, and **UPI handle detected**. The same kinds of reasons you see in the scan response, not a black box.
+
+## How Scanning Works
+Every email first goes through a language check. Hindi, Telugu, Urdu, Tamil and Bengali emails are scored by a fine-tuned XLM-RoBERTa model, Hinglish goes through MuRIL, and English goes through an ensemble of SecureBERT and MuRIL with a rule engine on top. Marketing or newsletter style mail takes a fast TF-IDF path so it never pays the cost of a transformer.
+
+Whichever path an email takes, the rule signals and the model score come together into one risk number with a plain verdict and a short explanation. If the specialist model cannot decide confidently, the app says so instead of guessing.
 
 ## Features
 
-> **Chrome Extension:** Includes a Chrome Extension for in-browser scanning — paste any email directly from Gmail or any webmail tab without leaving the page.
+> **Chrome Extension:** Includes a Chrome Extension for in-browser scanning. It signs in to the backend before scanning, so your scan history and feedback stay tied to one session, and paste any email directly from Gmail or any webmail tab without leaving the page.
 
 - Scans email text and returns a risk score with verdicts like Safe, Suspicious, or High Risk.
-- Uses both rule-based detection and machine-learning scoring for better phishing coverage.
-- Supports multilingual scam signals (including English, Hindi, Telugu, and mixed-script patterns).
+- Uses both rule-based detection and machine-learning scoring, with a language router that sends each email to the right specialist.
+- Supports multilingual scam signals. English, Hindi, Telugu, Urdu, Tamil, Bengali and mixed-script patterns each get a dedicated path.
 - You can run a full email scan, check a URL on its own, or paste headers for SPF-style checks when you do not have the whole message, then send feedback or fetch the stored explanation for a past scan so you are not re-pasting the same thread to understand an earlier verdict.
 - Saves user feedback to improve future detections over time.
-- Includes a React dashboard, TypeScript API layer, and FastAPI backend.
+- Includes a React dashboard with a dark theme, a live feed of recent scans, and a TypeScript API layer on a FastAPI backend.
 - Comes with Docker setup to run frontend and backend together with one command.
 
 ## Tech Stack
 | Layer | Technology |
 |-------|------------|
 | Backend | Python, FastAPI, Uvicorn, WebSocket |
-| ML Model | TF-IDF + Logistic Regression, SecureBERT/MuRIL (Transformers, Torch) |
+| ML Models | Fine-tuned XLM-RoBERTa (non-Latin), SecureBERT + MuRIL ensemble (English), MuRIL (Hinglish), TF-IDF + Logistic Regression (marketing fast path) |
 | Frontend | React 19, Vite 7, TypeScript, Tailwind CSS |
-| Database | SQLite (local dev DB), Drizzle ORM, JSON/CSV flat file stores |
+| Database | SQLite (with WAL mode for busy periods), JSON/CSV flat file stores |
 | Observability | Prometheus metrics; per-scan SHAP/LIME/heuristic word attributions on `/scan-email` (SHAP times out gracefully; `explanation_degraded` when fallback) |
 | DevOps | Docker, Docker Compose, Nginx, Playwright, GitHub Actions CI |
 
-## How It Works
-1. A user submits an email to scan.
-2. The backend cleans the text and checks phishing patterns (urgency, impersonation, credential lures, etc.).
-3. ML scoring runs (SecureBERT/MuRIL when available, with TF-IDF fallback). The transformer path runs when the machine has enough RAM or a GPU; on smaller laptops TF-IDF is picked automatically so the same request still returns a score.
-4. Rule signals + ML signals are fused into one final risk score.
-5. The app returns a clear verdict, confidence context, and explanation so the user knows what to do next.
-
 ## Architecture
 
-The backend (FastAPI) handles all phishing analysis — text cleaning, rule-based pattern checks, ML inference, score fusion, and feedback storage.
+The backend (FastAPI) handles all phishing analysis: language routing, text cleaning, rule-based pattern checks, ML inference, score fusion, and feedback storage.
 The frontend (React + TypeScript) talks to the backend over a REST API and shows scan results, risk scores, and explanations in a clean dashboard UI.
 Docker Compose wires both services together. Nginx serves the frontend and proxies API traffic to the backend.
 
@@ -71,9 +69,10 @@ flowchart LR
     NGX["Nginx port 80 static + /api proxy"]
   end
   subgraph SBE["Docker Compose service backend"]
-    API["FastAPI Uvicorn port 8000"]
+    API["FastAPI Uvicorn"]
+    ROUTER["Language router"]
     RULES["Rule engine pattern scores"]
-    MLN["ML TF-IDF LR or SecureBERT MuRIL"]
+    MLN["XLM-R / SecureBERT / MuRIL / TF-IDF"]
     FUS["Score fusion verdict"]
   end
   subgraph VOL["Host-mounted files"]
@@ -82,7 +81,11 @@ flowchart LR
   UI --> NGX
   NGX --> API
   EXT --> API
-  API --> RULES --> MLN --> FUS
+  API --> ROUTER
+  ROUTER --> RULES
+  ROUTER --> MLN
+  RULES --> FUS
+  MLN --> FUS
   API -.-> FILES
 ```
 
@@ -96,7 +99,7 @@ See `docs/PHISHSHIELD_COMPLETE_OVERVIEW.md` for a full deep-dive.
 
 All UI captures below are stored under `screenshots/`; each block lists the exact file path before the image.
 
-### Dashboard — home / email paste
+### Dashboard, home / email paste
 
 **Image:** `screenshots/dashboard-home-screen-scam-email-draft-01.png`  
 ![Dashboard home with scam-style email draft 1](screenshots/dashboard-home-screen-scam-email-draft-01.png)
@@ -107,16 +110,16 @@ All UI captures below are stored under `screenshots/`; each block lists the exac
 **Image:** `screenshots/dashboard-home-screen-safe-email-draft.png`  
 ![Dashboard home with safe / legitimate-style email draft](screenshots/dashboard-home-screen-safe-email-draft.png)
 
-### Dashboard — scan results
+### Dashboard, scan results
 
 **Image:** `screenshots/dashboard-scan-results-phishing-view-01.png`  
-![Dashboard scan result — phishing-style outcome 1](screenshots/dashboard-scan-results-phishing-view-01.png)
+![Dashboard scan result, phishing-style outcome 1](screenshots/dashboard-scan-results-phishing-view-01.png)
 
 **Image:** `screenshots/dashboard-scan-results-phishing-view-02.png`  
-![Dashboard scan result — phishing-style outcome 2](screenshots/dashboard-scan-results-phishing-view-02.png)
+![Dashboard scan result, phishing-style outcome 2](screenshots/dashboard-scan-results-phishing-view-02.png)
 
 **Image:** `screenshots/dashboard-scan-results-safe-verdict-view.png`  
-![Dashboard scan result — safe verdict](screenshots/dashboard-scan-results-safe-verdict-view.png)
+![Dashboard scan result, safe verdict](screenshots/dashboard-scan-results-safe-verdict-view.png)
 
 ### Chrome extension
 
@@ -127,7 +130,7 @@ All UI captures below are stored under `screenshots/`; each block lists the exac
 
 ### Quick Start
 
-The full **frontend + backend** stack is meant to come up with **one command** via **Docker Compose** from the repo root — no separate terminal per service.
+The full **frontend + backend** stack is meant to come up with **one command** via **Docker Compose** from the repo root, no separate terminal per service.
 
 ```bash
 git clone https://github.com/mohd-ibadullah/PhishShield.git
@@ -140,9 +143,9 @@ docker compose up --build
 
 **Docker + ML models:** Large weights are not copied into the image (see `backend/.dockerignore`). Compose mounts your local `backend/indicbert_model`, `backend/models/*`, and `model.pkl` into the container. Start **Docker Desktop** first, then run compose. First `/health` may take 1–2 minutes while transformers warm up.
 
-**Deploy (Render etc.):** Set the same API keys as local (`HF_TOKEN`, `VT_API_KEY`, `CORS_ALLOWED_ORIGINS`, LLM keys). Without `HF_TOKEN`, the container starts in rules/TF-IDF mode until Hugging Face downloads complete — check `/health` for `securebert` / `muril` status.
+**Deploy (Render etc.):** Set the same API keys as local (`HF_TOKEN`, `VT_API_KEY`, `CORS_ALLOWED_ORIGINS`, LLM keys). Without `HF_TOKEN`, the container starts in rules/TF-IDF mode until Hugging Face downloads complete, check `/health` for `securebert` / `muril` status. Set `PHISHSHIELD_ML2_LEGS=0` to keep the specialist language models out of the request path on small instances; `/health` reports the flag state either way.
 
-There is also a **`Makefile`** at the repo root with helper targets for Docker workflows, local setup convenience (for example creating `.env` from the example), and development tasks such as running tests in the backend container — run `make help` to see the list.
+There is also a **`Makefile`** at the repo root with helper targets for Docker workflows, local setup convenience (for example creating `.env` from the example), and development tasks such as running tests in the backend container, run `make help` to see the list.
 
 Use **Prerequisites**, **Installation**, and **Running the Project** below only if you prefer a local dev setup without Docker.
 
@@ -172,10 +175,10 @@ python -m pip install -r backend/requirements.txt
 
 ### Running the Project
 
-**Docker Compose (recommended):** From the repo root, the same single command as in **Quick Start** runs the full stack — frontend and backend in one go:
+**Docker Compose (recommended):** From the repo root, the same single command as in **Quick Start** runs the full stack, frontend and backend in one go:
 
 ```bash
-# Option A: Docker — full frontend + backend with one command
+# Option A: Docker, full frontend + backend with one command
 docker compose up --build
 ```
 
@@ -190,7 +193,7 @@ cd frontend
 pnpm dev
 ```
 
-Once running: frontend at http://localhost:5173 — API docs at http://localhost:8000/docs
+Once running: frontend at http://localhost:5173, API docs at http://localhost:8000/docs
 
 ## Chrome Extension
 
@@ -198,8 +201,8 @@ The loadable extension sources live under **`frontend/artifacts/chrome-extension
 
 1. Start the FastAPI backend so `http://localhost:8000` responds (for example `docker compose up --build` from the repo root, or `python -m uvicorn main:app --reload --port 8000` from `backend/`).
 2. In Chrome, open `chrome://extensions/`, turn on **Developer mode**, click **Load unpacked**, and choose the `frontend/artifacts/chrome-extension/` folder.
-3. Open the extension’s **Extension options** (or the options page from the extension details) and confirm **API Base URL** is `http://localhost:8000` (or your deployed API origin); use **Test Connection** if you want to verify `/health`.
-4. Use the toolbar popup: manual scans `POST` to **`/scan-email`** with JSON `{"email_text": "..."}` on that same FastAPI base URL, and the background worker polls **`/health`** for status—so the extension talks to the same backend as the dashboard, not a different stack.
+3. Open the extension's **Extension options** (or the options page from the extension details) and set **API Base URL** to your backend origin. The extension mints a session cookie from `POST /api/session` before its first scan, so history and feedback stay attached to your session. Use **Test Connection** if you want to verify `/health`.
+4. Use the toolbar popup: manual scans `POST` to **`/scan-email`** with JSON `{"email_text": "..."}` on that same FastAPI base URL, and the background worker polls **`/health`** for status, so the extension talks to the same backend as the dashboard, not a different stack.
 
 ## Project Structure
 ```text
@@ -211,8 +214,10 @@ The loadable extension sources live under **`frontend/artifacts/chrome-extension
 ├── data/                    # CSV/JSON datasets and evaluation artifacts
 ├── tests/                   # Centralized Python test files (test_*.py)
 ├── pytest.ini               # Repo-root pytest config (shared by tests/ above)
+├── ml2/                     # Router config, label map, model artifact registry
 ├── docs/                    # Architecture diagrams and technical docs
 │   └── PHISHSHIELD_COMPLETE_OVERVIEW.md  # Detailed project deep-dive
+├── diagnostics/             # Gauntlet evidence: model eval results, live-browser pass artifacts
 ├── screenshots/             # `dashboard-*.png`, `chrome-extension-*.png` (see Screenshots section)
 ├── docker-compose.yml       # Root compose for backend + frontend services
 └── README.md                # Recruiter-facing project overview
@@ -227,7 +232,7 @@ The loadable extension sources live under **`frontend/artifacts/chrome-extension
 ## Dataset
 This repo contains multiple phishing datasets and curated test corpora in `data/`.  
 Key visible files include:
-- `data/Phishing_Email.csv` (2,000 records — see `data/CARD.md`)
+- `data/Phishing_Email.csv` (2,000 records, see `data/CARD.md`)
 - `data/Phishing_Email_cleaned.csv` (~1,401 rows)
 - `data/elite_emails_1000.json` (~1,020 items)
 - `data/phishtank_dataset.json` (~200 items)
@@ -240,6 +245,8 @@ The training metadata in `data/training_meta.json` reports the current committed
 > for the current committed row count. (A previously referenced row count was relocated to docs/HISTORY_FABRICATIONS.md.)
 > the current committed dataset has been trimmed to 2,000 rows (1,600 train / 400 test).
 
+The XLM-R specialist was fine-tuned separately on roughly 194,000 emails pooled from three Hugging Face datasets. Measured results and the artifact registry live in `ml2/MODEL_ARTIFACTS.md`, with the raw evaluation numbers in `diagnostics/gauntlet/v2_eval_artifacts/`.
+
 ## Environment variables (runtime honesty)
 
 | Variable | Default | Purpose |
@@ -249,9 +256,10 @@ The training metadata in `data/training_meta.json` reports the current committed
 | `PHISHSHIELD_SHAP_MAX_EVALS` | `64` | SHAP evaluation budget when enabled. |
 | `EXPLAIN_TIMEOUT_SECONDS` | `4` | Total explainability budget per scan. |
 | `PHISHSHIELD_PROVIDER_WARMUP_SECONDS` | `180` | Startup warmup timeout per transformer provider. |
-| `VITE_BACKEND_URL` | — | Frontend → FastAPI base URL (e.g. `http://127.0.0.1:8000`). |
+| `PHISHSHIELD_ML2_LEGS` | `1` | Set `0` to keep the specialist language models out of the request path (small instances). The English pipeline runs either way; `/health` reports the state. |
+| `VITE_BACKEND_URL` |, | Frontend → FastAPI base URL (e.g. `http://127.0.0.1:8000`). |
 
-`/api/metrics` returns **offline_evaluation** (from `data/training_meta.json`) and **runtime_operational** (in-process scan counters) as separate objects — not live production accuracy.
+`/api/metrics` returns **offline_evaluation** (from `data/training_meta.json`) and **runtime_operational** (in-process scan counters) as separate objects, not live production accuracy.
 
 ## Results
 
@@ -270,6 +278,10 @@ These numbers are the **offline benchmark** on the train/test split recorded whe
 
 Source: `data/training_meta.json` (`metrics` + row counts). Run `python -c "import json; m=json.load(open('data/training_meta.json')); print(m['metrics']); print(f\"Train: {m['train_rows']}, Test: {m['test_rows']}\")"` to see current values.
 
+### Specialist model (XLM-R, measured)
+
+The non-Latin specialist was evaluated on a 34,283-email held-out test split: macro F1 0.965, phishing recall 0.952, phishing AUC 0.999. The full per-class table and the raw evaluation JSON are committed under `diagnostics/gauntlet/v2_eval_artifacts/`. Its known limits are listed below.
+
 ### Real inbox–style check (live UI QA, May 2026)
 
 Curated offline metrics can look stronger than what users see in a mixed real inbox. A **manual live UI run on 100 real emails** (documented in the same overview) estimated roughly **~80–85%** accuracy after hardening, with the caveat that live mail has more benign security/ops traffic and paraphrase variance than the offline split. That honest range was documented in the project overview.
@@ -280,11 +292,11 @@ Curated offline metrics can look stronger than what users see in a mixed real in
 - Data cleaning quality can change model behavior more than hyperparameter tweaks.
 - End-to-end architecture (frontend + API + ML backend + deployment) is a different skill than writing isolated scripts.
 - Explainability output is essential when users need to make safety decisions quickly.
-- Shipping the Chrome extension taught me that UX friction is a security problem — if checking a suspicious email requires switching apps, most people skip it and that is where the real risk lives.
+- Shipping the Chrome extension taught me that UX friction is a security problem, if checking a suspicious email requires switching apps, most people skip it and that is where the real risk lives.
 
-## Verification (local E2E, May 2026)
+## Verification (local E2E)
 
-Manual checks on FastAPI `:8000` + React dashboard:
+Manual checks on FastAPI + React dashboard:
 
 | Case | Expected | Result |
 |------|----------|--------|
@@ -295,11 +307,11 @@ Manual checks on FastAPI `:8000` + React dashboard:
 | Team meeting (no lure) | Safe ~10 | Pass |
 | Income tax refund `.xyz` | High Risk ~75 | Pass |
 
-Also verified: `/health` (actual active model), `/stats` (Gemini + VT active), `/check-url` (VirusTotal + allowlist), `/check-headers` (spoof signals), `/explain` (Gemini/OpenRouter when keyed; otherwise `source: signal_trace`), `/feedback`, `/recent-scans` (3 session items for Live Feed), `pytest` (**403+ passed**).
+The automated suite covers 421 tests (regression, adversarial, session identity, performance gates, guard tests) and runs on every push via GitHub Actions.
 
 ## Limits
 
-Classic scams strong; LLM-generated/BEC weak — partial rule mitigation only, no modern-coverage claim.
+Classic scams strong; LLM-generated/BEC weak, partial rule mitigation only, no modern-coverage claim.
 The specialist model catches legacy-style phishing reliably but misses polished LLM-generated and
 CEO-fraud (BEC) emails; the rule layer carries BEC/modern patterns as score boosts, which is
 mitigation, not detection.
@@ -307,17 +319,15 @@ mitigation, not detection.
 ## Future Improvements
 - A live Gmail or Outlook hook is next on my list because paste-only flows still add friction for people who live inside their inbox all day, and that is where most risky threads actually land.
 - I want broader Indian-language coverage and cleaner transliteration handling because mixed-script bait already shows up in the wild and the model still stumbles when the script hops mid-sentence.
-- A small model and version log in the UI would help me compare runs without diffing JSON by hand; right now the honest numbers live in files and that is fine for me, not great for a teammate joining cold.
+- A retrain of the specialist model on modern LLM-generated and BEC corpora is on the roadmap, so the gaps documented above actually close instead of being patched around.
 - Signed-in accounts with stored scan history belong in a serious deployment because feedback and repeat checks need a home that is not a shared CSV on disk.
-- CI currently runs backend pytest, mypy, and frontend pnpm build on every push/PR via GitHub Actions; expanding to include integration tests and the Playwright UI suite would catch more regressions automatically.
 
 ## Author
 **MOHD IBADULLAH**  
-Full-stack developer with a security focus — I build things that solve real problems, not just demo well.  
+Full-stack developer with a security focus, I build things that solve real problems, not just demo well.  
 [GitHub profile](https://github.com/mohd-ibadullah) · [LinkedIn](https://www.linkedin.com/in/mohd-ibadullah-4786b640a/)
 
 ## License
 MIT License
 
----
-📄 For technical and Docker details → [TECHNICAL_GUIDE](docs/TECHNICAL_GUIDE.md)
+For technical and Docker details, see [TECHNICAL_GUIDE](docs/TECHNICAL_GUIDE.md).
