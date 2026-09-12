@@ -40,7 +40,10 @@ Whichever path an email takes, the rule signals and the model score come togethe
 - Supports multilingual scam signals. English, Hindi, Telugu, Urdu, Tamil, Bengali and mixed-script patterns each get a dedicated path.
 - You can run a full email scan, check a URL on its own, or paste headers for SPF-style checks when you do not have the whole message, then send feedback or fetch the stored explanation for a past scan so you are not re-pasting the same thread to understand an earlier verdict.
 - Saves user feedback to improve future detections over time.
-- Includes a React dashboard with a dark theme, a live feed of recent scans, and a TypeScript API layer on a FastAPI backend.
+- Includes a React dashboard with a dark theme, a searchable Recent Activity history with verdict filters, and a TypeScript API layer on a FastAPI backend.
+- Privacy mode redacts emails, phone numbers, links and IDs everywhere they can surface, including scan previews and exported data.
+- A regional threat map groups flagged scans by city token extracted from the email text (fixed allowlist, no content stored), plus dominant attack vector and most-targeted brand summaries from real session data.
+- Model health is measured, not hardcoded: live agreement rate, drift level, false positives/negatives and a retrain recommendation all come from the persisted feedback store, and an OOD adversarial holdout is scored at every training run to report honest generalization alongside the offline split.
 - Comes with Docker setup to run frontend and backend together with one command.
 
 ## Tech Stack
@@ -195,6 +198,8 @@ pnpm dev
 
 Once running: frontend at http://localhost:5173 (API docs serve only when `PHISHSHIELD_ENABLE_DOCS=true`, the default build answers 404 by design)
 
+The dev server proxies `/api`, `/scan-email`, `/recent-scans`, `/feedback`, `/health` and `/ws` to the backend through `VITE_API_PROXY_TARGET` (default `http://localhost:8000`). Keep `VITE_BACKEND_URL` empty in local dev so requests stay same-origin; the session cookie is SameSite-protected and will not ride on cross-origin calls, which previously pushed the dashboard into REST polling instead of the live WebSocket feed.
+
 ## Chrome Extension
 
 The loadable extension sources live under **`frontend/artifacts/chrome-extension/`** (Manifest V3: `manifest.json`, `background.js` service worker, `content.js`, `popup.html` / `popup.js`, and `options.html` / `options.js`).
@@ -257,9 +262,10 @@ The XLM-R specialist was fine-tuned separately on roughly 194,000 emails pooled 
 | `EXPLAIN_TIMEOUT_SECONDS` | `4` | Total explainability budget per scan. |
 | `PHISHSHIELD_PROVIDER_WARMUP_SECONDS` | `180` | Startup warmup timeout per transformer provider. |
 | `PHISHSHIELD_ML2_LEGS` | `1` | Set `0` to keep the specialist language models out of the request path (small instances). The English pipeline runs either way; `/health` reports the state. |
-| `VITE_BACKEND_URL` |, | Frontend → FastAPI base URL (e.g. `http://127.0.0.1:8000`). |
+| `VITE_BACKEND_URL` | *(empty)* | Frontend → FastAPI base URL. Leave empty for dev (same-origin Vite proxy); set only when the dashboard is served from a different origin than the API. |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Dev-server proxy target for `/api`, `/scan-email`, `/recent-scans`, `/feedback`, `/health` and `/ws`. |
 
-`/api/metrics` returns **offline_evaluation** (from `data/training_meta.json`) and **runtime_operational** (in-process scan counters) as separate objects, not live production accuracy.
+`/api/metrics` returns **offline_evaluation** (from `data/training_meta.json`, including the **ood_holdout** block scored on `diagnostics/eval_set_v1.jsonl` and the **system_eval** end-to-end run from `diagnostics/headlines_output.json`) and **runtime_operational** (in-process scan counters) as separate objects, not live production accuracy. Session-learning figures (agreement rate, confirmed correct, false positives/negatives, drift level, retrain recommendation) are computed from the persisted feedback store at request time — nothing on the dashboard is a hardcoded placeholder.
 
 ## Results
 
@@ -277,6 +283,8 @@ These numbers are the **offline benchmark** on the train/test split recorded whe
 | Test Rows | from `training_meta.json` |
 
 Source: `data/training_meta.json` (`metrics` + row counts). Run `python -c "import json; m=json.load(open('data/training_meta.json')); print(m['metrics']); print(f\"Train: {m['train_rows']}, Test: {m['test_rows']}\")"` to see current values.
+
+The in-distribution split scores 1.0 across the board — a closed 2,000-row set the model has effectively memorized. That number is expected but says nothing about generalization, so every training run also scores a committed **out-of-distribution holdout** of 220 hand-authored adversarial/real-world emails (`diagnostics/eval_set_v1.jsonl`, disjoint from the training CSV). Current honest numbers: accuracy 0.686, precision 0.604, recall 0.900, F1 0.723, FPR 0.49. The full-pipeline system eval (routing + rules + merge through the live `/scan` endpoint) scores accuracy 0.682, F1 0.685 on the same holdout. Both blocks live in `training_meta.json` and `diagnostics/headlines_output.json` and are served through `/api/metrics`.
 
 ### Specialist model (XLM-R, measured)
 
