@@ -8,10 +8,10 @@
 > Real-time phishing email detection with explainable scoring, multilingual checks, and a full-stack dashboard + browser extension workflow.
 
 ### Dashboard Demo
-![PhishShield dashboard demo](newDemo.gif)
+![PhishShield dashboard demo](docs/demos/dashboard.gif)
 
 ### Chrome Extension Demo
-![PhishShield Chrome extension demo](extensiondemo.gif)
+![PhishShield Chrome extension demo](docs/demos/extension.gif)
 
 > **Workflow note:** Paste/forward workflow today; 
 > direct inbox integration (Gmail/Outlook) planned.
