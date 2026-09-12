@@ -1,0 +1,4 @@
+[submodule "phishshield-backend-space"]
+	path = phishshield-backend-space
+	url = https://huggingface.co/spaces/Mohd1314234123/phishshield-backend
+	branch = main

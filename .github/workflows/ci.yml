@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
@@ -36,10 +36,6 @@ jobs:
       - name: Run frontend unit tests
         run: pnpm --filter @workspace/phishshield test
         working-directory: frontend
-
-      - name: Verify dist labels match source claims
-        run: python -m pytest tests/test_prompt_hygiene.py -v
-        working-directory: .
 
   backend-syntax-check:
     runs-on: ubuntu-latest
@@ -72,6 +68,10 @@ jobs:
         run: python -c 'import py_compile, glob; patterns = glob.glob("tests/*.py") + glob.glob("tools/*.py"); [py_compile.compile(f, doraise=True) for f in patterns]; print(len(patterns), "files compile-clean")'
         working-directory: .
 
+      - name: Verify dist labels match source claims
+        run: python -m pytest tests/test_prompt_hygiene.py -v
+        working-directory: .
+
       - name: Run pytest (excluding 2 ML-side product-gap tests; parity with FIX_LEDGER.md gaps block)
         run: |
           python -m pytest             --deselect "tests/test_phishshield.py::test_hindi_cases[case1]"             --deselect "tests/test_phishshield.py::test_telugu_cases[case1]"
@@ -97,14 +97,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      # C3 (closure pass 2026-09-04): requirements.lock.txt does not exist yet —
-      # this job stays red until a human provides it (FIX_LEDGER.md deploy-phase).
+      # C3 (closure pass 2026-09-04): lockfile lives at the repo root, not backend/.
       - name: Create clean venv and install lockfile
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install -r requirements.lock.txt
-        working-directory: backend
 
       - name: Import main in the clean env
         run: |

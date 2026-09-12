@@ -1406,8 +1406,6 @@ function formatBackendModelVersion(health?: PythonBackendHealth | null) {
 function formatBackendHealthMetrics(health?: PythonBackendHealth | null) {
   if (!health) return '';
   const bits: string[] = [];
-  if (health.accuracy && health.accuracy !== '—') bits.push(`Acc ${health.accuracy}`);
-  if (health.f1_score && health.f1_score !== '—') bits.push(`F1 ${health.f1_score}`);
   if (health.device) bits.push(String(health.device));
   return bits.join(' · ');
 }
