@@ -61,3 +61,5 @@ backend/model.pkl
 backend/vectorizer.pkl
 backend/indicbert_model/tokenizer.json
 data/gmail_dataset.json
+backend/backend.log
+backend/dampen_debug.log
