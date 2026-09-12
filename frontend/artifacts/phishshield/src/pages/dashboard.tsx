@@ -257,6 +257,7 @@ type DashboardResult = {
   detectedSignals?: string[];
   sender_domain?: string;
   regionHint?: string | null;
+  scanModelLabel?: string | null;
   backendExplanation?: PythonModelExplanation;
   backendSummary?: {
     emailRisk: number;
@@ -1121,6 +1122,27 @@ type PythonBackendHealth = {
   providers?: Record<string, { status?: string; device?: string; reason?: string }>;
 };
 
+const ROUTER_LEG_LABELS: Record<string, string> = {
+  v2_xlmr: 'XLM-RoBERTa (Non-Latin Specialist)',
+  muril: 'MuRIL (Hinglish Specialist)',
+  ensemble: 'SecureBERT + MuRIL Ensemble',
+};
+
+/**
+ * The model that actually scored THIS email. The scan response's model_used is
+ * authoritative (the backend overrides it on router-specialist legs); the
+ * router_leg token is the fallback. Never fall back to the health-endpoint
+ * label here — that describes what the server has loaded, not what scored
+ * this scan.
+ */
+function resolveScanModelLabel(scan?: PythonEmailScan | null): string | null {
+  if (!scan) return null;
+  const fromScan = String(scan.model_used ?? '').trim();
+  if (fromScan) return fromScan;
+  const leg = String(scan.router_leg ?? '').trim();
+  return ROUTER_LEG_LABELS[leg] ?? null;
+}
+
 type PythonEmailScan = {
   scan_id?: string;
   session_id?: string;
@@ -1139,6 +1161,7 @@ type PythonEmailScan = {
   rule_signals?: number;
   recommendation?: string;
   model_used?: string;
+  router_leg?: string;
   explanation?: PythonModelExplanation;
   url_results?: Array<{
     url?: string;
@@ -2435,6 +2458,7 @@ export default function Dashboard() {
       signals: displaySignalsFromBackend,
       detectedSignals: displaySignalsFromBackend,
       reasons: backendReasons,
+      scanModelLabel: resolveScanModelLabel(scanData),
       mlScore: backendModelScore,
       recommendedDisposition,
       autoBlockRecommended: recommendedDisposition === 'block',
@@ -4149,7 +4173,7 @@ export default function Dashboard() {
                />
                 <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground opacity-70 mt-0.5">Scans this session</span>
                 <span className="text-[9px] text-muted-foreground mt-1">
-                  Model: {backendModelVersion}
+                  Model: {result?.scanModelLabel || backendModelVersion}
                   {formatBackendHealthMetrics(backendHealth) ? ` · ${formatBackendHealthMetrics(backendHealth)}` : ''}
                   {serverLifetimeScans > 0 ? ` · Server total ${serverLifetimeScans.toLocaleString()}` : ''}
                 </span>

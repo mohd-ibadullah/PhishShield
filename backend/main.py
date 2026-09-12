@@ -175,6 +175,8 @@ ENSEMBLE_HEALTH_LABEL = "SecureBERT + MuRIL Ensemble"
 TFIDF_HEALTH_LABEL = "TF-IDF Logistic Regression"
 SECUREBERT_HEALTH_LABEL = "SecureBERT"
 MURIL_HEALTH_LABEL = "MuRIL"
+V2_XLMR_HEALTH_LABEL = "XLM-RoBERTa (Non-Latin Specialist)"
+MURIL_MX_HEALTH_LABEL = "MuRIL (Hinglish Specialist)"
 MAX_TOKEN_LENGTH = 256
 VT_API_ROOT = "https://www.virustotal.com/api/v3/urls"
 
@@ -5985,6 +5987,8 @@ def calculate_email_risk(
                 if not _ml2_nonlatin_otp_awareness(_normalized_now, _linked_now):
                     _result["risk_score"] = max(int(_result.get("risk_score") or 0), 70)
                     _result["router_leg"] = "v2_xlmr"
+                # The specialist scored this email, not the ensemble — say so.
+                _result["model_used"] = V2_XLMR_HEALTH_LABEL
                 return _result
             if _ml2_confident_phish and not _rules_agree:
                 logger.info(
@@ -6012,6 +6016,7 @@ def calculate_email_risk(
                 )
                 _mx_result["risk_score"] = max(int(_mx_result.get("risk_score") or 0), 70)
                 _mx_result["router_leg"] = "muril"
+                _mx_result["model_used"] = MURIL_MX_HEALTH_LABEL
                 return _mx_result
     except Exception:
         logger.exception("ML2 router leg failed; existing pipeline continues (honest fallback)")
