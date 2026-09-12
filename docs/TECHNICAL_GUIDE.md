@@ -173,8 +173,8 @@ In May 2026 we ran **100 real emails through the live UI** and found **20 issues
 
 ### Accuracy (honest)
 
-- **Offline benchmark** (training split): **97.19%** (see `backend/training_meta.json`)
-- **Live UI QA** (100 real emails, May 2026): **~80–85%** after fixes (was ~42% before)
+- **Offline benchmark** (training split, committed corpus): see `data/training_meta.json` `metrics` — the canonical source, values change on retrain
+- **Live UI QA** (100 real emails, May 2026): ~80–85% after fixes (was ~42% before)
 
 ### Docker Compose Services
 
