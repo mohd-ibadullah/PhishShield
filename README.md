@@ -7,7 +7,11 @@
 
 > Real-time phishing email detection with explainable scoring, multilingual checks, and a full-stack dashboard + browser extension workflow.
 
-![PhishShield in action](screenshots/demo.gif)
+### Dashboard Demo
+![PhishShield dashboard demo](newDemo.gif)
+
+### Chrome Extension Demo
+![PhishShield Chrome extension demo](extensiondemo.gif)
 
 > **Workflow note:** Paste/forward workflow today; 
 > direct inbox integration (Gmail/Outlook) planned.
@@ -16,7 +20,7 @@
 I kept seeing smart people around me still fall for phishing because the emails looked "normal enough."  
 Most tools just say safe or unsafe, but they do not explain why in a way regular users can trust.  
 I wanted to build something that catches real scam patterns we actually see here (OTP, KYC, UPI, fake bank urgency), and also shows the reasoning clearly.  
-This project became my way of learning security engineering by building a product end to end, not just training a model in a notebook.
+This project became my way of learning security engineering by building a product end to end instead of only training a model in a notebook.
 
 ## What Does It Do?
 Most of the time you paste email text straight into the app (from your inbox, a forward, or a screenshot dump) and hit scan.  
@@ -37,11 +41,11 @@ Every model in the hot path is registered with byte size and SHA-256 in `ml2/MOD
 
 | Path | Model | Training data | Measured performance |
 |------|-------|---------------|----------------------|
-| English | SecureBERT + MuRIL ensemble + deterministic anchor (0.45/0.35/0.20 weights, 3s per-provider timeout, circuit breaker) | Pretrained checkpoints used as-is, not fine-tuned on repo data — SecureBERT `ehsanaghaei/SecureBERT` (498 MB) and MuRIL `google/muril-base-cased` (950 MB) | Gauntlet round 2 live probes: 18/18 phishing, 8/8 benign. No offline benchmark is claimed for this path because none was run |
+| English | SecureBERT + MuRIL ensemble + deterministic anchor (0.45/0.35/0.20 weights, 3s per-provider timeout, circuit breaker) | Pretrained checkpoints used as-is, not fine-tuned on repo data. SecureBERT `ehsanaghaei/SecureBERT` (498 MB) and MuRIL `google/muril-base-cased` (950 MB) | Gauntlet round 2 live probes: 18/18 phishing, 8/8 benign. No offline benchmark is claimed for this path because none was run |
 | Non-Latin (hi/te/ur/ta/bn) | Fine-tuned XLM-RoBERTa (`model_merged/`, 1.1 GB) | ~194,000 emails pooled from three Hugging Face datasets | Held-out 34,283-email split: macro F1 0.965, phishing recall 0.952, AUC 0.999. Known limit: cross-source OOD phishing recall 0.0 on modern LLM-style/BEC mail (documented, rule layer mitigates) |
 | Hinglish / code-mixed | MuRIL (`google/muril-base-cased`) | Pretrained checkpoint used as-is | Same gauntlet evidence as the English leg; no separate fine-tune benchmark |
-| Marketing fast path | TF-IDF + Logistic Regression (`model.pkl` + `vectorizer.pkl`) | `data/Phishing_Email.csv`, 2,000 rows (1,600 train / 400 test) | In-distribution 1.0 (closed set, memorization — not a generalization claim). OOD holdout below is the honest number |
-| Legacy slot | IndicBERT | ai4bharat/indic-bert | Present but inactive — out of the hot path since the ROUTER pass after ranking last in both shootout rounds |
+| Marketing fast path | TF-IDF + Logistic Regression (`model.pkl` + `vectorizer.pkl`) | `data/Phishing_Email.csv`, 2,000 rows (1,600 train / 400 test) | In-distribution 1.0 (closed set, memorization, not a generalization claim). OOD holdout below is the honest number |
+| Legacy slot | IndicBERT | ai4bharat/indic-bert | Present but inactive, out of the hot path since the ROUTER pass after ranking last in both shootout rounds |
 
 The OOD numbers for the active TF-IDF path (accuracy 0.686, F1 0.723, FPR 0.49 on 220 hand-authored adversarial emails) and the full-pipeline system eval (accuracy 0.682, F1 0.685 through the live scan endpoint) are recorded in `data/training_meta.json` and `diagnostics/headlines_output.json`. The multilingual router also carries a rules-agreement gate: a specialist flagging Hindi/Telugu text as phishing at high confidence only forces a risk floor when the rule layer independently finds a high-risk keyword cluster, which keeps benign transactional mail in those languages from being floored to phishing.
 
@@ -97,7 +101,7 @@ docker compose up --build
 
 `docker compose up --build` starts both services together (images build on first run or when Dockerfiles change).
 
-**Docker + ML models:** Large weights are not copied into the image (see `backend/.dockerignore`). Compose mounts your local `backend/indicbert_model`, `backend/models/*`, and `model.pkl` into the container. Start **Docker Desktop** first, then run compose. First `/health` may take 1–2 minutes while transformers warm up.
+**Docker + ML models:** Large weights are not copied into the image (see `backend/.dockerignore`). Compose mounts your local `backend/indicbert_model`, `backend/models/*`, and `model.pkl` into the container. Start **Docker Desktop** first, then run compose. First `/health` may take 1-2 minutes while transformers warm up.
 
 **Deploy (Render etc.):** Set the same API keys as local (`HF_TOKEN`, `VT_API_KEY`, `CORS_ALLOWED_ORIGINS`, LLM keys). Without `HF_TOKEN`, the container starts in rules/TF-IDF mode until Hugging Face downloads complete, check `/health` for `securebert` / `muril` status. Set `PHISHSHIELD_ML2_LEGS=0` to keep the specialist language models out of the request path on small instances; `/health` reports the flag state either way.
 
@@ -167,7 +171,7 @@ The loadable extension sources live under **`frontend/artifacts/chrome-extension
 .
 ├── backend/                 # FastAPI app, ML logic, training and evaluation scripts
 │   ├── analyze_report.py     # Prints eval summary and sample misses/false positives from data/test_report.json
-│   └── certify_dataset.py    # Audits, normalizes, and writes Phishing_Email.csv → Phishing_Email_cleaned.csv
+│   └── certify_dataset.py    # Audits, normalizes, and writes Phishing_Email.csv to Phishing_Email_cleaned.csv
 ├── frontend/                # React + TypeScript workspace and extension artifacts
 ├── data/                    # CSV/JSON datasets and evaluation artifacts
 ├── tests/                   # Centralized Python test files (test_*.py)
@@ -215,10 +219,10 @@ The XLM-R specialist was fine-tuned separately on roughly 194,000 emails pooled 
 | `EXPLAIN_TIMEOUT_SECONDS` | `4` | Total explainability budget per scan. |
 | `PHISHSHIELD_PROVIDER_WARMUP_SECONDS` | `180` | Startup warmup timeout per transformer provider. |
 | `PHISHSHIELD_ML2_LEGS` | `1` | Set `0` to keep the specialist language models out of the request path (small instances). The English pipeline runs either way; `/health` reports the state. |
-| `VITE_BACKEND_URL` | *(empty)* | Frontend → FastAPI base URL. Leave empty for dev (same-origin Vite proxy); set only when the dashboard is served from a different origin than the API. |
+| `VITE_BACKEND_URL` | *(empty)* | FastAPI base URL for the frontend. Leave empty for dev (same-origin Vite proxy); set only when the dashboard is served from a different origin than the API. |
 | `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Dev-server proxy target for `/api`, `/scan-email`, `/recent-scans`, `/feedback`, `/health` and `/ws`. |
 
-`/api/metrics` returns **offline_evaluation** (from `data/training_meta.json`, including the **ood_holdout** block scored on `diagnostics/eval_set_v1.jsonl` and the **system_eval** end-to-end run from `diagnostics/headlines_output.json`) and **runtime_operational** (in-process scan counters) as separate objects, not live production accuracy. Session-learning figures (agreement rate, confirmed correct, false positives/negatives, drift level, retrain recommendation) are computed from the persisted feedback store at request time — nothing on the dashboard is a hardcoded placeholder.
+`/api/metrics` returns **offline_evaluation** (from `data/training_meta.json`, including the **ood_holdout** block scored on `diagnostics/eval_set_v1.jsonl` and the **system_eval** end-to-end run from `diagnostics/headlines_output.json`) and **runtime_operational** (in-process scan counters) as separate objects, not live production accuracy. Session-learning figures (agreement rate, confirmed correct, false positives/negatives, drift level, retrain recommendation) are computed from the persisted feedback store at request time. Nothing on the dashboard is a hardcoded placeholder.
 
 ## Results
 
@@ -237,15 +241,15 @@ These numbers are the **offline benchmark** on the train/test split recorded whe
 
 Source: `data/training_meta.json` (`metrics` + row counts). Run `python -c "import json; m=json.load(open('data/training_meta.json')); print(m['metrics']); print(f\"Train: {m['train_rows']}, Test: {m['test_rows']}\")"` to see current values.
 
-The in-distribution split scores 1.0 across the board — a closed 2,000-row set the model has effectively memorized. That number is expected but says nothing about generalization, so every training run also scores a committed **out-of-distribution holdout** of 220 hand-authored adversarial/real-world emails (`diagnostics/eval_set_v1.jsonl`, disjoint from the training CSV). Current honest numbers: accuracy 0.686, precision 0.604, recall 0.900, F1 0.723, FPR 0.49. The full-pipeline system eval (routing + rules + merge through the live `/scan` endpoint) scores accuracy 0.682, F1 0.685 on the same holdout. Both blocks live in `training_meta.json` and `diagnostics/headlines_output.json` and are served through `/api/metrics`.
+The in-distribution split scores 1.0 across the board: a closed 2,000-row set the model has effectively memorized. That number is expected but says nothing about generalization, so every training run also scores a committed **out-of-distribution holdout** of 220 hand-authored adversarial/real-world emails (`diagnostics/eval_set_v1.jsonl`, disjoint from the training CSV). Current honest numbers: accuracy 0.686, precision 0.604, recall 0.900, F1 0.723, FPR 0.49. The full-pipeline system eval (routing + rules + merge through the live `/scan` endpoint) scores accuracy 0.682, F1 0.685 on the same holdout. Both blocks live in `training_meta.json` and `diagnostics/headlines_output.json` and are served through `/api/metrics`.
 
 ### Specialist model (XLM-R, measured)
 
 The non-Latin specialist was evaluated on a 34,283-email held-out test split: macro F1 0.965, phishing recall 0.952, phishing AUC 0.999. The full per-class table and the raw evaluation JSON are committed under `diagnostics/gauntlet/v2_eval_artifacts/`. Its known limits are listed below.
 
-### Real inbox–style check (live UI QA, May 2026)
+### Real inbox-style check (live UI QA, May 2026)
 
-Curated offline metrics can look stronger than what users see in a mixed real inbox. A **manual live UI run on 100 real emails** (documented in the same overview) estimated roughly **~80–85%** accuracy after hardening, with the caveat that live mail has more benign security/ops traffic and paraphrase variance than the offline split. That honest range was documented in the project overview.
+Curated offline metrics can look stronger than what users see in a mixed real inbox. A **manual live UI run on 100 real emails** (documented in the same overview) estimated roughly **~80-85%** accuracy after hardening, with the caveat that live mail has more benign security/ops traffic and paraphrase variance than the offline split. That honest range was documented in the project overview.
 
 ## What I Learned
 - During the live 100-email pass I watched real mail get flagged as phishing when it was just boring IT or bank security copy; that sting of a wrong red banner mattered more than squeezing another point on the offline split.
@@ -285,8 +289,8 @@ mitigation, not detection.
 
 ## Author
 **MOHD IBADULLAH**  
-Full-stack developer with a security focus, I build things that solve real problems, not just demo well.  
-[GitHub profile](https://github.com/mohd-ibadullah) · [LinkedIn](https://www.linkedin.com/in/mohd-ibadullah-4786b640a/)
+Full-stack developer with a security focus, I build things that solve real problems, not things that only demo well.  
+[GitHub profile](https://github.com/mohd-ibadullah) | [LinkedIn](https://www.linkedin.com/in/mohd-ibadullah-4786b640a/)
 
 ## License
 MIT License
