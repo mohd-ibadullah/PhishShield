@@ -16,6 +16,14 @@ def _load_allowlist() -> set[str]:
 
 ALLOWLIST_ENTRY_RE = re.compile(r"^[^#][^:]+: .+$")
 
+# Binary assets (images, models, archives) cannot be meaningfully scanned as
+# text; regexing raw bytes produces false-positive email/phone matches.
+BINARY_SUFFIXES = {
+    ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".svg",
+    ".pdf", ".zip", ".gz", ".pkl", ".joblib", ".bin", ".pt", ".safetensors",
+    ".woff", ".woff2", ".ttf", ".mp4", ".webm", ".wav", ".mp3",
+}
+
 
 def test_allowlist_entries_are_machine_parsable():
     """D2/V14: every non-comment allowlist line must be `<path>: <justification>`.
@@ -46,6 +54,8 @@ def test_no_pii_in_non_allowlisted_files():
     violations = []
     for f in files:
         if f in allowlist:
+            continue
+        if pathlib.Path(f).suffix.lower() in BINARY_SUFFIXES:
             continue
         try:
             t = open(f, encoding="utf-8", errors="replace").read()
