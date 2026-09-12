@@ -68,11 +68,23 @@ dialogs_fired=0
 ```
 (script: `diagnostics/gauntlet/p4_restart_check.py`, log: `diagnostics/gauntlet/p4_restart_check.log`)
 
+## P4.4a Upload-file tab (checkmaster 2026-09-12)
+- DOM check: `<input type="file">` count = **1** (dashboard.tsx:4157 code confirmed live).
+- Real upload flow (Playwright `set_input_files` on a `.eml` probe): textarea filled with
+  309 chars, mode auto-switched, scan ran → `FINAL VERDICT | SAFE ... TRUST 100/100 | RISK 0/100`
+  (the probe .eml is an internal-looking note; backend classified it safe).
+- Prior "probe couldn't find the input" finding: superseded — the tab was in a
+  hidden state at the old probe's inventory point; with the tab active the input is
+  reachable and the full flow (upload → parse → scan → verdict) works. Probe committed:
+  `diagnostics/gauntlet/upload_probe.py`.
+
 ## P4.5 Load
 - 20 parallel scans via API → `20/20 200`, server alive.
 - 500 rapid-fire identical scans → `{200: 500}`, server alive. Observed behavior: the
   in-memory scan cache absorbs repeats (first scan real inference, subsequent identical
   scans cache hits, all 200); no rate-limit rejection observed for this burst.
+- checkmaster re-run (2026-09-12, fresh boot): `20-parallel codes: {200: 20} | wall: 3.69 s`,
+  all in-session.
 
 ## P4.6 Viewport 375×812
 No horizontal scroll on `/`, `/premium`, `/classic`; screenshots:
