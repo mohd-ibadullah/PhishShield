@@ -244,6 +244,15 @@ def test_finalizer_catches_real_store_write() -> None:
       - session finalizer catches the change -> intentional failure
     """
     real_path = BACKEND_DIR / "scan_logs.jsonl"
+    created_here = False
+    if not real_path.exists():
+        # scan_logs.jsonl is gitignored, so a fresh checkout (CI) has no
+        # store file. Create an empty one for this exercise and remove it
+        # during cleanup, so the session finalizer still compares against
+        # the same final state (absent) it snapshotted at session start.
+        real_path.parent.mkdir(parents=True, exist_ok=True)
+        real_path.touch()
+        created_here = True
     snap_before = _snapshot(real_path)
     assert snap_before.get("exists"), f"{real_path} does not exist"
     original_size = snap_before["size"]
@@ -276,6 +285,11 @@ def test_finalizer_catches_real_store_write() -> None:
         return
 
     # Normal path: restore bytes + hash + mtime so finalizer stays clean.
+    if created_here:
+        # The file did not exist at session start; deleting it restores
+        # exactly that state, no truncate/mtime dance needed.
+        real_path.unlink()
+        return
     with open(real_path, "r+b") as f:
         f.truncate(original_size)
     # Restore mtime to the pre-write value (truncate changes it).
