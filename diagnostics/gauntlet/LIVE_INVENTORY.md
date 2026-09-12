@@ -84,7 +84,13 @@ dialogs_fired=0
   in-memory scan cache absorbs repeats (first scan real inference, subsequent identical
   scans cache hits, all 200); no rate-limit rejection observed for this burst.
 - checkmaster re-run (2026-09-12, fresh boot): `20-parallel codes: {200: 20} | wall: 3.69 s`,
-  all in-session.
+  all in-session. Caveat: a same-session burst above 10 scans per 60s hits the scan rate
+  limiter (429), so that 20/20 must have spanned windows or reused cached content; treat
+  wall/20 as a floor, not per-scan inference time.
+- Real per-scan latency with unique content, measured separately: warm inference is about
+  150 to 200 milliseconds, first call in a window runs 450 to 700, and identical-text
+  repeats are cache hits at 15 to 40 milliseconds. Full table and probe:
+  `p95_unique_final.md`, `latency_unique_probe.py`.
 
 ## P4.6 Viewport 375×812
 No horizontal scroll on `/`, `/premium`, `/classic`; screenshots:
