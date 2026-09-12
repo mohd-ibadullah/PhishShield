@@ -114,5 +114,6 @@ No horizontal scroll on `/`, `/premium`, `/classic`; screenshots:
   (`_validate_internal_access`), surfaced by the UI as a toast; not a defect.
 - The P4 harness was fixed to be re-run-safe: per-run unique markers
   (`LIVE-QA-<n>-<run>`) so repeated runs never collide in the backend's in-memory
-  scan cache (cache hits skip `save_scan_to_db`), and type-matched re-anchoring so
+  scan cache (cache hits skip `save_scan_to_db`; cache hits also precede the scan rate limiter —
+  identical-payload bursts are free of 429), and type-matched re-anchoring so
   every inventoried control is exercised (0 absent-at-execution).
