@@ -193,7 +193,7 @@ cd frontend
 pnpm dev
 ```
 
-Once running: frontend at http://localhost:5173, API docs at http://localhost:8000/docs
+Once running: frontend at http://localhost:5173 (API docs serve only when `PHISHSHIELD_ENABLE_DOCS=true`, the default build answers 404 by design)
 
 ## Chrome Extension
 
