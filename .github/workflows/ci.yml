@@ -75,7 +75,7 @@ jobs:
         run: python -m pytest tests/test_prompt_hygiene.py -v
         working-directory: .
 
-      - name: Run pytest (excluding 2 ML-side product-gap tests; parity with FIX_LEDGER.md gaps block)
+      - name: Run pytest (excluding 2 ML-side product-gap tests; parity with docs/FIX_LEDGER.md gaps block)
         run: |
           python -m pytest             --deselect "tests/test_phishshield.py::test_hindi_cases[case1]"             --deselect "tests/test_phishshield.py::test_telugu_cases[case1]"
         working-directory: .

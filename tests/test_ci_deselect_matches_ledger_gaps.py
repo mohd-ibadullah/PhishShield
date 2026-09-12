@@ -1,5 +1,5 @@
 """C3/V31: CI --deselect list must exactly match the machine-readable gaps block
-in FIX_LEDGER.md, and the product-gap-tracking job must execute the same node ids.
+in docs/FIX_LEDGER.md, and the product-gap-tracking job must execute the same node ids.
 """
 
 import re
@@ -7,7 +7,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CI_PATH = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
-LEDGER_PATH = PROJECT_ROOT / "FIX_LEDGER.md"
+LEDGER_PATH = PROJECT_ROOT / "docs/FIX_LEDGER.md"
 
 NODE_ID_RE = re.compile(r"(tests/[A-Za-z0-9_./-]+::[A-Za-z0-9_\[\]-]+)")
 NAME_RE = re.compile(r"test_\w+")
@@ -31,7 +31,7 @@ def _ci_gap_job_ids() -> set[str]:
 def _ledger_gap_names() -> set[str]:
     text = LEDGER_PATH.read_text(encoding="utf-8", errors="replace")
     m = re.search(r"^## gaps\s*\n(.*?)(?=^## |\Z)", text, re.MULTILINE | re.DOTALL)
-    assert m is not None, "gaps block not found in FIX_LEDGER.md"
+    assert m is not None, "gaps block not found in docs/FIX_LEDGER.md"
     names: set[str] = set()
     for line in m.group(1).splitlines():
         line = line.strip()
@@ -51,11 +51,11 @@ def test_ci_deselect_matches_ledger_gaps() -> None:
     gap_names = _ledger_gap_names()
 
     assert deselect_ids, "CI has no --deselect entries; gaps block would be dead"
-    assert gap_names, "FIX_LEDGER.md gaps block has no entries"
+    assert gap_names, "docs/FIX_LEDGER.md gaps block has no entries"
 
     deselect_names = {_function_name(nid) for nid in deselect_ids}
     assert deselect_names == gap_names, (
-        f"CI deselects {sorted(deselect_names)} but FIX_LEDGER.md gaps are "
+        f"CI deselects {sorted(deselect_names)} but docs/FIX_LEDGER.md gaps are "
         f"{sorted(gap_names)} — deselect list and gaps block must name the same functions"
     )
 
