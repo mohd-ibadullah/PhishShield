@@ -67,6 +67,19 @@ def _init_app_state() -> None:
     # many times and only need caches reset. Cache artifact initialization per-process.
     if not getattr(m.app.state, "artifacts_loaded", False):
         m.load_artifacts()
+        # Provider warmup mirrors uvicorn's startup event (checkmaster V2.1):
+        # without it the first scans pay model-load latency inside the timed
+        # loop, putting the p95 over the gate for load reasons, not pipeline ones.
+        if getattr(m, "_securebert_provider", None) is not None:
+            m._securebert_provider.warmup_load()
+        if getattr(m, "_muril_provider", None) is not None:
+            m._muril_provider.warmup_load()
+        # V2 XLM-R router leg: same boot-warmup as uvicorn startup (main.py:1995).
+        try:
+            from ml2_router import warmup_router_legs as _ml2_warmup
+            _ml2_warmup()
+        except Exception:
+            pass
         m.app.state.artifacts_loaded = True
 
 
