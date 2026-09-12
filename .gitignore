@@ -55,3 +55,9 @@ backend_mlfix_boot.log
 backend_server.log
 frontend_qa_boot*.log
 server.log
+
+# Large model artifacts and local datasets (downloaded/trained at runtime, not source)
+backend/model.pkl
+backend/vectorizer.pkl
+backend/indicbert_model/tokenizer.json
+data/gmail_dataset.json
