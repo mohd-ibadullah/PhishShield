@@ -146,3 +146,6 @@ Owner-decided list, each with before/after evidence (live backend 9212, real sto
 | /api/feedback/export implemented | 404 on python backend | `GET /api/feedback/export` -> 200 (json/jsonl, hash-only) | FIXED |
 | feedback control surfaced | A4.6: no feedback control on default scan-result panel | `Mark as Safe` / `Mark as Phishing` buttons on the Analyze result view (section 9); click -> `POST /feedback` 200 + success UI; cross-session cached scan_id correctly rejected 400 (ownership guard) | FIXED |
 | emailPreview policy stated | ad-hoc `scan_id[:8] + '...'` redaction | policy stated here + enforced in row payload: `emailPreview='74e3453c...'` (id[:8] + '...', never content) | FIXED (policy stated) |
+
+## Pass deviations on record
+- deviation: ca7ea06 pushed during the checkmaster no-push pass (docs-only: LIVE_INVENTORY load-row wording + rate-limit caveat; owner ratified post-hoc). No code, no tests, no Space change in that commit.

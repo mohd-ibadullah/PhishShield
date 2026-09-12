@@ -43,7 +43,7 @@ built dist served by `vite preview` (`http://127.0.0.1:4173`, same-origin proxy 
 | reload-persistence | `n0=7 n1=8 n2=8 new=['a28e7213d86f'] kept=True` |
 | two-tab-broadcast | `submitted=True id_in_tab2=True marker_in_tab2=False` (scan_id prefix propagates, raw email text never) |
 | cookie-clear-gated | `401` |
-| load-20-parallel | `20/20 200; set=[200]` — V5.5 run was: single checkmaster session, claim corrected via re-run on 2026-09-12; evidence: unique-marker probe `latency_unique_probe.py` shows per-session limiter returns 429 after 10 in one window, so the 20/20 spanned windows or reused cache; raw codes map in `p95_unique_final.md` |
+| load-20-parallel | `20/20 200; set=[200]` — V5.5 run was: single checkmaster session, claim corrected via re-run on 2026-09-12; evidence: unique-marker probe `latency_unique_probe.py` shows per-session limiter returns 429 after 10 in one window; settle probe (`settle_cache.py`, same cache-able payload 20x, one window) → `{200: 20}` = cache-hit path bypasses the limiter before it fires, so the unique-marker 429s and the 20/20-200 result are both explained; raw codes map in `p95_unique_final.md` |
 | load-500-rapid | `{200: 500}; alive=True` (500 identical scans: 1 real inference + 499 in-memory cache hits, all 200, server alive) |
 | viewport-375/ | `hscroll=False` (`p4_mobile_375_root.png`) |
 | viewport-375/premium | `hscroll=False` (`p4_mobile_375_premium.png`) |
@@ -85,7 +85,8 @@ dialogs_fired=0
   scans cache hits, all 200); no rate-limit rejection observed for this burst.
 - checkmaster re-run (2026-09-12, fresh boot): `20-parallel codes: {200: 20} | wall: 3.69 s`,
   all in-session. Caveat: a same-session burst above 10 scans per 60s hits the scan rate
-  limiter (429), so that 20/20 must have spanned windows or reused cached content; treat
+  limiter (429); settle probe shows the cache-hit path returns 200 before the limiter
+  fires, so the 20/20 is explained by cache reuse, no mystery; treat
   wall/20 as a floor, not per-scan inference time.
 - Real per-scan latency with unique content, measured separately: warm inference is about
   150 to 200 milliseconds, first call in a window runs 450 to 700, and identical-text
