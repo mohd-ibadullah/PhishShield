@@ -207,6 +207,8 @@ export interface ScanHistoryItem {
   timestamp: string;
   /** First 80 characters of the email text */
   emailPreview: string;
+  /** Privacy-safe city token extracted from the scan content (fixed vocabulary, no content leak) */
+  regionHint?: string | null;
   riskScore: number;
   classification: ScanHistoryItemClassification;
   detectedLanguage: string;

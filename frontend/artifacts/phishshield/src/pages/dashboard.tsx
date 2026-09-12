@@ -5,7 +5,7 @@ import {
   CheckCircle, ChevronDown, ChevronUp, RefreshCw, Loader2,
   Mail, Eye, Flag, BarChart3, History, Trash2, Globe, Languages,
   TrendingUp, Scan, Lock, Shield, Download,
-  Ban, Phone, ExternalLink, Building2, Bot, Copy, Command, Search, SunMoon
+  Ban, Phone, ExternalLink, Building2, Bot, Copy, Command, Search
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Button } from '@/components/ui/button';
@@ -255,6 +255,8 @@ type DashboardResult = {
   };
   signals?: string[];
   detectedSignals?: string[];
+  sender_domain?: string;
+  regionHint?: string | null;
   backendExplanation?: PythonModelExplanation;
   backendSummary?: {
     emailRisk: number;
@@ -269,6 +271,7 @@ type LocalHistoryItem = {
   id: string;
   timestamp: string;
   emailPreview: string;
+  regionHint?: string | null;
   riskScore: number;
   classification: VerdictState;
   detectedLanguage: string;
@@ -755,7 +758,7 @@ type LiveFeedMode = 'connecting' | 'live' | 'polling';
 const LIVE_FEED_POLL_INTERVAL_MS = 20_000;
 const LIVE_FEED_WS_FAIL_THRESHOLD = 3;
 
-function DashboardLiveFeed() {
+function DashboardLiveFeed({ privacyMode }: { privacyMode: boolean }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const sessionId = useMemo(() => getSessionId(), []);
   const wsSessionKeyRef = useRef(`feed-${Math.random().toString(36).slice(2, 10)}`);
@@ -1018,7 +1021,9 @@ function DashboardLiveFeed() {
           {visibleEvents.map((event, index) => {
             const verdictText = String(event.verdict ?? 'Unknown');
             const risk = Number(event.risk_score ?? 0);
-            const previewText = normalizeLiveFeedPreview(event.preview);
+            // Privacy mode must hold everywhere sensitive text can surface,
+            // including the live feed (same redaction as Recent Activity).
+            const previewText = safeShareTextForFeed(normalizeLiveFeedPreview(event.preview), privacyMode);
             const verdictTone = /high/i.test(verdictText)
               ? 'border-destructive/30 bg-destructive/10 text-red-200'
               : /safe/i.test(verdictText)
@@ -1056,6 +1061,10 @@ function DashboardLiveFeed() {
       </div>
     </div>
   );
+}
+
+function safeShareTextForFeed(value: string, privacyMode: boolean) {
+  return privacyMode ? redactSensitiveText(value) : value;
 }
 
 function redactSensitiveText(text: string) {
@@ -1126,10 +1135,20 @@ type PythonEmailScan = {
   signals?: string[];
   safe_signals?: string[];
   ml_probability?: number;
+  regionHint?: string;
   rule_signals?: number;
   recommendation?: string;
   model_used?: string;
   explanation?: PythonModelExplanation;
+  url_results?: Array<{
+    url?: string;
+    domain?: string;
+    risk_score?: number;
+    link_risk?: number;
+    malicious_count?: number;
+    suspicious_count?: number;
+  }>;
+  header_spoofing_score?: number;
   url_analyses_with_vt?: Array<DashboardUrlAnalysis & {
     trusted?: boolean;
     vtSource?: string;
@@ -1164,6 +1183,7 @@ type PythonFeedbackAck = {
   feedback_count?: number;
   retrain_triggered?: boolean;
   pending_retrain?: number;
+  needed_for_retrain?: number;
 };
 
 type PythonFeedbackStats = {
@@ -1738,24 +1758,41 @@ function RegionalThreatMap({
   history,
   totalScans,
 }: {
-  history: Array<{ emailPreview?: string; classification?: string }>;
+  history: Array<{ emailPreview?: string; classification?: string; regionHint?: string | null }>;
   totalScans: number;
 }) {
-  const sessionReady = totalScans >= 20;
+  // Honest gating: show real region risk as soon as there is session data.
+  // The old totalScans >= 20 gate hid measured hits behind "Baseline only",
+  // which made the card look broken for typical short sessions.
+  const sessionReady = totalScans > 0;
+  // Two signals merged:
+  //   (a) regionHint — the privacy-safe city token the backend extracted from
+  //       the scan content (fixed vocabulary, no content leak).
+  //   (b) emailPreview text match — legacy path, retained because the redaction
+  //       policy makes emailPreview non-content, so (a) carries the signal now.
   const flaggedText = history
     .filter((item) => normalizeClassification(item.classification) !== 'safe')
     .map((item) => item.emailPreview ?? '')
     .join(' \n ');
 
+  const regionHits = history.reduce<Record<string, number>>((acc, item) => {
+    if (normalizeClassification(item.classification) === 'safe') return acc;
+    const hint = (item as { regionHint?: string | null }).regionHint;
+    if (hint) acc[hint] = (acc[hint] ?? 0) + 1;
+    return acc;
+  }, {});
+
   const regions = [
-    { city: 'Mumbai', pattern: /\bmumbai\b/gi },
-    { city: 'Delhi', pattern: /\bdelhi\b/gi },
-    { city: 'Bengaluru', pattern: /\bbengaluru|bangalore\b/gi },
-    { city: 'Hyderabad', pattern: /\bhyderabad\b/gi },
-    { city: 'Chennai', pattern: /\bchennai\b/gi },
-    { city: 'Kolkata', pattern: /\bkolkata\b/gi },
+    { city: 'Mumbai', key: 'mumbai', pattern: /\bmumbai\b/gi },
+    { city: 'Delhi', key: 'delhi', pattern: /\bdelhi\b/gi },
+    { city: 'Bengaluru', key: 'bengaluru', pattern: /\bbengaluru|bangalore\b/gi },
+    { city: 'Hyderabad', key: 'hyderabad', pattern: /\bhyderabad\b/gi },
+    { city: 'Chennai', key: 'chennai', pattern: /\bchennai\b/gi },
+    { city: 'Kolkata', key: 'kolkata', pattern: /\bkolkata\b/gi },
   ].map((region) => {
-    const hits = (flaggedText.match(region.pattern) ?? []).length;
+    // regionHint (privacy-safe backend token) is the primary signal; the
+    // preview-text match stays as a secondary legacy path.
+    const hits = regionHits[region.key] ?? (flaggedText.match(region.pattern) ?? []).length;
     const risk = !sessionReady ? 'Baseline only' : hits >= 3 ? 'High' : hits >= 1 ? 'Medium' : 'Low';
     const color = risk === 'High' ? 'bg-destructive' : risk === 'Medium' ? 'bg-warning' : risk === 'Low' ? 'bg-safe' : 'bg-muted';
     return {
@@ -1845,14 +1882,6 @@ export default function Dashboard() {
   const [historySearch, setHistorySearch] = useState('');
   const [historyFilter, setHistoryFilter] = useState<'all' | 'safe' | 'uncertain' | 'phishing'>('all');
   const [privacyMode, setPrivacyMode] = useState(true);
-  // Theme toggle: dark is the cybersecurity default (App.tsx forces .dark at
-  // mount); light mode is opt-in via localStorage so it survives reloads.
-  const [themeMode, setThemeMode] = useState<'dark' | 'light'>(() =>
-    (localStorage.getItem('phishshield-theme') === 'light' ? 'light' : 'dark'));
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', themeMode === 'dark');
-    localStorage.setItem('phishshield-theme', themeMode);
-  }, [themeMode]);
   const [feedbackNote, setFeedbackNote] = useState('');
   const [safeSenders, setSafeSenders] = useState<SafeSenderEntry[]>([]);
   const [duplicateScanNotice, setDuplicateScanNotice] = useState('');
@@ -1912,8 +1941,9 @@ export default function Dashboard() {
         throw new Error(backendResponse.error || 'Python feedback save failed');
       }
 
-      const pending = Number(backendResponse.data.pending_retrain ?? 0);
-      const moreNeeded = Math.max(0, 50 - pending);
+      // Use the backend's authoritative retrain counter — never a local
+      // hardcoded threshold (the real one is env-configurable server-side).
+      const moreNeeded = Math.max(0, Number(backendResponse.data.needed_for_retrain ?? 0));
       setFeedbackSent(true);
       setFeedbackMessage(
         backendResponse.data.retrain_triggered
@@ -2267,13 +2297,30 @@ export default function Dashboard() {
           isSuspicious: Boolean(item.isSuspicious),
           riskScore: Number((item as any).riskScore ?? (item as any).linkRisk ?? 0),
         }))
-      : (Array.isArray(baseResult?.urlAnalyses) ? baseResult.urlAnalyses : []);
+      : Array.isArray(scanData.url_results) && scanData.url_results.length > 0
+        ? scanData.url_results.map((item) => {
+            const score = Math.round(Number(item.risk_score ?? item.link_risk ?? 0));
+            return {
+              url: String(item.url ?? ''),
+              domain: String(item.domain ?? ''),
+              flags: [] as string[],
+              isSuspicious: score >= 61 || Number(item.malicious_count ?? 0) > 0,
+              riskScore: score,
+            };
+          })
+        : (Array.isArray(baseResult?.urlAnalyses) ? baseResult.urlAnalyses : []);
     const backendUrlRisk = Math.max(0, ...backendUrlAnalyses.map((item) => Number(item.riskScore ?? 0)));
 
     const rawHeaderAnalysis = ((scanData as any).header_analysis ?? (scanData as any).headerAnalysis ?? baseResult?.headerAnalysis) as DashboardResult['headerAnalysis'] | undefined;
     const backendHeaderScore = Math.max(
       0,
-      Math.round(Number((rawHeaderAnalysis as any)?.headerScore ?? (scanData as any)?.headerScore ?? baseResult?.headerScore ?? 0)),
+      Math.round(Number(
+        (rawHeaderAnalysis as any)?.headerScore
+          ?? (scanData as any)?.headerScore
+          ?? (scanData as any)?.header_spoofing_score
+          ?? baseResult?.headerScore
+          ?? 0,
+      )),
     );
 
     const backendTopWords = dedupeTopWordIndicators(scanData.explanation?.top_words ?? [])
@@ -2380,6 +2427,7 @@ export default function Dashboard() {
       ruleScore: backendPatternScore,
       urlScore: backendUrlRisk,
       headerScore: backendHeaderScore,
+      sender_domain: String((scanData as { sender_domain?: string }).sender_domain ?? '').trim() || (baseResult?.sender_domain as string | undefined),
       trustScore: backendTrustScore,
       trust_score: backendTrustScore,
       displayLabel: buildDisplayLabel(finalRiskScore, Math.round(finalConfidence * 100), backendTrustScore),
@@ -2394,6 +2442,7 @@ export default function Dashboard() {
       featureImportance: backendFeatureImportance,
       suspiciousSpans: mergedSuspiciousSpans,
       backendExplanation: scanData.explanation,
+      regionHint: (scanData as { regionHint?: string | null })?.regionHint ?? null,
       headerAnalysis: rawHeaderAnalysis,
       warnings: [...new Set([
         ...(Array.isArray(baseResult?.warnings) ? baseResult.warnings : []),
@@ -2593,6 +2642,7 @@ export default function Dashboard() {
     return {
       ...baseResult,
       id: baseResult?.id ?? emailResponse.data.scan_id ?? crypto.randomUUID(),
+      regionHint: (scanData as { regionHint?: string | null })?.regionHint ?? null,
       riskScore: mergedRiskScore,
       risk_score: mergedRiskScore,
       classification: mergedClassification,
@@ -2658,6 +2708,27 @@ export default function Dashboard() {
     disclaimer?: string;
     live_qa_note?: string;
     metrics_source_note?: string;
+    ood_holdout?: {
+      source?: string;
+      rows?: number | null;
+      accuracy?: number | null;
+      precision?: number | null;
+      recall?: number | null;
+      f1_score?: number | null;
+      false_positive_rate?: number | null;
+      note?: string | null;
+      available?: boolean;
+    } | null;
+    system_eval?: {
+      source?: string;
+      rows?: number | null;
+      accuracy?: number | null;
+      precision?: number | null;
+      recall?: number | null;
+      f1_score?: number | null;
+      false_positive_rate?: number | null;
+      note?: string | null;
+    } | null;
     benchmark_caveat?: {
       csv_records?: number;
       template_families?: number;
@@ -2685,6 +2756,17 @@ export default function Dashboard() {
   const benchmarkRecall = parseMetricNumber(offlineEvaluation.recall ?? learningMetrics.recall);
   const benchmarkF1 = parseMetricNumber(offlineEvaluation.f1_score ?? offlineEvaluation.f1Score ?? learningMetrics.f1Score);
   const benchmarkFpr = parseMetricNumber(offlineEvaluation.false_positive_rate ?? learningMetrics.falsePositiveRate);
+  // End-to-end system performance: the full pipeline (routing + rules + merge)
+  // scored on the same OOD holdout via the live /scan endpoint. This is the
+  // headline number — it reflects what users actually experience.
+  const systemEval = offlineEvaluation.system_eval;
+  const systemAccuracy = parseMetricNumber(systemEval?.accuracy);
+  const systemPrecision = parseMetricNumber(systemEval?.precision);
+  const systemRecall = parseMetricNumber(systemEval?.recall);
+  const systemF1 = parseMetricNumber(systemEval?.f1_score);
+  const systemFpr = parseMetricNumber(systemEval?.false_positive_rate);
+  const systemRows = parseMetricNumber(systemEval?.rows);
+  const hasSystemEval = systemEval != null && systemAccuracy != null;
   // Caveat counts come from diagnostics/reproduce_headlines.py via the metrics
   // payload; when the harness output is absent this is null and nothing renders.
   const rawCaveat = offlineEvaluation.benchmark_caveat;
@@ -2711,16 +2793,29 @@ export default function Dashboard() {
   const feedbackAgreementSummary = hasFeedbackSamples
     ? `Our model agreed with reviewed feedback ${(feedbackAgreementRate * 100).toFixed(0)}% of the time. Below 50% means retraining is strongly recommended.`
     : 'No reviewed feedback samples yet — agreement rate will appear after analyst confirmations are collected.';
-  const retrainCollected = Number(backendFeedbackStats?.pending_retrain ?? learningMetrics.samplesSinceLastRetrain ?? 0);
-  const retrainNeeded = Number(backendFeedbackStats?.needed_for_retrain ?? learningMetrics.samplesNeededForRetrain ?? (retrainCollected > 0 ? 0 : 50));
-  const retrainTarget = retrainCollected + retrainNeeded;
-  const retrainProgressText = retrainTarget > 0 ? `${retrainCollected} / ${retrainTarget}` : 'Awaiting feedback';
+  // Retrain internals (pending/needed counts) are redacted from /feedback/stats
+  // by T2 hardening. total_feedback equals the pending-retrain queue size (D1 fix),
+  // so use it as the honest queue count — never fabricate the 50-sample threshold.
+  const retrainCollected = Number(backendFeedbackStats?.total_feedback ?? learningMetrics.samplesSinceLastRetrain ?? 0);
+  const retrainNeeded = Number(backendFeedbackStats?.needed_for_retrain ?? learningMetrics.samplesNeededForRetrain ?? 0);
+  const retrainThreshold = retrainCollected + retrainNeeded;
+  const retrainProgressText = retrainThreshold > 0
+    ? retrainCollected >= retrainThreshold
+      ? `${retrainCollected} / ${retrainThreshold} · ready`
+      : `${retrainCollected} / ${retrainThreshold}`
+    : retrainCollected > 0
+      ? `${retrainCollected} queued`
+      : 'Awaiting data';
   const driftTone =
     learningMetrics.driftLevel === 'high'
       ? 'text-destructive border-destructive/30 bg-destructive/5'
       : learningMetrics.driftLevel === 'medium'
         ? 'text-warning border-warning/30 bg-warning/5'
         : 'text-safe border-safe/30 bg-safe/5';
+  const rawDriftScore = learningMetrics.driftScore;
+  const driftScoreDisplay = rawDriftScore === null || rawDriftScore === undefined
+    ? 'Not enough data'
+    : `Score ${(Number(rawDriftScore) * 100).toFixed(0)}%`;
   const backendStatusTone =
     backendStatus === 'connected'
       ? 'text-safe border-safe/30 bg-safe/10'
@@ -3245,6 +3340,14 @@ export default function Dashboard() {
   const handleScan = () => {
     if (!emailText.trim()) return;
 
+    // Reset per-scan state BEFORE the duplicate check — clearing it afterwards
+    // overwrote the notice in the same batched render, so it never showed.
+    setDuplicateScanNotice('');
+    setIsDemoEmail(false);
+    setFeedbackSent(false);
+    setFeedbackMessage('');
+    setFeedbackNote('');
+
     const contentHash = hashEmailContent(emailText);
     const existingScan = localHistory.find((item) => item.contentHash === contentHash);
     if (existingScan) {
@@ -3259,12 +3362,6 @@ export default function Dashboard() {
     const rawHeadersSnapshot = headersText.trim() || extractInlineHeadersFromText(rawEmailSnapshot);
     const scanToken = beginLockedScan();
 
-    setDuplicateScanNotice('');
-    setIsDemoEmail(false);
-    setFeedbackSent(false);
-    setFeedbackMessage('');
-    setFeedbackNote('');
-
     void (async () => {
       const mergedData = await enhanceWithPythonBackend(null, rawEmailSnapshot, rawHeadersSnapshot);
       const lockedResult = commitLockedScanResult(scanToken, mergedData);
@@ -3274,6 +3371,7 @@ export default function Dashboard() {
         id: lockedResult?.scanId || crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         emailPreview: rawEmailSnapshot.slice(0, 80),
+        regionHint: (lockedResult as { regionHint?: string | null })?.regionHint ?? null,
         riskScore: Math.max(0, Math.min(100, Math.round(lockedResult?.riskScore ?? 0))),
         classification: normalizeClassification(lockedResult?.classification ?? 'safe'),
         detectedLanguage: normalizeLanguageCode(lockedResult?.detectedLanguage ?? 'EN'),
@@ -3336,6 +3434,7 @@ export default function Dashboard() {
         id: lockedResult?.scanId || crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         emailPreview: text.slice(0, 80).replace(/\n/g, ' '),
+        regionHint: (lockedResult as { regionHint?: string | null })?.regionHint ?? null,
         riskScore: lockedResult?.riskScore ?? 0,
         classification: lockedResult?.classification ?? 'safe',
         detectedLanguage: normalizeLanguageCode(lockedResult?.detectedLanguage ?? 'EN'),
@@ -3387,7 +3486,9 @@ export default function Dashboard() {
       phishingCount: sessionMetrics.phishingDetected,
       suspiciousCount: sessionMetrics.suspiciousDetected,
       safeCount: sessionMetrics.safeDetected,
-      scans: filteredHistory.slice(0, historyVisibleCount).map((item) => ({
+      // Export every row matching the current filter/search — never a silent
+      // subset of the visible page (rows beyond "Load more" would be lost).
+      scans: filteredHistory.map((item) => ({
         preview: safeShareText(item.emailPreview),
         score: Math.round(item.riskScore ?? 0),
         verdict: formatVerdictLabel(item.classification, item.riskScore ?? 0),
@@ -3414,7 +3515,8 @@ export default function Dashboard() {
 
   const handleExportCsv = () => {
     const header = ['timestamp', 'verdict', 'score', 'language', 'urlCount', 'preview'];
-    const rows = filteredHistory.slice(0, historyVisibleCount).map((item) => [
+    // Same rule as the snapshot: all filtered rows, not just the visible page.
+    const rows = filteredHistory.map((item) => [
       item.timestamp,
       formatVerdictLabel(item.classification, item.riskScore ?? 0),
       String(Math.round(item.riskScore ?? 0)),
@@ -3467,18 +3569,42 @@ export default function Dashboard() {
 
   const getMostTargetedBrand = () => {
     if (!sessionHistory.length) return 'None';
-    const text = sessionHistory.map(h => h.emailPreview || '').join(" ").toLowerCase();
-    if (text.includes('hdfc')) return 'HDFC Bank';
-    if (text.includes('sbi')) return 'SBI (State Bank)';
-    if (text.includes('amazon')) return 'Amazon India';
-    if (text.includes('netflix')) return 'Netflix';
-    if (text.includes('paytm') || text.includes('gpay')) return 'Digital Wallet (UPI)';
-    return 'Financial Institution';
+    // Real keyword-frequency counting: whichever brand appears in the most
+    // session-scanned email previews wins. Ties break toward the brand seen
+    // most recently. This keeps the card honest about its "keyword frequency"
+    // label — no fixed brand priority ordering.
+    const brandPatterns: Array<[RegExp, string]> = [
+      [/hdfc/, 'HDFC Bank'],
+      [/sbi|state bank/, 'SBI (State Bank)'],
+      [/amazon/, 'Amazon India'],
+      [/netflix/, 'Netflix'],
+      [/paytm|gpay|google pay|phonepe/, 'Digital Wallet (UPI)'],
+      [/icici/, 'ICICI Bank'],
+      [/irctc/, 'IRCTC'],
+    ];
+    const counts = new Map<string, number>();
+    const lastSeen = new Map<string, number>();
+    sessionHistory.forEach((h, i) => {
+      const preview = String(h.emailPreview || '').toLowerCase();
+      for (const [pattern, brand] of brandPatterns) {
+        if (pattern.test(preview)) {
+          counts.set(brand, (counts.get(brand) || 0) + 1);
+          lastSeen.set(brand, i);
+        }
+      }
+    });
+    if (counts.size === 0) return 'Financial Institution';
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || (lastSeen.get(b[0]) ?? 0) - (lastSeen.get(a[0]) ?? 0))[0][0];
   };
 
   const senderToBlock = result?.headerAnalysis?.senderEmail
     || result?.headerAnalysis?.replyToEmail
     || result?.headerAnalysis?.senderDomain
+    // Fall back to the backend-extracted domain or a From: line in the body —
+    // blocking should not require the optional Advanced (Headers) input.
+    || (result as { sender_domain?: string; senderDomain?: string })?.sender_domain
+    || (result as { sender_domain?: string; senderDomain?: string })?.senderDomain
+    || /from:\s*([^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)/i.exec(emailText)?.[1]
     || '';
 
   const officialSiteUrl = (() => {
@@ -3952,18 +4078,6 @@ export default function Dashboard() {
               <span className={cn('h-1.5 w-1.5 rounded-full', privacyMode ? 'bg-safe' : 'bg-muted-foreground')} />
               {privacyMode ? 'Redacted exports' : 'Full exports'}
             </div>
-            {/* Theme toggle: dark default, light opt-in */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setThemeMode((v) => (v === 'dark' ? 'light' : 'dark'))}
-              title="Switch between dark cybersecurity theme and light mode. Preference is saved locally."
-              className="hidden sm:inline-flex h-8 text-[11px] font-bold border-border/60"
-            >
-              <SunMoon className="w-3.5 h-3.5 mr-1.5" />
-              {themeMode === 'dark' ? 'Dark' : 'Light'}
-            </Button>
             {/* Tab switcher */}
             <div className="flex items-center bg-secondary/50 border border-border/50 rounded-lg p-0.5 gap-0.5">
               <button
@@ -4748,47 +4862,6 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    {/* 3. Key Signals */}
-                    {result.featureImportance && result.featureImportance.length > 0 && (
-                      <div className="space-y-3 pt-2 pb-4 border-b border-border/50">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                            Key signals
-                          </h3>
-                          <span className="text-[10px] text-muted-foreground">Most important warning words</span>
-                        </div>
-                        <div className="space-y-2.5">
-                          {result.featureImportance.map((f, i) => {
-                            const maxC = result.featureImportance![0].contribution;
-                            const pct = maxC > 0 ? Math.round((f.contribution / maxC) * 100) : 0;
-                            return (
-                              <div key={i} className="flex items-center gap-3">
-                                <span className={cn(
-                                  "text-xs font-mono shrink-0 w-32 truncate",
-                                  f.direction === 'phishing' ? 'text-destructive' : 'text-safe'
-                                )} title={f.feature}>
-                                  {f.feature}
-                                </span>
-                                <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                                  <div
-                                    className={cn("h-full rounded-full transition-all duration-700", f.direction === 'phishing' ? 'bg-destructive/70' : 'bg-safe/70')}
-                                    style={{ width: `${pct}%` }}
-                                  />
-                                </div>
-                                <span className="text-[10px] font-mono text-muted-foreground w-8 text-right shrink-0">{f.contribution.toFixed(2)}</span>
-                                <span className={cn(
-                                  "text-[9px] uppercase font-bold shrink-0 w-8",
-                                  f.direction === 'phishing' ? 'text-destructive' : 'text-safe'
-                                )}>
-                                  {f.direction === 'phishing' ? 'risk' : 'safe'}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
 
                     {/* 4. Header Analysis */}
                     {result.headerAnalysis && result.headerAnalysis.hasHeaders && (
@@ -5017,20 +5090,6 @@ export default function Dashboard() {
                       </div>
                     )}
 
-                    {/* 7. Before You Act */}
-                    {result.safetyTips.length > 0 && (
-                      <div className="space-y-4 pt-4 border-t border-border/50">
-                        <h3 className="text-lg font-semibold text-foreground">What to do next</h3>
-                        <div className="space-y-3">
-                          {result.safetyTips.slice(0, 4).map((tip, i) => (
-                            <div key={i} className="flex items-start gap-3">
-                              <ShieldCheck className="w-4 h-4 text-safe shrink-0 mt-0.5" />
-                              <p className="text-sm text-foreground/90">{tip}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                           </div>
                         </motion.div>
@@ -5255,17 +5314,6 @@ export default function Dashboard() {
                 </div>
               </section>
 
-              <section className={cn(dashboardSectionClass, 'space-y-5')}>
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                    <Shield className="w-4 h-4 text-primary" />
-                    Live Feed
-                  </h2>
-                  <span className="text-xs text-muted-foreground">Live WebSocket or REST polling from Python backend</span>
-                </div>
-                <DashboardLiveFeed />
-              </section>
-
               {/* ── Risk Scale Reference ── */}
               <section className={cn(dashboardSectionClass, 'space-y-5')}>
                 <h2 className="mb-5 flex items-center gap-2 text-lg font-semibold text-foreground">
@@ -5297,49 +5345,6 @@ export default function Dashboard() {
                 </div>
               </section>
 
-              {/* ── Attack Intelligence ── */}
-              <section className={cn(dashboardSectionClass, 'space-y-5')}>
-                <div className="mb-1 flex items-center gap-2 text-lg font-semibold text-foreground">
-                  <AlertTriangle className="w-4 h-4 text-primary" />
-                  Attack Intelligence
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <section className={cn('rounded-xl border border-card-border bg-card p-5', cardHoverClass)}>
-                  <h3 className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-warning" />
-                    Risk Keywords
-                  </h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {getTopKeywords().length > 0 ? getTopKeywords().map(kw => (
-                      <span key={kw} className="px-1.5 py-0.5 rounded bg-warning/10 text-warning border border-warning/20 text-[10px] font-mono lowercase">
-                        {kw}
-                      </span>
-                    )) : <span className="text-[11px] text-muted-foreground">None detected</span>}
-                  </div>
-                </section>
-                
-                <section className={cn('rounded-xl border border-card-border bg-card p-5', cardHoverClass)}>
-                  <h3 className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <ShieldAlert className="w-3.5 h-3.5 text-destructive" />
-                    Attack Type
-                  </h3>
-                  <div className="text-sm font-bold text-foreground tracking-tight">
-                    {getMostCommonAttackType()}
-                  </div>
-                </section>
-
-                <section className={cn('rounded-xl border border-card-border bg-card p-5', cardHoverClass)}>
-                  <h3 className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Building2 className="w-3.5 h-3.5 text-primary" />
-                    Targeted Brand
-                  </h3>
-                  <div className="text-sm font-bold text-foreground tracking-tight">
-                    {getMostTargetedBrand()}
-                  </div>
-                </section>
-                </div>
-              </section>
-
               {/* ── Model Performance ── */}
               <section className={cn(dashboardSectionClass, 'space-y-5')}>
                 <div className="mb-5 flex items-center justify-between gap-3">
@@ -5347,7 +5352,7 @@ export default function Dashboard() {
                     <BarChart3 className="w-4 h-4 text-primary" />
                     Detection Accuracy
                   </h2>
-                  <span className="text-xs text-muted-foreground">Benchmark Accuracy · measured on a curated test set, not live data</span>
+                  <span className="text-xs text-muted-foreground">End-to-end system performance · full pipeline, measured on unseen emails</span>
                 </div>
 
                 <div className="mb-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-[11px] text-foreground/85">
@@ -5365,75 +5370,46 @@ export default function Dashboard() {
                   ) : null}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  {[
-                    { label: 'Accuracy', value: benchmarkAccuracy, color: 'text-primary', desc: 'Offline holdout split' },
-                    { label: 'Precision', value: benchmarkPrecision, color: 'text-safe', desc: 'Offline holdout split' },
-                    { label: 'Recall', value: benchmarkRecall, color: 'text-safe', desc: 'Offline holdout split' },
-                    { label: 'F1 Score', value: benchmarkF1, color: 'text-accent', desc: 'Offline holdout split' },
-                  ].map(({ label, value, color, desc }) => (
-                    <div key={label} className={cn('rounded-xl border border-card-border bg-card p-4', cardHoverClass)}>
-                      <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide">{label}</p>
-                      <p className={cn("text-2xl font-bold font-mono", color)}>
-                        {formatBenchmarkMetric(value)}
+                {hasSystemEval && (
+                  <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-foreground">End-to-end system performance</p>
+                      <span className="text-[10px] text-muted-foreground">
+                        full pipeline · routing + rules · {systemRows != null ? `${Math.round(systemRows)} unseen emails` : 'unseen holdout'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                      {[
+                        { label: 'Accuracy', value: systemAccuracy, color: 'text-primary' },
+                        { label: 'Precision', value: systemPrecision, color: 'text-safe' },
+                        { label: 'Recall', value: systemRecall, color: 'text-safe' },
+                        { label: 'F1 Score', value: systemF1, color: 'text-accent' },
+                      ].map(({ label, value, color }) => (
+                        <div key={label}>
+                          <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide">{label}</p>
+                          <p className={cn('text-2xl font-bold font-mono', color)}>
+                            {formatBenchmarkMetric(value)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    {systemFpr != null && (
+                      <p className="mt-3 text-[11px] text-muted-foreground">
+                        False positive rate on this holdout: <span className="font-mono text-warning">{(systemFpr * 100).toFixed(1)}%</span>
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{desc}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className={cn('mt-3 rounded-xl border border-card-border bg-card p-4', cardHoverClass)}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-muted-foreground font-medium">False Positive Rate</span>
-                    {(() => {
-                      const fprDisplay = formatBenchmarkFpr(benchmarkFpr);
-                      return (
-                        <span className="text-xs font-mono text-warning">
-                          {fprDisplay.valueText}{' '}
-                          <span className="text-muted-foreground">{fprDisplay.captionText}</span>
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-warning rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: benchmarkFpr !== null ? `${benchmarkFpr * 100}%` : '0%' }}
-                      transition={{ duration: 0.8 }}
-                    />
-                  </div>
-                </div>
-
-                {benchmarkCaveatText !== null && (
-                  <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
-                    {benchmarkCaveatText}
-                  </p>
-                )}
-
-                {benchmarkAccuracy !== null && benchmarkAccuracy > 0 && (
-                  <div className="mt-3 space-y-1.5">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Offline holdout accuracy</span>
-                      <span className="font-mono text-foreground">{(benchmarkAccuracy * 100).toFixed(1)}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-primary rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${benchmarkAccuracy * 100}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                      />
-                    </div>
+                    )}
+                    <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+                      {systemEval?.note ?? 'The whole production system (language routing, rules, score merge) scored on unseen adversarial emails — the honest end-to-end number.'}
+                    </p>
                   </div>
                 )}
 
                 <div className={cn('mt-5 rounded-xl border border-card-border bg-card p-4', cardHoverClass)}>
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-3">
                     <h3 className="text-sm font-semibold text-foreground">Live Session Accuracy</h3>
-                    <span className="text-[11px] text-muted-foreground">Calculated from real user feedback, false negatives, and agreement rate</span>
+                    <span className="text-[11px] text-muted-foreground">Calculated from real user feedback agreement</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {[
                       {
                         label: 'Agreement rate',
@@ -5445,16 +5421,7 @@ export default function Dashboard() {
                         value: String(learningMetrics.confirmedCorrect ?? 0),
                         helper: hasFeedbackSamples ? `${learningMetrics.feedbackSamples ?? 0} feedback samples reviewed` : 'No feedback samples reviewed yet',
                       },
-                      {
-                        label: 'False negatives',
-                        value: String(learningMetrics.falseNegativeCount ?? 0),
-                        helper: 'Missed phishing corrected by users',
-                      },
-                      {
-                        label: 'Drift',
-                        value: String(learningMetrics.driftLevel ?? 'low').toUpperCase(),
-                        helper: `Score ${(Number(learningMetrics.driftScore ?? 0) * 100).toFixed(0)}%`,
-                      },
+                      // False negatives and drift live in Self-Improving Model Loop only — no duplication.
                     ].map((card) => (
                       <div key={card.label} className={cn('rounded-xl border border-border/50 bg-background/60 p-3', cardHoverClass)}>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{card.label}</p>
@@ -5522,7 +5489,7 @@ export default function Dashboard() {
                     {
                       label: 'Drift Status',
                       value: String(learningMetrics.driftLevel ?? 'low').toUpperCase(),
-                      helper: `Score ${(Number(learningMetrics.driftScore ?? 0) * 100).toFixed(0)}%`,
+                      helper: driftScoreDisplay,
                     },
                   ].map((card) => (
                     <div key={card.label} className={cn('rounded-xl border border-card-border bg-card p-4 transition-all duration-200', cardHoverClass)}>
