@@ -1569,10 +1569,15 @@ def ensure_scans_db() -> None:
                 risk_score INTEGER,
                 timestamp TEXT,
                 language TEXT,
-                sender_domain TEXT
+                sender_domain TEXT,
+                model_used TEXT
             )
             """
         )
+        # Migration for databases created before the model_used column existed.
+        scan_columns = {row[1] for row in conn.execute("PRAGMA table_info(scans)").fetchall()}
+        if "model_used" not in scan_columns:
+            conn.execute("ALTER TABLE scans ADD COLUMN model_used TEXT")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS scan_explanations (
@@ -1718,20 +1723,22 @@ def save_scan_to_db(result: dict[str, Any], session_id: str | None = None) -> No
         # LIVE defect 1: UPSERT, not INSERT OR IGNORE. persist_scan_explanation_db
         # writes an FK stub row (scan_id + session_id, all else NULL) before the
         # scans row; a plain OR IGNORE would keep the hollow stub forever.
+        model_used = str(result.get("model_used") or "")
         conn.execute(
             """
             INSERT INTO scans (
-                scan_id, session_id, verdict, risk_score, timestamp, language, sender_domain
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                scan_id, session_id, verdict, risk_score, timestamp, language, sender_domain, model_used
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(scan_id) DO UPDATE SET
                 session_id=excluded.session_id,
                 verdict=excluded.verdict,
                 risk_score=excluded.risk_score,
                 timestamp=excluded.timestamp,
                 language=excluded.language,
-                sender_domain=excluded.sender_domain
+                sender_domain=excluded.sender_domain,
+                model_used=excluded.model_used
             """,
-            (scan_id, resolved_session_id, verdict, risk_score, timestamp, language, sender_domain),
+            (scan_id, resolved_session_id, verdict, risk_score, timestamp, language, sender_domain, model_used),
         )
         conn.commit()
 
@@ -1743,7 +1750,7 @@ def get_recent_scans_from_db(session_id: str | None = None) -> list[dict[str, An
         if session_id:
             rows = conn.execute(
                 """
-                SELECT scan_id, session_id, verdict, risk_score, timestamp, language, sender_domain
+                SELECT scan_id, session_id, verdict, risk_score, timestamp, language, sender_domain, model_used
                 FROM scans
                 WHERE session_id = ?
                 ORDER BY timestamp DESC
@@ -1754,7 +1761,7 @@ def get_recent_scans_from_db(session_id: str | None = None) -> list[dict[str, An
         else:
             rows = conn.execute(
                 """
-                SELECT scan_id, session_id, verdict, risk_score, timestamp, language, sender_domain
+                SELECT scan_id, session_id, verdict, risk_score, timestamp, language, sender_domain, model_used
                 FROM scans
                 ORDER BY timestamp DESC
                 LIMIT 10
@@ -1769,6 +1776,7 @@ def get_recent_scans_from_db(session_id: str | None = None) -> list[dict[str, An
             "timestamp": str(row["timestamp"]) if row["timestamp"] else None,
             "sender_domain": str(row["sender_domain"] or ""),
             "language": str(row["language"] or "EN"),
+            "model_used": str(row["model_used"] or "") if "model_used" in row.keys() else "",
             "session_id": str(row["session_id"] or ""),
         }
         for row in rows
