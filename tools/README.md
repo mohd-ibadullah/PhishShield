@@ -14,8 +14,16 @@ server on `http://127.0.0.1:8000` and hit the HTTP API directly.
 | test_e2e.py | End-to-end certification against /scan endpoint | Live server on :8000 + combined_test_dataset.json |
 | test_harness.py | Comprehensive test harness with full dataset | Live server on :8000 + combined_test_dataset.json |
 | test_phishshield_cases.py | PhishShield case testing | Live server on :8000 |
-| test_script.py | Utility script | Live server on :8000 |
-| test_trust.py | Trust/reputation testing | Live server on :8000 |
+
+Moved to `tools/legacy-manual-tests/` (2026-09-12) because they cannot import
+safely as plain modules in CI (they `from main import ...` at module level or
+load local model weights on import):
+
+| File | Why moved |
+|------|-----------|
+| test_script.py | imports backend `main` at module level (manual validation suite) |
+| test_trust.py | imports backend `main` at module level (identical copy already lived in legacy-manual-tests/) |
+| word_trajectory.py | loads `backend/models/securebert_model` weights on import (1GB+, gitignored) |
 
 ## How to run
 
@@ -24,14 +32,12 @@ server on `http://127.0.0.1:8000` and hit the HTTP API directly.
 cd backend && uvicorn main:app --host 127.0.0.1 --port 8000
 
 # Then run a script
-python tools/test_scan_simple.py
 python tools/test_10_cases.py
 ```
 
 ## How to run test functions via pytest
 
 ```bash
-# These can also be collected by pytest if server is running:
 pytest tools/test_scan_simple.py::test_scan_and_broadcast -v
 pytest tools/test_wsbroadcast.py::test_websocket_broadcast -v
 ```
@@ -40,4 +46,5 @@ pytest tools/test_wsbroadcast.py::test_websocket_broadcast -v
 
 - **py_compile**: checked in CI (`tests/*.py + tools/*.py`)
 - **pytest collection**: NOT part of CI suite (requires live server)
+- **Module-import probe** (`tests/test_tools_manifest.py`): tools/*.py must import cleanly
 - **Last verified**: commit 0f3a7bc, 2026-08-31

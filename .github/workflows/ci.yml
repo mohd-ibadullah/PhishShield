@@ -43,6 +43,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Space-copy parity tests import phishshield-backend-space/ directly.
+          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v5

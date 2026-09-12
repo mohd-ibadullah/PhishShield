@@ -67,8 +67,8 @@ def test_all_tools_import_safely_as_module():
         try:
             result = subprocess.run(
                 [sys.executable, "-c",
-                 f"import importlib.util; s=importlib.util.spec_from_file_location('m','{py}'); " +
-                 f"m=importlib.util.module_from_spec(s); s.loader.exec_module(m)"],
+                 f"import importlib.util, sys; s=importlib.util.spec_from_file_location('m','{py}'); " +
+                 f"m=importlib.util.module_from_spec(s); sys.modules['m']=m; s.loader.exec_module(m)"],
                 capture_output=True, text=True, timeout=10,
             )
         except subprocess.TimeoutExpired:
