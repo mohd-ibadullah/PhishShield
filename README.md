@@ -31,6 +31,20 @@ Every email first goes through a language check. Hindi, Telugu, Urdu, Tamil and 
 
 Whichever path an email takes, the rule signals and the model score come together into one risk number with a plain verdict and a short explanation. If the specialist model cannot decide confidently, the app says so instead of guessing.
 
+### Models: provenance and measured performance
+
+Every model in the hot path is registered with byte size and SHA-256 in `ml2/MODEL_ARTIFACTS.md`; the numbers below are the measured ones behind the claims.
+
+| Path | Model | Training data | Measured performance |
+|------|-------|---------------|----------------------|
+| English | SecureBERT + MuRIL ensemble + deterministic anchor (0.45/0.35/0.20 weights, 3s per-provider timeout, circuit breaker) | Pretrained checkpoints used as-is, not fine-tuned on repo data — SecureBERT `ehsanaghaei/SecureBERT` (498 MB) and MuRIL `google/muril-base-cased` (950 MB) | Gauntlet round 2 live probes: 18/18 phishing, 8/8 benign. No offline benchmark is claimed for this path because none was run |
+| Non-Latin (hi/te/ur/ta/bn) | Fine-tuned XLM-RoBERTa (`model_merged/`, 1.1 GB) | ~194,000 emails pooled from three Hugging Face datasets | Held-out 34,283-email split: macro F1 0.965, phishing recall 0.952, AUC 0.999. Known limit: cross-source OOD phishing recall 0.0 on modern LLM-style/BEC mail (documented, rule layer mitigates) |
+| Hinglish / code-mixed | MuRIL (`google/muril-base-cased`) | Pretrained checkpoint used as-is | Same gauntlet evidence as the English leg; no separate fine-tune benchmark |
+| Marketing fast path | TF-IDF + Logistic Regression (`model.pkl` + `vectorizer.pkl`) | `data/Phishing_Email.csv`, 2,000 rows (1,600 train / 400 test) | In-distribution 1.0 (closed set, memorization — not a generalization claim). OOD holdout below is the honest number |
+| Legacy slot | IndicBERT | ai4bharat/indic-bert | Present but inactive — out of the hot path since the ROUTER pass after ranking last in both shootout rounds |
+
+The OOD numbers for the active TF-IDF path (accuracy 0.686, F1 0.723, FPR 0.49 on 220 hand-authored adversarial emails) and the full-pipeline system eval (accuracy 0.682, F1 0.685 through the live scan endpoint) are recorded in `data/training_meta.json` and `diagnostics/headlines_output.json`. The multilingual router also carries a rules-agreement gate: a specialist flagging Hindi/Telugu text as phishing at high confidence only forces a risk floor when the rule layer independently finds a high-risk keyword cluster, which keeps benign transactional mail in those languages from being floored to phishing.
+
 ## Features
 
 > **Chrome Extension:** Includes a Chrome Extension for in-browser scanning. It signs in to the backend before scanning, so your scan history and feedback stay tied to one session, and paste any email directly from Gmail or any webmail tab without leaving the page.
@@ -50,7 +64,7 @@ Whichever path an email takes, the rule signals and the model score come togethe
 | Layer | Technology |
 |-------|------------|
 | Backend | Python, FastAPI, Uvicorn, WebSocket |
-| ML Models | Fine-tuned XLM-RoBERTa (non-Latin), SecureBERT + MuRIL ensemble (English), MuRIL (Hinglish), TF-IDF + Logistic Regression (marketing fast path) |
+| ML Models | Fine-tuned XLM-RoBERTa (non-Latin, ~194k emails), SecureBERT + MuRIL pretrained ensemble with rule anchor (English), MuRIL (Hinglish), TF-IDF + Logistic Regression (marketing fast path; provenance + measured numbers in `ml2/MODEL_ARTIFACTS.md`) |
 | Frontend | React 19, Vite 7, TypeScript, Tailwind CSS |
 | Database | SQLite (with WAL mode for busy periods), JSON/CSV flat file stores |
 | Observability | Prometheus metrics; per-scan SHAP/LIME/heuristic word attributions on `/scan-email` (SHAP times out gracefully; `explanation_degraded` when fallback) |
