@@ -76,36 +76,6 @@ The backend (FastAPI) handles all phishing analysis: language routing, text clea
 The frontend (React + TypeScript) talks to the backend over a REST API and shows scan results, risk scores, and explanations in a clean dashboard UI.
 Docker Compose wires both services together. Nginx serves the frontend and proxies API traffic to the backend.
 
-```mermaid
-flowchart LR
-  subgraph C["Clients"]
-    UI["React 19 + TypeScript dashboard"]
-    EXT["Chrome extension MV3"]
-  end
-  subgraph SFE["Docker Compose service frontend"]
-    NGX["Nginx port 80 static + /api proxy"]
-  end
-  subgraph SBE["Docker Compose service backend"]
-    API["FastAPI Uvicorn"]
-    ROUTER["Language router"]
-    RULES["Rule engine pattern scores"]
-    MLN["XLM-R / SecureBERT / MuRIL / TF-IDF"]
-    FUS["Score fusion verdict"]
-  end
-  subgraph VOL["Host-mounted files"]
-    FILES["feedback.csv, sender_profiles.json, scan_logs.jsonl"]
-  end
-  UI --> NGX
-  NGX --> API
-  EXT --> API
-  API --> ROUTER
-  ROUTER --> RULES
-  ROUTER --> MLN
-  RULES --> FUS
-  MLN --> FUS
-  API -.-> FILES
-```
-
 ### Full System Architecture
 
 ![PhishShield Full Architecture](docs/architecture.png)
