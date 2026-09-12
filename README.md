@@ -112,37 +112,6 @@ flowchart LR
 
 See `docs/PHISHSHIELD_COMPLETE_OVERVIEW.md` for a full deep-dive.
 
-## Screenshots
-
-All UI captures below are stored under `screenshots/`; each block lists the exact file path before the image.
-
-### Dashboard, home / email paste
-
-**Image:** `screenshots/dashboard-home-screen-scam-email-draft-01.png`  
-![Dashboard home with scam-style email draft 1](screenshots/dashboard-home-screen-scam-email-draft-01.png)
-
-**Image:** `screenshots/dashboard-home-screen-scam-email-draft-02.png`  
-![Dashboard home with scam-style email draft 2](screenshots/dashboard-home-screen-scam-email-draft-02.png)
-
-**Image:** `screenshots/dashboard-home-screen-safe-email-draft.png`  
-![Dashboard home with safe / legitimate-style email draft](screenshots/dashboard-home-screen-safe-email-draft.png)
-
-### Dashboard, scan results
-
-**Image:** `screenshots/dashboard-scan-results-phishing-view-01.png`  
-![Dashboard scan result, phishing-style outcome 1](screenshots/dashboard-scan-results-phishing-view-01.png)
-
-**Image:** `screenshots/dashboard-scan-results-phishing-view-02.png`  
-![Dashboard scan result, phishing-style outcome 2](screenshots/dashboard-scan-results-phishing-view-02.png)
-
-**Image:** `screenshots/dashboard-scan-results-safe-verdict-view.png`  
-![Dashboard scan result, safe verdict](screenshots/dashboard-scan-results-safe-verdict-view.png)
-
-### Chrome extension
-
-**Image:** `screenshots/chrome-extension-popup-phishshield-scan.png`  
-![Chrome extension PhishShield scan popup](screenshots/chrome-extension-popup-phishshield-scan.png)
-
 ## Getting Started
 
 ### Quick Start
@@ -237,7 +206,7 @@ The loadable extension sources live under **`frontend/artifacts/chrome-extension
 ├── docs/                    # Architecture diagrams and technical docs
 │   └── PHISHSHIELD_COMPLETE_OVERVIEW.md  # Detailed project deep-dive
 ├── diagnostics/             # Gauntlet evidence: model eval results, live-browser pass artifacts
-├── screenshots/             # `dashboard-*.png`, `chrome-extension-*.png` (see Screenshots section)
+├── screenshots/             # UI captures
 ├── docker-compose.yml       # Root compose for backend + frontend services
 └── README.md                # Recruiter-facing project overview
 ```
