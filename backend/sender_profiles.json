@@ -1,37 +1,114 @@
 {
-  "e.economist.com": {
-    "totalScans": 1,
-    "safeCount": 1,
-    "lastScore": 12,
-    "lastVerdict": "Safe",
-    "lastSeen": "2026-05-21T12:53:25.535412+00:00"
+  "example.invalid": {
+    "totalScans": 8,
+    "phishingCount": 8,
+    "lastScore": 85,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T18:41:05.935283+00:00"
   },
-  "skills.google": {
-    "totalScans": 1,
-    "safeCount": 1,
-    "lastScore": 15,
-    "lastVerdict": "Safe",
-    "lastSeen": "2026-05-21T12:53:25.828339+00:00"
+  "gmail.com": {
+    "totalScans": 3,
+    "phishingCount": 3,
+    "lastScore": 85,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T12:46:50.312536+00:00"
   },
-  "notify.docker.com": {
-    "totalScans": 1,
-    "safeCount": 1,
-    "lastScore": 11,
-    "lastVerdict": "Safe",
-    "lastSeen": "2026-05-21T12:53:26.101874+00:00"
+  "hack2skill.com": {
+    "totalScans": 2,
+    "phishingCount": 2,
+    "lastScore": 35,
+    "lastVerdict": "Suspicious",
+    "lastSeen": "2026-09-12T07:29:20.794692+00:00"
   },
-  "hdfc-secure.tk": {
+  "sbi-secure.xyz": {
     "totalScans": 1,
     "phishingCount": 1,
     "lastScore": 85,
     "lastVerdict": "High Risk",
-    "lastSeen": "2026-09-01T09:32:00.500364+00:00"
+    "lastSeen": "2026-09-12T12:22:46.289455+00:00"
   },
-  "paypa1.com": {
+  "parcel-delivery-notif.xyz": {
+    "totalScans": 2,
+    "phishingCount": 2,
+    "lastScore": 57,
+    "lastVerdict": "Suspicious",
+    "lastSeen": "2026-09-12T12:31:15.735618+00:00"
+  },
+  "lucky-draw-kbc.xyz": {
+    "totalScans": 1,
+    "phishingCount": 1,
+    "lastScore": 85,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T12:22:47.014439+00:00"
+  },
+  "netflix-billing-update.xyz": {
+    "totalScans": 1,
+    "phishingCount": 1,
+    "lastScore": 83,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T12:37:34.081913+00:00"
+  },
+  "amazon-offers-day.xyz": {
+    "totalScans": 1,
+    "phishingCount": 1,
+    "lastScore": 70,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T12:42:44.134256+00:00"
+  },
+  "amazon-mega-sale.xyz": {
+    "totalScans": 1,
+    "phishingCount": 1,
+    "lastScore": 46,
+    "lastVerdict": "Suspicious",
+    "lastSeen": "2026-09-12T12:43:14.358508+00:00"
+  },
+  "delhi-notice.xyz": {
+    "totalScans": 1,
+    "phishingCount": 1,
+    "lastScore": 35,
+    "lastVerdict": "Suspicious",
+    "lastSeen": "2026-09-12T13:58:08.664983+00:00"
+  },
+  "sbi-alert-mumbai.xyz": {
+    "totalScans": 2,
+    "phishingCount": 2,
+    "lastScore": 70,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T14:03:01.616196+00:00"
+  },
+  "sbi-secure.tk": {
+    "totalScans": 1,
+    "phishingCount": 1,
+    "lastScore": 85,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T18:42:04.707648+00:00"
+  },
+  "netflix-billing.xyz": {
     "totalScans": 1,
     "phishingCount": 1,
     "lastScore": 82,
     "lastVerdict": "High Risk",
-    "lastSeen": "2026-09-01T21:55:42.718850+00:00"
+    "lastSeen": "2026-09-12T18:45:33.028280+00:00"
+  },
+  "paypa1.com": {
+    "totalScans": 2,
+    "phishingCount": 2,
+    "lastScore": 49,
+    "lastVerdict": "Suspicious",
+    "lastSeen": "2026-09-12T18:52:24.077837+00:00"
+  },
+  "sbi-secure-tk7q.xyz": {
+    "totalScans": 1,
+    "phishingCount": 1,
+    "lastScore": 85,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T19:02:31.379691+00:00"
+  },
+  "sbi-secure-tk2a.xyz": {
+    "totalScans": 1,
+    "phishingCount": 1,
+    "lastScore": 85,
+    "lastVerdict": "High Risk",
+    "lastSeen": "2026-09-12T19:22:37.962594+00:00"
   }
 }

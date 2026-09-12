@@ -75,6 +75,46 @@ def read_eval_count() -> int:
         return sum(1 for line in handle if line.strip() and json.loads(line))
 
 
+def read_ood_holdout_rows() -> tuple[list[str], list[int]]:
+    """Committed adversarial/real-world holdout (hand-authored, NOT in training data).
+
+    This is the honest generalization measurement: same rows the repo ships in
+    diagnostics/eval_set_v1.jsonl, none of which appear in the training CSV.
+    """
+    items: list[dict] = []
+    with EVAL_SET_PATH.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            obj = json.loads(line)
+            if not isinstance(obj, dict) or not obj.get("text") or obj.get("label") not in LABEL_MAP:
+                raise ValueError(f"Invalid eval_set_v1 row: {obj!r:.80}")
+            items.append(obj)
+    texts = [clean_text(str(i["text"])) for i in items]
+    labels = [LABEL_MAP[i["label"]] for i in items]
+    return texts, labels
+
+
+def measure_ood_holdout(
+    vectorizer: TfidfVectorizer, model: LogisticRegression
+) -> dict[str, int | float | None]:
+    """Score the OOD holdout with the trained artifacts; returns metrics + confusion counts."""
+    texts, labels = read_ood_holdout_rows()
+    predictions = model.predict(vectorizer.transform(texts))
+    fp = sum(actual == 0 and predicted == 1 for actual, predicted in zip(labels, predictions))
+    tn = sum(actual == 0 and predicted == 0 for actual, predicted in zip(labels, predictions))
+    return {
+        "rows": len(labels),
+        "accuracy": accuracy_score(labels, predictions),
+        "precision": precision_score(labels, predictions, zero_division=0),
+        "recall": recall_score(labels, predictions, zero_division=0),
+        "f1_score": f1_score(labels, predictions, zero_division=0),
+        "fp": int(fp), "tn": int(tn),
+        "false_positive_rate": float(fp / (fp + tn)) if fp + tn else None,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -108,11 +148,45 @@ def main() -> None:
         "csv_records": len(texts),
         **template_family_stats(texts, labels),
     }
+    ood = measure_ood_holdout(vectorizer, model)
+    system_eval_path = Path(__file__).resolve().parent / "system_eval_results.json"
+    system_eval = None
+    if system_eval_path.exists():
+        try:
+            raw = json.loads(system_eval_path.read_text(encoding="utf-8"))
+            valid = [r for r in raw if "error" not in r]
+            if valid:
+                tp = sum(1 for r in valid if r["label"] == "phishing" and not r["pred_safe"])
+                fn = sum(1 for r in valid if r["label"] == "phishing" and r["pred_safe"])
+                tn = sum(1 for r in valid if r["label"] == "safe" and r["pred_safe"])
+                fp = sum(1 for r in valid if r["label"] == "safe" and not r["pred_safe"])
+                total = tp + fn + tn + fp
+                prec = tp / (tp + fp) if tp + fp else 0.0
+                rec = tp / (tp + fn) if tp + fn else 0.0
+                system_eval = {
+                    "source": "POST /scan end-to-end (routing + rules + merge)",
+                    "rows": total,
+                    "accuracy": round((tp + tn) / total, 4),
+                    "precision": round(prec, 4),
+                    "recall": round(rec, 4),
+                    "f1_score": round(2 * prec * rec / (prec + rec), 4) if prec + rec else 0.0,
+                    "fp": fp, "tn": tn, "fn": fn, "tp": tp,
+                    "false_positive_rate": round(fp / (fp + tn), 4) if fp + tn else 0.0,
+                    "note": (
+                        "Full production pipeline scored on the OOD holdout via the "
+                        "live /scan endpoint — this is the honest end-to-end system "
+                        "performance, not a single-model benchmark."
+                    ),
+                }
+        except (json.JSONDecodeError, KeyError, TypeError):
+            system_eval = None
     print("metadata_metrics=" + json.dumps(metadata.get("metrics", {}), sort_keys=True))
     print("measured=" + json.dumps(measured, sort_keys=True))
+    print("ood_holdout=" + json.dumps(ood, sort_keys=True))
+    print("system_eval=" + json.dumps(system_eval, sort_keys=True))
     print("caveat=" + json.dumps(caveat, sort_keys=True))
     if args.write_json:
-        payload = {"measured": measured, "caveat": caveat}
+        payload = {"measured": measured, "ood_holdout": ood, "system_eval": system_eval, "caveat": caveat}
         Path(args.write_json).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 

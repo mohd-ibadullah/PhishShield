@@ -15,6 +15,21 @@ def training_metadata_paths() -> list[Path]:
 HEADLINES_OUTPUT_PATH = BASE_DIR.parent / "diagnostics" / "headlines_output.json"
 
 
+def load_system_eval() -> dict[str, Any] | None:
+    """End-to-end system performance: full pipeline (routing + rules + merge)
+    scored on the OOD holdout via the live /scan endpoint. None when the
+    harness output is absent.
+    """
+    if not HEADLINES_OUTPUT_PATH.exists():
+        return None
+    try:
+        payload = json.loads(HEADLINES_OUTPUT_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    system_eval = payload.get("system_eval")
+    return system_eval if isinstance(system_eval, dict) else None
+
+
 def load_benchmark_caveat() -> dict[str, Any] | None:
     """Caveat counts produced by diagnostics/reproduce_headlines.py, or None.
 
@@ -53,6 +68,59 @@ def load_training_metadata() -> dict[str, Any]:
         return {}
 
 
+FEEDBACK_MEMORY_PATH = BASE_DIR.parent / "data" / "feedback_memory.json"
+
+
+def _learning_metrics_from_feedback() -> dict[str, Any]:
+    """Live Session Accuracy inputs, computed from the persisted feedback store.
+
+    Agreement = model verdict matched the analyst-corrected verdict.
+    A correction is a false positive when the model flagged phish/suspicious
+    but the analyst said Safe; a false negative is the reverse.
+    """
+    empty = {
+        "feedback_samples": 0,
+        "confirmed_correct": 0,
+        "false_positive_count": 0,
+        "false_negative_count": 0,
+        "feedback_agreement_rate": None,
+        "pending_review_count": 0,
+    }
+    if not FEEDBACK_MEMORY_PATH.exists():
+        return empty
+    try:
+        payload = json.loads(FEEDBACK_MEMORY_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return empty
+    entries = payload.get("entries") if isinstance(payload.get("entries"), dict) else {}
+    samples = confirmed = fp = fn = pending_review = 0
+    for entry in entries.values():
+        if not isinstance(entry, dict):
+            continue
+        predicted = str(entry.get("predicted") or "").strip().lower()
+        corrected = str(entry.get("corrected") or "").strip().lower()
+        if predicted and not corrected:
+            pending_review += 1
+        if not predicted or not corrected:
+            continue
+        samples += 1
+        if predicted == corrected:
+            confirmed += 1
+        elif corrected == "safe":
+            fp += 1
+        elif corrected in {"high risk", "high"}:
+            fn += 1
+    rate = (confirmed / samples) if samples else None
+    return {
+        "feedback_samples": samples,
+        "confirmed_correct": confirmed,
+        "false_positive_count": fp,
+        "false_negative_count": fn,
+        "feedback_agreement_rate": rate,
+        "pending_review_count": pending_review,
+    }
+
+
 def _runtime_counts_from_scans(scans: list[dict[str, Any]]) -> dict[str, int]:
     total_scans = len(scans)
     phishing_detected = sum(1 for item in scans if int(item.get("risk_score", 0) or 0) >= 61)
@@ -73,6 +141,7 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
     metadata = load_training_metadata()
     offline_raw = metadata.get("metrics") if isinstance(metadata.get("metrics"), dict) else {}
     runtime = _runtime_counts_from_scans(scans)
+    learning = _learning_metrics_from_feedback()
 
     accuracy = float(offline_raw.get("accuracy", 0.0) or 0.0)
     precision = float(offline_raw.get("precision", 0.0) or 0.0)
@@ -100,12 +169,37 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
         except (TypeError, ValueError):
             live_accuracy_note = None
 
+    ood_raw = metadata.get("ood_holdout") if isinstance(metadata.get("ood_holdout"), dict) else {}
+    ood_available = ood_raw.get("available") is not False and bool(ood_raw)
+
+    def _ood_metric(key: str) -> float | None:
+        if not ood_available:
+            return None
+        try:
+            value = ood_raw.get(key)
+            return None if value is None else float(value)
+        except (TypeError, ValueError):
+            return None
+
     offline_evaluation = {
         "accuracy": accuracy,
         "precision": precision,
         "recall": recall,
         "f1_score": f1,
         "false_positive_rate": false_positive_rate,
+        # Honest generalization measurement (hand-authored adversarial holdout,
+        # disjoint from the training CSV). Null when the holdout is absent.
+        "ood_holdout": {
+            "source": ood_raw.get("source"),
+            "rows": _ood_metric("rows"),
+            "accuracy": _ood_metric("accuracy"),
+            "precision": _ood_metric("precision"),
+            "recall": _ood_metric("recall"),
+            "f1_score": _ood_metric("f1_score"),
+            "false_positive_rate": _ood_metric("false_positive_rate"),
+            "note": ood_raw.get("note") if ood_available else None,
+            "available": ood_available,
+        },
         "evaluated_at": metadata.get("trained_at"),
         "evaluation_dataset_size": metadata.get("test_rows"),
         "training_rows": metadata.get("train_rows"),
@@ -114,6 +208,7 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
         "metadata_path": str(resolve_training_metadata_path() or training_metadata_paths()[0]),
         "disclaimer": "Offline holdout evaluation on a fixed train/test split — not continuously measured live accuracy.",
         "live_qa_note": live_accuracy_note,
+        "system_eval": load_system_eval(),
         "benchmark_caveat": load_benchmark_caveat(),
     }
 
@@ -138,6 +233,32 @@ def build_api_metrics_payload(scans: list[dict[str, Any]]) -> dict[str, Any]:
         "phishingDetected": runtime["phishing_detected"],
         "suspiciousDetected": runtime["suspicious_detected"],
         "safeDetected": runtime["safe_detected"],
-        "driftLevel": "low",
-        "falseNegativeCount": 0,
+        **({
+            "feedbackSamples": learning["feedback_samples"],
+            "confirmedCorrect": learning["confirmed_correct"],
+            "falsePositiveCount": learning["false_positive_count"],
+            "falseNegativeCount": learning["false_negative_count"],
+            "feedbackAgreementRate": learning["feedback_agreement_rate"],
+        } if learning["feedback_samples"] else {}),
+        "driftLevel": "low" if not learning["feedback_samples"] else (
+            "high" if learning["feedback_agreement_rate"] is not None and learning["feedback_agreement_rate"] < 0.5
+            else "medium" if learning["feedback_agreement_rate"] is not None and learning["feedback_agreement_rate"] < 0.8
+            else "low"
+        ),
+        "falseNegativeCount": learning["false_negative_count"],
+        # Honest drift score: disagreement share of reviewed feedback (0.0 = perfect agreement).
+        "driftScore": (
+            round(1.0 - learning["feedback_agreement_rate"], 4)
+            if learning["feedback_agreement_rate"] is not None
+            else None
+        ),
+        # Entries with a model prediction but no analyst correction yet.
+        "needsReviewCount": learning["pending_review_count"],
+        # Retrain recommendation mirrors the drift contract: medium+ drift means retrain.
+        "retrainingRecommended": (
+            learning["feedback_samples"] > 0
+            and learning["feedback_agreement_rate"] is not None
+            and learning["feedback_agreement_rate"] < 0.8
+        ),
+        "samplesSinceLastRetrain": runtime["total_scans"],
     }

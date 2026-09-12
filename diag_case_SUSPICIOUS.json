@@ -1,0 +1,271 @@
+{
+ "verdict": "Safe",
+ "verdict_binary": "safe",
+ "category": "General Phishing",
+ "risk_score": 15,
+ "riskScore": 15,
+ "language": "EN",
+ "detectedLanguage": "EN",
+ "detected_language": "EN",
+ "trust_score": 58,
+ "trustScore": 58,
+ "confidence": 61,
+ "ml_probability": 0.8,
+ "model_used": "SecureBERT + MuRIL Ensemble",
+ "providers_used": [
+  "securebert",
+  "muril",
+  "deterministic"
+ ],
+ "fallback_mode": false,
+ "signals": [],
+ "safe_signals": [],
+ "language_model_score": 80,
+ "pattern_score": 0,
+ "link_risk_score": 0,
+ "header_spoofing_score": 8,
+ "enrichment_status": "unavailable",
+ "analysisSources": [
+  "backend",
+  "header",
+  "reputation",
+  "threat-intel",
+  "attachments",
+  "sandbox",
+  "intent-context-behavior"
+ ],
+ "sender_reputation": {
+  "signals": [],
+  "safe_signals": [],
+  "score_bonus": 0,
+  "known": false,
+  "safeCount": 0,
+  "phishingCount": 0,
+  "status": "unknown"
+ },
+ "intent_analysis": {
+  "financial_intent_score": 0,
+  "credential_intent_score": 0,
+  "action_intent_score": 0,
+  "dominant_intent": "financial",
+  "financial_hits": [],
+  "credential_hits": [],
+  "access_hits": [],
+  "action_hits": []
+ },
+ "context_analysis": {
+  "context_type": "general_phishing",
+  "context_risk_score": 50,
+  "hr_scam_detected": false,
+  "invoice_fraud_detected": false
+ },
+ "authority_analysis": {
+  "sender_role": "unknown_external",
+  "authority_score": 30,
+  "authority_request_risk": 30
+ },
+ "action_analysis": {
+  "money_transfer_requested": false,
+  "link_click_requested": false,
+  "data_sharing_requested": false,
+  "urgent_reply_requested": false,
+  "action_risk_score": 0
+ },
+ "behavior_analysis": {
+  "urgency": false,
+  "pressure": false,
+  "secrecy": false,
+  "impersonation": false,
+  "behavior_risk_score": 0
+ },
+ "financial_intent_score": 0,
+ "credential_intent_score": 0,
+ "action_intent_score": 0,
+ "context_type": "general_phishing",
+ "context_risk_score": 50,
+ "threat_intel": {
+  "signals": [],
+  "score_bonus": 0,
+  "matches": [],
+  "feedSources": [
+   "Local enterprise threat feed",
+   "CERT-style phishing indicators",
+   "Known campaign fragments"
+  ]
+ },
+ "thread_analysis": {
+  "signals": [],
+  "score_bonus": 0,
+  "threadDetected": false
+ },
+ "attachment_analysis": {
+  "signals": [
+   "No attachments detected"
+  ],
+  "score_bonus": 0,
+  "findings": [],
+  "total_attachments": 0
+ },
+ "url_sandbox": {
+  "signals": [],
+  "score_bonus": 0,
+  "details": []
+ },
+ "trusted_sender": false,
+ "timestamp": "2026-09-12T18:51:49.409328+00:00",
+ "sender_domain": "",
+ "header_analysis": {
+  "spf": "none",
+  "dkim": "none",
+  "dmarc": "none",
+  "reply_to_mismatch": false,
+  "return_path_mismatch": false,
+  "suspicious_ip": false,
+  "score_impact": 8,
+  "reason": "Sender authenticity not verifiable from SPF/DKIM/DMARC (all none or neutral)"
+ },
+ "url_results": [],
+ "matched_signals": [],
+ "signal_trace": {
+  "ml_model": {
+   "weight": 4.54,
+   "evidence": [
+    "raw_probability: 0.8000",
+    "ml_cap_points: 35.0"
+   ]
+  },
+  "rules_pattern": {
+   "weight": 0.0,
+   "evidence": [
+    "pattern_rule_cap: 0.0"
+   ]
+  },
+  "link_reputation": {
+   "weight": 0.0,
+   "evidence": [
+    "link_risk_score: 0"
+   ]
+  },
+  "header_spoofing": {
+   "weight": 0.44,
+   "evidence": [
+    "header_spoofing_score: 8"
+   ]
+  },
+  "enterprise_modules": {
+   "weight": 0.0,
+   "evidence": [
+    "enterprise_bonus_raw: 0.00"
+   ]
+  },
+  "hard_signal_bonus": {
+   "weight": 0.0,
+   "evidence": [
+    "hard_signal_count: 0"
+   ]
+  },
+  "header_auth_fail_boost": {
+   "weight": 0.0,
+   "evidence": [
+    "no header-fail boost"
+   ]
+  },
+  "untrusted_sender_boost": {
+   "weight": 4.45,
+   "evidence": [
+    "untrusted sender boost"
+   ]
+  },
+  "brand_impersonation_boost": {
+   "weight": 5.56,
+   "evidence": [
+    "brand impersonation boost"
+   ]
+  },
+  "virustotal_suspicious_boost": {
+   "weight": 0.01,
+   "evidence": [
+    "vt_confirmed_suspicious: 0"
+   ]
+  }
+ },
+ "top_signals": [
+  {
+   "signal": "brand_impersonation_boost",
+   "weight": 5.56,
+   "evidence": "brand impersonation boost"
+  },
+  {
+   "signal": "ml_model",
+   "weight": 4.54,
+   "evidence": "raw_probability: 0.8000"
+  },
+  {
+   "signal": "untrusted_sender_boost",
+   "weight": 4.45,
+   "evidence": "untrusted sender boost"
+  },
+  {
+   "signal": "header_spoofing",
+   "weight": 0.44,
+   "evidence": "header_spoofing_score: 8"
+  },
+  {
+   "signal": "virustotal_suspicious_boost",
+   "weight": 0.01,
+   "evidence": "vt_confirmed_suspicious: 0"
+  }
+ ],
+ "math_check": {
+  "signal_weights_sum": 15.0,
+  "final_score": 15,
+  "matches": true
+ },
+ "explanation_source": "signal_trace",
+ "score_components": {
+  "language_model": 80,
+  "pattern_matching": 0,
+  "link_risk": 0,
+  "header_spoofing": 8
+ },
+ "explanation": {
+  "why_risky": "No high-risk phishing combinations were detected, but sender authenticity is unverified: Sender authenticity not verifiable from SPF/DKIM/DMARC (all none or neutral).",
+  "top_words": [
+   {
+    "word": "unusual",
+    "contribution": 0.26
+   },
+   {
+    "word": "noticed",
+    "contribution": 0.25
+   },
+   {
+    "word": "activity",
+    "contribution": 0.25
+   },
+   {
+    "word": "unusual activity",
+    "contribution": 0.22
+   },
+   {
+    "word": "security",
+    "contribution": 0.03
+   }
+  ],
+  "method": "linear-weights",
+  "confidence_interval": "61% ± 12%",
+  "explanation_degraded": false,
+  "degraded_reason": null,
+  "signals": []
+ },
+ "recommendation": "Allow but continue monitoring",
+ "analysis_meta": {
+  "analyzed_at": "2026-09-12T18:51:49.409328+00:00",
+  "model_version": "SecureBERT + MuRIL Ensemble",
+  "response_schema_version": "v2.0-strict"
+ },
+ "scan_id": "e891dab13aa6",
+ "id": "e891dab13aa6",
+ "regionHint": null,
+ "processing_ms": 59
+}

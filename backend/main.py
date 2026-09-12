@@ -1642,6 +1642,7 @@ def build_explanation_record_from_scan_result(result: dict[str, Any], *, email_t
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "session_id": str(session_id or result.get("session_id") or ""),
         "email_sha256": email_sha256,
+        "region_hint": result.get("regionHint") or None,
         "risk_score": risk_score,
         "verdict": str(result.get("verdict") or classification_from_risk(risk_score)),
         "confidence": int(result.get("confidence") or 0),
@@ -5949,7 +5950,28 @@ def calculate_email_risk(
                 and _ml2_decision.get("verdict") == "phishing"
                 and float(_ml2_decision.get("confidence") or 0.0) >= 0.70
             )
-            if _ml2_confident_phish:
+            # Rules-agreement gate FIRST. Measured 2026-09-12: the legacy-era
+            # V2 artifact scores benign Hindi/Telugu transactional notifications
+            # (payment credited, ticket confirmed, monthly statement) at
+            # 0.89–0.94 "phishing" confidence because modern benign-security
+            # style never appeared in its 2026-era training pools. Confidence
+            # alone cannot be trusted, so the floor requires BOTH the
+            # specialist AND the rules layer to agree: without a non-Latin
+            # high-risk keyword cluster (or an OTP+phone lure), no risk floor
+            # is injected and the normal pipeline runs.
+            _hi_hits = _term_hits(normalize_confusables(raw_entry_text), _HINDI_HIGH_RISK_TERMS)
+            _te_hits = _term_hits(normalize_confusables(raw_entry_text), _TELUGU_HIGH_RISK_TERMS)
+            _has_otp_lure = bool(re.search(r"\botp\b|ఒటిపి", raw_entry_text, re.IGNORECASE))
+            _has_phone_91 = bool(_PHONE_IN_91_PATTERN.search(raw_entry_text))
+            # The benign transactional notifications that triggered the false
+            # alarms hit ZERO high-risk terms; a single term (e.g. खाता in a
+            # salary notice) is normal transactional vocabulary, so the bar is
+            # a real keyword cluster (2+ distinct terms) or an OTP+phone lure.
+            _rules_agree = max(_hi_hits, _te_hits) >= 1 or (_has_otp_lure and _has_phone_91)
+            # NOTE: threshold is 1 here because the specialist already flagged
+            # phishing at >=0.70 confidence; the rules layer only needs to not
+            # be fully silent. Zero hits = pure benign notification style.
+            if _ml2_confident_phish and _rules_agree:
                 _result = _calculate_email_risk_inner(
                     email_text,
                     headers_text=headers_text,
@@ -5964,6 +5986,12 @@ def calculate_email_risk(
                     _result["risk_score"] = max(int(_result.get("risk_score") or 0), 70)
                     _result["router_leg"] = "v2_xlmr"
                 return _result
+            if _ml2_confident_phish and not _rules_agree:
+                logger.info(
+                    "ML2 router floor skipped: specialist flagged but rules layer found no high-risk cluster (lang=%s conf=%.2f)",
+                    _ml2_language, float((_ml2_decision or {}).get("confidence") or 0.0),
+                )
+                # fall through to the normal rules+TF-IDF pipeline
         elif _ml2_language == "MX":
             # P2: Hinglish/code-mixed → MuRIL specialist floor (same 0.70 bar).
             _mx_decision = _ml2_route(raw_entry_text)
@@ -8050,12 +8078,14 @@ def _calculate_email_risk_inner(
     scan_id = uuid4().hex[:12]
     response_payload["scan_id"] = scan_id
     response_payload["id"] = scan_id
+    response_payload["regionHint"] = extract_region_hint(email_text)
     store_scan_explanation(
         scan_id,
         {
             "scan_id": scan_id,
             "session_id": session_id or "",
             "email_text": email_text,
+            "region_hint": response_payload["regionHint"],
             "risk_score": risk_score,
             "verdict": final_verdict,
             "confidence": confidence,
@@ -8279,6 +8309,7 @@ def legacy_history(request: Request) -> list[dict[str, Any]]:
                     "id": sid,
                     "timestamp": row.get("timestamp"),
                     "emailPreview": _history_email_preview(sid),
+                    "regionHint": None,
                     "riskScore": risk_score,
                     "classification": classification_from_risk(risk_score),
                     "verdict": _score_to_verdict(risk_score),
@@ -8300,6 +8331,45 @@ def _history_email_preview(scan_id_val: str) -> str:
     return scan_id_val[:8] + "..." if scan_id_val else "[redacted]"
 
 
+# Region hint for the dashboard's Regional Threat Intelligence widget.
+# Privacy-safe by construction: the ONLY thing returned is a fixed vocabulary
+# city token when the *text mentions that city* — no content, no hash, no new
+# identifier. Cities absent from the allowlist never produce a hint.
+_REGION_CITY_PATTERNS: dict[str, str] = {
+    "mumbai": "mumbai",
+    "delhi": "delhi",
+    "new delhi": "delhi",
+    "bengaluru": "bengaluru",
+    "bangalore": "bengaluru",
+    "hyderabad": "hyderabad",
+    "chennai": "chennai",
+    "kolkata": "kolkata",
+    "calcutta": "kolkata",
+    "pune": "pune",
+    "jaipur": "jaipur",
+    "ahmedabad": "ahmedabad",
+    "lucknow": "lucknow",
+    "surat": "surat",
+    "kochi": "kochi",
+    "indore": "indore",
+}
+
+
+def extract_region_hint(email_text: str) -> str | None:
+    """Return one allowlisted city name mentioned in the text, or None.
+
+    Content never leaves the process — only which allowlisted city (if any)
+    the text references. This supplies the frontend's RegionalThreatMap with
+    a privacy-safe geography signal (it cannot work off the redacted
+    emailPreview, which Policy §1.2 keeps non-content by design).
+    """
+    lowered = str(email_text or "").lower()
+    for needle, city in _REGION_CITY_PATTERNS.items():
+        if needle in lowered:
+            return city
+    return None
+
+
 def _history_item_from_memory_record(record: dict[str, Any]) -> dict[str, Any]:
     # §1.2: Use scan_id[:8] as preview — unique, not person-linked, no hash needed.
     scan_id_val = str(record.get("scan_id") or "")
@@ -8310,6 +8380,7 @@ def _history_item_from_memory_record(record: dict[str, Any]) -> dict[str, Any]:
         # string "None" (LIVE defect 2). Current scans always carry ISO time.
         "timestamp": record.get("timestamp") or None,
         "emailPreview": _history_email_preview(scan_id_val),
+        "regionHint": record.get("region_hint") or None,
         "riskScore": risk_score,
         # classification (safe/uncertain/phishing) is the frontend-typed vocab;
         # verdict (Safe/Suspicious/High Risk) is the scan-response vocab. Same
@@ -8433,6 +8504,14 @@ async def scan_email(payload: EmailScanRequest, request: Request, response: Resp
         store_cached_scan_result(cache_key, result)
         processing_ms = int(round((time.perf_counter() - started_at) * 1000))
         result["processing_ms"] = processing_ms
+        # Region hint for the dashboard's Regional Threat Intelligence widget:
+        # fixed-vocabulary city token only (privacy-safe, no content). Also
+        # stored in the result dict so save_scan_to_db's response payload
+        # carries it through the history feed.
+        try:
+            result["regionHint"] = extract_region_hint(payload.email_text)
+        except Exception:
+            logger.warning("region hint extraction failed; serving None")
 
         save_scan_to_db(result, session_key)
 

@@ -16,6 +16,7 @@ DATASET_PATH = BASE_DIR.parent / "data" / "Phishing_Email.csv"
 MODEL_PATH = BASE_DIR / "model.pkl"
 VECTORIZER_PATH = BASE_DIR / "vectorizer.pkl"
 METADATA_PATH = BASE_DIR.parent / "data" / "training_meta.json"
+OOD_EVAL_PATH = BASE_DIR.parent / "diagnostics" / "eval_set_v1.jsonl"
 REPO_RELATIVE_DATASET_PATH = "data/Phishing_Email.csv"
 
 LABEL_MAP = {
@@ -34,7 +35,12 @@ def clean_text(text: str) -> str:
 
 
 def build_training_metadata(
-    *, rows: int, train_rows: int, test_rows: int, metrics: dict[str, float]
+    *,
+    rows: int,
+    train_rows: int,
+    test_rows: int,
+    metrics: dict[str, float],
+    ood_holdout: dict[str, object],
 ) -> dict[str, object]:
     """Return the deterministic canonical metadata for this trainer recipe."""
     return {
@@ -43,6 +49,52 @@ def build_training_metadata(
         "train_rows": train_rows,
         "test_rows": test_rows,
         "metrics": metrics,
+        "ood_holdout": ood_holdout,
+    }
+
+
+def measure_ood_holdout(
+    vectorizer: TfidfVectorizer, model: LogisticRegression
+) -> dict[str, object]:
+    """Honest generalization measurement: score the committed adversarial
+    holdout (diagnostics/eval_set_v1.jsonl) — hand-authored real-world rows
+    that never appear in the training CSV. In-distribution scores near 1.0
+    do not measure generalization; this bucket does."""
+    if not OOD_EVAL_PATH.exists():
+        return {"source": "diagnostics/eval_set_v1.jsonl", "available": False}
+
+    items: list[dict[str, str]] = []
+    with OOD_EVAL_PATH.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            obj = json.loads(line)
+            if not isinstance(obj, dict) or not obj.get("text") or obj.get("label") not in LABEL_MAP:
+                raise ValueError(f"Invalid OOD holdout row: {str(obj)[:80]!r}")
+            items.append(obj)
+
+    texts = [clean_text(str(i["text"])) for i in items]
+    labels = [LABEL_MAP[i["label"]] for i in items]
+    predictions = model.predict(vectorizer.transform(texts))
+
+    fp = sum(a == 0 and p == 1 for a, p in zip(labels, predictions))
+    tn = sum(a == 0 and p == 0 for a, p in zip(labels, predictions))
+    return {
+        "source": "diagnostics/eval_set_v1.jsonl",
+        "rows": len(labels),
+        "accuracy": float(accuracy_score(labels, predictions)),
+        "precision": float(precision_score(labels, predictions, zero_division=0)),
+        "recall": float(recall_score(labels, predictions, zero_division=0)),
+        "f1_score": float(f1_score(labels, predictions, zero_division=0)),
+        "fp": int(fp),
+        "tn": int(tn),
+        "false_positive_rate": float(fp / (fp + tn)) if fp + tn else None,
+        "note": (
+            "Hand-authored adversarial/real-world holdout; none of these rows "
+            "appear in the training CSV. This is the honest generalization "
+            "measurement — the easy in-distribution training split is not."
+        ),
     }
 
 
@@ -120,11 +172,24 @@ def main() -> None:
     joblib.dump(model, MODEL_PATH)
     joblib.dump(vectorizer, VECTORIZER_PATH)
 
+    ood_holdout = measure_ood_holdout(vectorizer, model)
+    print("=== OOD holdout (diagnostics/eval_set_v1.jsonl) ===")
+    if ood_holdout.get("available") is False:
+        print("OOD eval set absent — ood_holdout marked unavailable")
+    else:
+        print(f"Rows     : {ood_holdout['rows']}")
+        print(f"Accuracy : {ood_holdout['accuracy']:.4f}")
+        print(f"Precision: {ood_holdout['precision']:.4f}")
+        print(f"Recall   : {ood_holdout['recall']:.4f}")
+        print(f"F1 Score : {ood_holdout['f1_score']:.4f}")
+        print(f"FPR      : {ood_holdout['false_positive_rate']}")
+
     metadata = build_training_metadata(
         rows=int(len(df)),
         train_rows=int(len(X_train)),
         test_rows=int(len(X_test)),
         metrics=metrics,
+        ood_holdout=ood_holdout,
     )
     METADATA_PATH.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 

@@ -8,5 +8,17 @@
     "precision": 1.0,
     "recall": 1.0,
     "f1_score": 1.0
+  },
+  "ood_holdout": {
+    "source": "diagnostics/eval_set_v1.jsonl",
+    "rows": 220,
+    "accuracy": 0.6863636363636364,
+    "precision": 0.6040268456375839,
+    "recall": 0.9,
+    "f1_score": 0.7228915662650602,
+    "fp": 59,
+    "tn": 61,
+    "false_positive_rate": 0.49166666666666664,
+    "note": "Hand-authored adversarial/real-world holdout; none of these rows appear in the training CSV. This is the honest generalization measurement \u2014 the easy in-distribution training split is not."
   }
 }
