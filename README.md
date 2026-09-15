@@ -272,7 +272,7 @@ Manual checks on FastAPI + React dashboard:
 | Team meeting (no lure) | Safe ~10 | Pass |
 | Income tax refund `.xyz` | High Risk ~75 | Pass |
 
-The automated suite covers 421 tests (regression, adversarial, session identity, performance gates, guard tests) and runs on every push via GitHub Actions.
+The automated suite covers 420+ tests (regression, adversarial, session identity, performance gates, guard tests) and runs on every push via GitHub Actions.
 
 ## Limits
 
